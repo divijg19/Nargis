@@ -1,0 +1,38 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    background-color: #f5f5f5;
+}
+
+.container {
+    padding: 50px;
+}
+
+h1 {
+    color: #ff69b4;
+}
+
+p {
+    color: #333;
+    font-size: 18px;
+    line-height: 1.6;
+}
+
+/* Styling for images on the edges */
+.left-image, .right-image {
+    position: absolute;
+    top: 0;
+    height: 100vh;
+    width: auto;
+    max-width: 30%;
+}
+
+.left-image {
+    left: 0;
+}
+
+.right-image {
+    right: 0;
+}
