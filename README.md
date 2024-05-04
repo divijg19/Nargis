@@ -14,7 +14,7 @@ Ergo sumit narcissus - "Thus, let the narcissus bloom."
 I know it's been very tough for you, and I've tried to stay away so you dont suffer more due to my presence in your life. If you're reading this, I have inevitably failed.
 
 From the moment I met you- I knew you weren't perfect. You had flaws, and I loved you despite and because of them. They do not make you a lesser person.
-All the beautiful and loved things, were never meant to be ideal. Over time, I knew you had the potential to be perfect- *especially for me*.
+All the beautiful and loved things, were never meant to be ideal. Over time, I knew you were beautiful inside and out, and were gonna be *perfect for me*.
 
  I want you to bloom, to *rediscover* yourself and *grow*. To believe and embrace that change is possible and that you deserve the good in the world. To *accept your past*, and *keep faith* that things could change for the better. And most of all, I want to give you the hope and safety to be vulnerable enough to make these changes, with me by your side.
 
