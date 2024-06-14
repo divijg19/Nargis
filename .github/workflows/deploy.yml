@@ -18,10 +18,11 @@ jobs:
       with:
         ruby-version: '3.0'  # Specify the Ruby version you need
 
+    - name: Install Bundler
+      run: gem install bundler
+
     - name: Install Jekyll and GitHub Pages dependencies
-      run: |
-        gem install bundler
-        bundle install
+      run: bundle install
 
     - name: Build the Jekyll site
       run: bundle exec jekyll build
