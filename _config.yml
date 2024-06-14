@@ -2,8 +2,8 @@
 title: Nargis
 description: >- # this means to ignore newlines until "baseurl:"
   This is a sample Jekyll site configuration.
-baseurl:  # the subpath of your site
-url: "https://yourusername.github.io" # the base hostname & protocol for your site
+baseurl: "https://divijg19.github.io/nargis/" # the subpath of your site
+url: "https://divijg19.github.io" # the base hostname & protocol for your site
 
 # Social media links
 github_username: divijg19
@@ -45,8 +45,8 @@ jekyll-feed:
 jekyll-seo-tag:
   title: "My Jekyll Site"
   description: "This is a sample Jekyll site configuration."
-  author: "Your Name"
-  url: "https://yourusername.github.io"
+  author: "Divij"
+  url: "https://divijg19.github.io"
 
 # Development settings
 future: true # if true, Jekyll will process future-dated posts
