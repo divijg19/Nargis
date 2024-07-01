@@ -1,0 +1,57 @@
+# Site settings
+title: Nargis
+description: >- # this means to ignore newlines until "baseurl:"
+  This is a sample Jekyll site configuration.
+baseurl: "https://divijg19.github.io/nargis/" # the subpath of your site
+url: "https://divijg19.github.io" # the base hostname & protocol for your site
+
+# Social media links
+github_username: divijg19
+
+# Build settings
+markdown: kramdown
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+# Exclude these files and directories from the build
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+
+# Include specific files and directories in the build
+include:
+  - _pages
+  - _posts
+
+# Permalinks
+permalink: /:categories/:year/:month/:day/:title:output_ext
+
+# Pagination settings
+paginate: 5
+paginate_path: "/page:num/"
+
+# Configuration for plugins
+jekyll-feed:
+  path: feed.xml
+
+jekyll-seo-tag:
+  title: "My Jekyll Site"
+  description: "This is a sample Jekyll site configuration."
+  author: "Divij"
+  url: "https://divijg19.github.io"
+
+# Development settings
+future: true # if true, Jekyll will process future-dated posts
+lsi: false # if true, Jekyll will produce better related post results
+safe: true # if true, Jekyll will disable custom plugins
+
+# Additional settings
+timezone: "America/New_York"
