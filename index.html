@@ -4,328 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>To, Nargis</title>
-    <link rel="stylesheet" href="style.css">
+    <!-- Tailwind CSS 4.1.7 CDN -->
+    <script src="https://cdn.tailwindcss.com/4.1.7"></script>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Framer Motion (Motion One for vanilla JS) -->
+    <script src="https://unpkg.com/@motionone/dom@10.15.2/dist/motion.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <style>
         body {
             font-family: 'Montserrat', sans-serif;
-            margin: 0;
-            padding: 0;
-            text-align: center;
-            background-color: #f0f0f0;
+            background: linear-gradient(120deg, #f5e6fa 0%, #ffe3ec 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
         }
-        .navbar {
-            background-color: rgba(255, 255, 255, 0.9);
-            border-bottom: 1px solid #ff69b4;
-            padding: 10px 20px;
-            position: fixed;
-            top: 0;
-            width: 100%;
-            z-index: 10;
-        }
-        .navbar-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .navbar-title {
-            font-family: 'Dancing Script', cursive;
-            font-size: 28px;
-            color: #333;
-        }
-        .navbar-user {
-            font-size: 18px;
-            color: #666;
+        .glass {
+            background: rgba(255,255,255,0.35);
+            box-shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
+            border-radius: 24px;
+            backdrop-filter: blur(12px);
+            border: 1.5px solid rgba(255,255,255,0.25);
         }
         .parallax-couples {
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            top: 0;
-            left: 0;
+            pointer-events: none;
         }
-        .anime-couple {
-            position: absolute;
-            width: 50%;
-            height: auto;
-        }
-        .left-couple {
-            left: 0;
-            top: 0;
-        }
-        .right-couple {
-            right: 0;
-            top: 0;
-        }
-        .main-content {
-            position: relative;
-            z-index: 1;
-            padding-top: 80px; /* Added padding to prevent content from being hidden behind navbar */
-        }
-        .hero-section {
-            padding: 100px 20px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            margin: 50px auto;
-            max-width: 800px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        .main-title {
-            font-family: 'Dancing Script', cursive;
-            font-size: 48px;
-            margin-bottom: 10px;
-            color: #333;
-        }
-        .proposal-message {
-            font-size: 18px;
-            margin: 10px 0 20px;
-            color: #666;
-        }
-        .confession-section {
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            margin: 0 auto;
-            max-width: 800px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        .confession-form {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        #confessionInput {
-            width: 100%;
-            height: 100px;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ff69b4;
-            border-radius: 10px;
-            font-size: 16px;
-            resize: none;
-        }
-        .confess-btn {
-            background-color: #ff69b4;
-            border: none;
-            border-radius: 5px;
-            color: white;
-            cursor: pointer;
-            font-size: 18px;
-            padding: 10px 20px;
-            transition: background-color 0.3s;
-        }
-        .confess-btn:hover {
-            background-color: #ff1493;
-        }
-        .confessions-list {
-            margin-top: 20px;
-            text-align: left;
-        }
-        .confession-card {
-            background-color: #fff3f8;
-            border: 1px solid #ff69b4;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 10px;
-        }
-        .confession-intro {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .confession-body {
-            margin-bottom: 5px;
-        }
-        .confession-signoff {
-            font-style: italic;
-        }
-        .signature {
-            font-weight: bold;
-        }
-        .footer {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #777;
-        }
-        .confession-letter-section {
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            margin: 20px auto;
-            max-width: 800px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            position: relative;
-        }
-        .confession-letter {
-            padding: 20px;
-        }
-        .confession-couples {
-            margin: 20px 0;
-        }
-        .confession-couple-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 10px 0;
-        }
-        .confession-couple-img {
-            width: 48%;
-            border-radius: 10px;
-        }
-        .confession-quote {
-            font-style: italic;
-            margin: 10px 0;
-        }
-        .confession-letter-body {
-            margin: 20px 0;
-            text-align: left;
-        }
-        .confession-letter-footer {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #777;
+        .anime-couple img {
+            filter: drop-shadow(0 8px 32px rgba(31,38,135,0.12));
+            opacity: 0.92;
         }
     </style>
 </head>
-<body>
-    <nav class="navbar">
-        <div class="navbar-content">
-            <div class="navbar-title">Confessions for Nargis</div>
-            <div class="navbar-user">To: Nargis</div>
-        </div>
+<body class="relative min-h-screen bg-gradient-to-br from-pink-100 to-pink-200">
+    <nav class="navbar fixed top-0 left-0 w-full z-50 bg-white/80 border-b border-pink-300 py-2 px-4 flex justify-between items-center shadow-sm">
+        <div class="navbar-title font-dancing text-2xl text-pink-700">Confessions for Nargis</div>
+        <div class="navbar-user text-lg text-pink-500 font-semibold">To: Nargis</div>
     </nav>
-    <div class="parallax-couples">
-        <!-- Guts & Casca – Berserk -->
-        <div class="anime-couple left-couple" data-couple="0">
-            <img src="https://static.wikia.nocookie.net/berserk/images/2/2d/Guts_Anime.png" alt="Guts" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="0">
-            <img src="https://static.wikia.nocookie.net/berserk/images/6/6e/Casca_Anime.png" alt="Casca" />
-        </div>
-        <!-- Naruto & Hinata – Naruto -->
-        <div class="anime-couple left-couple" data-couple="1">
-            <img src="https://static.wikia.nocookie.net/naruto/images/6/6e/Hinata_Part_II.png" alt="Hinata Hyuga" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="1">
-            <img src="https://static.wikia.nocookie.net/naruto/images/9/97/Naruto_Part_II.png" alt="Naruto Uzumaki" />
-        </div>
-        <!-- Ichigo & Orihime – Bleach -->
-        <div class="anime-couple left-couple" data-couple="2">
-            <img src="https://static.wikia.nocookie.net/bleach/images/2/2d/Ichigo_Kurosaki_Anime.png" alt="Ichigo Kurosaki" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="2">
-            <img src="https://static.wikia.nocookie.net/bleach/images/7/7e/Orihime_Inoue_Anime.png" alt="Orihime Inoue" />
-        </div>
-        <!-- Kisuke & Yoruichi – Bleach -->
-        <div class="anime-couple left-couple" data-couple="3">
-            <img src="https://static.wikia.nocookie.net/bleach/images/2/2d/Kisuke_Urahara_Anime.png" alt="Kisuke Urahara" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="3">
-            <img src="https://static.wikia.nocookie.net/bleach/images/7/7e/Yoruichi_Shihouin_Anime.png" alt="Yoruichi Shihouin" />
-        </div>
-        <!-- Inuyasha & Kagome – Inuyasha -->
-        <div class="anime-couple left-couple" data-couple="4">
-            <img src="https://static.wikia.nocookie.net/inuyasha/images/2/2d/Inuyasha_Anime.png" alt="Inuyasha" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="4">
-            <img src="https://static.wikia.nocookie.net/inuyasha/images/7/7e/Kagome_Higurashi_Anime.png" alt="Kagome Higurashi" />
-        </div>
-        <!-- Yusuke & Keiko – Yu Yu Hakusho -->
-        <div class="anime-couple left-couple" data-couple="5">
-            <img src="https://static.wikia.nocookie.net/yuyuhakusho/images/2/2d/Yusuke_Urameshi_Anime.png" alt="Yusuke Urameshi" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="5">
-            <img src="https://static.wikia.nocookie.net/yuyuhakusho/images/7/7e/Keiko_Yukimura_Anime.png" alt="Keiko Yukimura" />
-        </div>
-        <!-- Edward & Winry – Fullmetal Alchemist -->
-        <div class="anime-couple left-couple" data-couple="6">
-            <img src="https://static.wikia.nocookie.net/fma/images/2/2d/Edward_Elric_Anime.png" alt="Edward Elric" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="6">
-            <img src="https://static.wikia.nocookie.net/fma/images/7/7e/Winry_Rockbell_Anime.png" alt="Winry Rockbell" />
-        </div>
-        <!-- Roy Mustang & Riza Hawkeye – Fullmetal Alchemist -->
-        <div class="anime-couple left-couple" data-couple="7">
-            <img src="https://static.wikia.nocookie.net/fma/images/2/2d/Roy_Mustang_Anime.png" alt="Roy Mustang" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="7">
-            <img src="https://static.wikia.nocookie.net/fma/images/7/7e/Riza_Hawkeye_Anime.png" alt="Riza Hawkeye" />
-        </div>
-        <!-- Ban & Elaine – Seven Deadly Sins -->
-        <div class="anime-couple left-couple" data-couple="8">
-            <img src="https://static.wikia.nocookie.net/nanatsu-no-taizai/images/2/2d/Ban_Anime.png" alt="Ban" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="8">
-            <img src="https://static.wikia.nocookie.net/nanatsu-no-taizai/images/7/7e/Elaine_Anime.png" alt="Elaine" />
-        </div>
-        <!-- Asuna & Kirito – Sword Art Online -->
-        <div class="anime-couple left-couple" data-couple="9">
-            <img src="https://static.wikia.nocookie.net/swordartonline/images/2/2d/Asuna_Alicization.png" alt="Asuna Yuuki" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="9">
-            <img src="https://static.wikia.nocookie.net/swordartonline/images/7/7e/Kirito_Alicization.png" alt="Kirito" />
-        </div>
-        <!-- Dante & Lady – Devil May Cry -->
-        <div class="anime-couple left-couple" data-couple="10">
-            <img src="https://static.wikia.nocookie.net/devilmaycry/images/2/2d/Dante_Anime.png" alt="Dante" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="10">
-            <img src="https://static.wikia.nocookie.net/devilmaycry/images/7/7e/Lady_Anime.png" alt="Lady (Mary Ann)" />
-        </div>
-        <!-- Cloud & Tifa – Final Fantasy VII -->
-        <div class="anime-couple left-couple" data-couple="11">
-            <img src="https://static.wikia.nocookie.net/finalfantasy/images/2/2d/Cloud_Strife_Anime.png" alt="Cloud Strife" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="11">
-            <img src="https://static.wikia.nocookie.net/finalfantasy/images/7/7e/Tifa_Lockhart_Anime.png" alt="Tifa Lockhart" />
-        </div>
-        <!-- Geralt & Yennefer – The Witcher -->
-        <div class="anime-couple left-couple" data-couple="12">
-            <img src="https://static.wikia.nocookie.net/witcher/images/2/2d/Geralt_Anime.png" alt="Geralt" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="12">
-            <img src="https://static.wikia.nocookie.net/witcher/images/7/7e/Yennefer_Anime.png" alt="Yennefer" />
-        </div>
-        <!-- Aragorn & Arwen – The Lord of the Rings -->
-        <div class="anime-couple left-couple" data-couple="13">
-            <img src="https://static.wikia.nocookie.net/lotr/images/2/2d/Aragorn_Anime.png" alt="Aragorn" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="13">
-            <img src="https://static.wikia.nocookie.net/lotr/images/7/7e/Arwen_Anime.png" alt="Arwen" />
-        </div>
-        <!-- Jon Snow & Ygritte – Game of Thrones -->
-        <div class="anime-couple left-couple" data-couple="14">
-            <img src="https://static.wikia.nocookie.net/gameofthrones/images/2/2d/Jon_Snow_Anime.png" alt="Jon Snow" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="14">
-            <img src="https://static.wikia.nocookie.net/gameofthrones/images/7/7e/Ygritte_Anime.png" alt="Ygritte" />
-        </div>
-        <!-- Batman & Catwoman – DC Universe -->
-        <div class="anime-couple left-couple" data-couple="15">
-            <img src="https://static.wikia.nocookie.net/dc/images/2/2d/Batman_Anime.png" alt="Batman" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="15">
-            <img src="https://static.wikia.nocookie.net/dc/images/7/7e/Catwoman_Anime.png" alt="Catwoman" />
-        </div>
-        <!-- Peter Parker & Mary Jane Watson – Spider-Man -->
-        <div class="anime-couple left-couple" data-couple="16">
-            <img src="https://static.wikia.nocookie.net/spiderman/images/2/2d/Peter_Parker_Anime.png" alt="Peter Parker" />
-        </div>
-        <div class="anime-couple right-couple" data-couple="16">
-            <img src="https://static.wikia.nocookie.net/spiderman/images/7/7e/Mary_Jane_Anime.png" alt="Mary Jane Watson" />
-        </div>
+    <div class="parallax-couples fixed inset-0 w-full h-full z-10 flex items-end justify-between pointer-events-none">
+        <!-- Couple images will be injected by JS -->
     </div>
-    <div class="main-content">
-        <section class="hero-section">
-            <div class="main-title">To, Nargis</div>
-            <div class="proposal-message">In the garden of my heart, where every flower blooms with your name, there's one blossom that outshines them all - the radiant Nargis. <br><br>Let this site be a confession, a letter, and a hope for us to bloom together.</div>
-            <div class="featured-couple">Hinata & Naruto</div>
+    <main class="main-content relative z-20 flex flex-col items-center pt-28">
+        <section class="hero-section glass w-full max-w-2xl mx-auto my-8 p-8 flex flex-col items-center">
+            <h1 class="main-title font-dancing text-5xl text-pink-700 mb-2">To, Nargis</h1>
+            <div class="proposal-message text-lg text-pink-500 mb-4">In the garden of my heart, where every flower blooms with your name, there's one blossom that outshines them all - the radiant Nargis.<br><br>Let this site be a confession, a letter, and a hope for us to bloom together.</div>
+            <div class="featured-couple text-pink-600 font-bold text-xl mt-2">Guts & Casca</div>
         </section>
-        <section class="confession-letter-section">
-            <div class="confession-letter">
-                <h2>My Dearest Nargis,</h2>
-                <div class="confession-letter-body">
+        <section class="confession-letter-section glass w-full max-w-2xl mx-auto my-8 p-8">
+            <div class="confession-letter flex flex-col items-center">
+                <h2 class="font-dancing text-3xl text-pink-700 mb-2">My Dearest Nargis,</h2>
+                <div class="confession-letter-body text-left text-base text-gray-700 leading-relaxed">
                     <p>In the garden of my heart, where every flower blooms with your name, there's one blossom that outshines them all - the radiant Nargis- otherwise known as the daffodils. The reason I start this letter of hope with the blossom of Nargis is due to the significance of the flower- rebirth, reconnection of worlds, and hope- the highest enduring form of love.</p>
                     <p>You, the Hibiscus to my Hyacinth<br>You, with the potential to hark and bring forth new worlds and chapters of our lives.</p>
                     <p>I beseech you with this phrase, and its word plays-<br><em>Ergo sumit narcissus - "Thus, let the narcissus bloom."</em></p>
@@ -340,22 +65,22 @@
                     <p>Do me a favour and make me the happiest I've been in my life- by actually giving me a chance to make you the happiest woman on Earth.</p>
                     <p>I know its scary- but its only ever real when its scary, and when you have no explainable reason to be afraid- I won't hesitate this time to take you in my arms and keep you close.</p>
                 </div>
-                <div class="confession-letter-footer">
+                <div class="confession-letter-footer text-pink-500 font-semibold mt-6">
                     <div class="signature">Forever and always loving you,<br>Divij</div>
                 </div>
             </div>
         </section>
-        <section class="confession-section">
-            <form class="confession-form" id="confessionForm">
-                <textarea id="confessionInput" placeholder="Write your own confession for Nargis..." required></textarea>
-                <button type="submit" class="confess-btn">Confess</button>
+        <section class="confession-section glass w-full max-w-2xl mx-auto my-8 p-8">
+            <form class="confession-form flex flex-col gap-4" id="confessionForm">
+                <textarea id="confessionInput" class="rounded-xl border border-pink-300 p-4 text-base bg-white/70 focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition" placeholder="Write your own confession for Nargis..." required></textarea>
+                <button type="submit" class="confess-btn bg-gradient-to-r from-pink-500 to-pink-300 text-white rounded-full px-8 py-3 text-lg font-semibold shadow hover:from-pink-400 hover:to-pink-600 transition">Confess</button>
             </form>
-            <div class="confessions-list" id="confessionsList"></div>
+            <div class="confessions-list flex flex-col gap-4 mt-6" id="confessionsList"></div>
         </section>
-        <footer class="footer">
-            &copy; 2025 Confessions for Nargis. Made with <span style="color:#e91e63">&#10084;</span> and cherry blossoms.
+        <footer class="footer text-center text-gray-500 mt-12 mb-4">
+            &copy; 2025 Confessions for Nargis. Made with <span class="text-pink-500">&#10084;</span> and cherry blossoms.
         </footer>
-    </div>
+    </main>
     <script src="script.js"></script>
     <script src="https://unpkg.com/sakura-js@1.0.0/dist/sakura.min.js"></script>
     <script>new Sakura('body');</script>

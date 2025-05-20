@@ -10,26 +10,62 @@ document.addEventListener("DOMContentLoaded", function() {
         }, 600);
     }
 
-    // Couple data for featured label
+    // Couple data for split parallax effect
     const couples = [
-        { label: 'Guts & Casca' },
-        { label: 'Naruto & Hinata' },
-        { label: 'Ichigo & Orihime' },
-        { label: 'Kisuke & Yoruichi' },
-        { label: 'Inuyasha & Kagome' },
-        { label: 'Yusuke & Keiko' },
-        { label: 'Edward & Winry' },
-        { label: 'Roy Mustang & Riza Hawkeye' },
-        { label: 'Ban & Elaine' },
-        { label: 'Asuna & Kirito' },
-        { label: 'Dante & Lady' },
-        { label: 'Cloud & Tifa' },
-        { label: 'Geralt & Yennefer' },
-        { label: 'Aragorn & Arwen' },
-        { label: 'Jon Snow & Ygritte' },
-        { label: 'Batman & Catwoman' },
-        { label: 'Peter Parker & Mary Jane Watson' }
+        { left: 0, right: 0, label: 'Guts & Casca' },
+        { left: 1, right: 1, label: 'Naruto & Hinata' },
+        { left: 2, right: 2, label: 'Ichigo & Orihime' },
+        { left: 3, right: 3, label: 'Kisuke & Yoruichi' },
+        { left: 4, right: 4, label: 'Inuyasha & Kagome' },
+        { left: 5, right: 5, label: 'Yusuke & Keiko' },
+        { left: 6, right: 6, label: 'Edward & Winry' },
+        { left: 7, right: 7, label: 'Roy Mustang & Riza Hawkeye' },
+        { left: 8, right: 8, label: 'Ban & Elaine' },
+        { left: 9, right: 9, label: 'Asuna & Kirito' },
+        { left: 10, right: 10, label: 'Dante & Lady' },
+        { left: 11, right: 11, label: 'Cloud & Tifa' },
+        { left: 12, right: 12, label: 'Geralt & Yennefer' },
+        { left: 13, right: 13, label: 'Aragorn & Arwen' },
+        { left: 14, right: 14, label: 'Jon Snow & Ygritte' },
+        { left: 15, right: 15, label: 'Batman & Catwoman' },
+        { left: 16, right: 16, label: 'Peter Parker & Mary Jane Watson' }
     ];
+    const coupleImageMap = [
+        { left: 'guts.png', right: 'casca.png', label: 'Guts & Casca' },
+        { left: 'hinata.png', right: 'naruto.png', label: 'Naruto & Hinata' },
+        { left: 'ichigo.png', right: 'orihime.png', label: 'Ichigo & Orihime' },
+        { left: 'kisuke.png', right: 'yoruichi.png', label: 'Kisuke & Yoruichi' },
+        { left: 'inuyasha.png', right: 'kagome.png', label: 'Inuyasha & Kagome' },
+        { left: 'yusuke.png', right: 'keiko.png', label: 'Yusuke & Keiko' },
+        { left: 'edward.png', right: 'winry.png', label: 'Edward & Winry' },
+        { left: 'roy.png', right: 'riza.png', label: 'Roy Mustang & Riza Hawkeye' },
+        { left: 'ban.png', right: 'elaine.png', label: 'Ban & Elaine' },
+        { left: 'asuna.png', right: 'kirito.png', label: 'Asuna & Kirito' },
+        { left: 'dante.png', right: 'lady.png', label: 'Dante & Lady' },
+        { left: 'cloud.png', right: 'tifa.png', label: 'Cloud & Tifa' },
+        { left: 'geralt.png', right: 'yennefer.png', label: 'Geralt & Yennefer' },
+        { left: 'aragorn.png', right: 'arwen.png', label: 'Aragorn & Arwen' },
+        { left: 'jon.png', right: 'ygritte.png', label: 'Jon Snow & Ygritte' },
+        { left: 'batman.png', right: 'catwoman.png', label: 'Batman & Catwoman' },
+        { left: 'peter.png', right: 'mj.png', label: 'Peter Parker & Mary Jane Watson' }
+    ];
+
+    // Inject couple images into parallax-couples container
+    const parallaxContainer = document.querySelector('.parallax-couples');
+    parallaxContainer.innerHTML = '';
+    for (let i = 0; i < coupleImageMap.length; i++) {
+        const leftDiv = document.createElement('div');
+        leftDiv.className = 'anime-couple left-couple';
+        leftDiv.dataset.couple = i;
+        leftDiv.innerHTML = `<img src="images/${coupleImageMap[i].left}" alt="${coupleImageMap[i].label.split(' & ')[0]}" />`;
+        parallaxContainer.appendChild(leftDiv);
+        const rightDiv = document.createElement('div');
+        rightDiv.className = 'anime-couple right-couple';
+        rightDiv.dataset.couple = i;
+        rightDiv.innerHTML = `<img src="images/${coupleImageMap[i].right}" alt="${coupleImageMap[i].label.split(' & ')[1]}" />`;
+        parallaxContainer.appendChild(rightDiv);
+    }
+
     const coupleCount = couples.length;
     const coupleHeight = window.innerHeight * 0.9;
     const leftCoupleEls = Array.from(document.querySelectorAll('.left-couple'));
@@ -43,11 +79,19 @@ document.addEventListener("DOMContentLoaded", function() {
             const sectionEnd = (i + 1) * coupleHeight * 0.9;
             const leftEl = leftCoupleEls[i];
             const rightEl = rightCoupleEls[i];
+            if (leftEl && rightEl) {
+                // Set local image src if not already set
+                if (leftEl.querySelector('img') && !leftEl.querySelector('img').src.includes('/images/')) {
+                    leftEl.querySelector('img').src = `/images/${coupleImageMap[i].left}`;
+                }
+                if (rightEl.querySelector('img') && !rightEl.querySelector('img').src.includes('/images/')) {
+                    rightEl.querySelector('img').src = `/images/${coupleImageMap[i].right}`;
+                }
+            }
             if (scrollY >= sectionStart && scrollY < sectionEnd) {
-                // Show this couple
                 leftEl.style.opacity = 1;
                 rightEl.style.opacity = 1;
-                // Animate them walking toward each other
+                // Animate them split to the side
                 const progress = Math.min(1, Math.max(0, (scrollY - sectionStart) / (sectionEnd - sectionStart)));
                 leftEl.style.transform = `translateY(${-progress * 40}px) translateX(${progress * 18}vw)`;
                 rightEl.style.transform = `translateY(${-progress * 40}px) translateX(-${progress * 18}vw)`;
