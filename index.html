@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confession Garden | Anime Love Wall</title>
+    <title>Confession Garden | Love Wall</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -14,6 +14,29 @@
             padding: 0;
             text-align: center;
             background-color: #f0f0f0;
+        }
+        .navbar {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid #ff69b4;
+            padding: 10px 20px;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 10;
+        }
+        .navbar-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar-title {
+            font-family: 'Dancing Script', cursive;
+            font-size: 28px;
+            color: #333;
+        }
+        .navbar-user {
+            font-size: 18px;
+            color: #666;
         }
         .parallax-couples {
             position: fixed;
@@ -39,6 +62,7 @@
         .main-content {
             position: relative;
             z-index: 1;
+            padding-top: 80px; /* Added padding to prevent content from being hidden behind navbar */
         }
         .hero-section {
             padding: 100px 20px;
@@ -127,6 +151,12 @@
     </style>
 </head>
 <body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <span class="navbar-title">Confession Garden</span>
+            <span class="navbar-user">For Nargis</span>
+        </div>
+    </nav>
     <div class="parallax-couples">
         <div class="anime-couple left-couple" data-couple="0">
             <img src="https://static.zerochan.net/Hinata.Hyuuga.full.2112822.jpg" alt="Hinata Hyuga" />
@@ -164,5 +194,21 @@
         <footer class="footer">&copy; 2024 DivijG19. All rights reserved.</footer>
     </div>
     <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sakura-js@1.0.2/dist/sakura.min.js"></script>
+    <script>
+        // Sakura.js for cherry blossom effect
+        document.addEventListener('DOMContentLoaded', function() {
+            new Sakura('body', {
+                colors: [
+                    {
+                        gradientColorStart: 'rgba(255,183,197,0.95)',
+                        gradientColorEnd: 'rgba(255,197,208,0.95)',
+                        gradientColorDegree: 120
+                    }
+                ],
+                delay: 400
+            });
+        });
+    </script>
 </body>
 </html>

@@ -1,6 +1,32 @@
 # nargis
 
-My Dearest Nargis,
+<div align="center" style="max-width: 700px; margin: 0 auto;">
+
+---
+
+# 🌸 Confession Garden 🌸
+
+### For Nargis
+
+<sub>In the garden of my heart, where every flower blooms with your name, there's one blossom that outshines them all - the radiant Nargis.</sub>
+
+---
+
+![Hinata & Naruto](https://static.zerochan.net/Hinata.Hyuuga.full.2112822.jpg#left)
+![Naruto Uzumaki](https://static.zerochan.net/Naruto.Uzumaki.full.2112821.jpg#right)
+
+---
+
+## "Ergo sumit narcissus - Thus, let the narcissus bloom."
+
+---
+
+![Asuna Yuuki](https://static.zerochan.net/Asuna.Yuuki.full.1623702.jpg#left)
+![Kirito](https://static.zerochan.net/Kirito.full.1623701.jpg#right)
+
+---
+
+### My Dearest Nargis,
 
 In the garden of my heart, where every flower blooms with your name, there's one blossom that outshines them all - the radiant Nargis- otherwise known as the daffodils. The reason I start this letter of hope with the blossom of Nargis is due to the significance of the flower- rebirth, reconnection of worlds, and hope- the highest enduring form of love.
 
@@ -9,6 +35,13 @@ You, with the potential to hark and bring forth new worlds and chapters of our l
 
 I beseech you with this phrase, and its word plays-
 
+---
+
+![Misaka Mikoto](https://static.zerochan.net/Misaka.Mikoto.full.2109642.jpg#left)
+![Accelerator](https://static.zerochan.net/Accelerator.full.2109641.jpg#right)
+
+---
+
 Ergo sumit narcissus - "Thus, let the narcissus bloom."
 
 I know it's been very tough for you, and I've tried to stay away so you dont suffer more due to my presence in your life. If you're reading this, I have inevitably failed.
@@ -16,7 +49,7 @@ I know it's been very tough for you, and I've tried to stay away so you dont suf
 From the moment I met you- I knew you weren't perfect. You had flaws, and I loved you despite and because of them. They do not make you a lesser person.
 All the beautiful and loved things, were never meant to be ideal. Over time, I knew you were beautiful inside and out, and were gonna be *perfect for me*.
 
- I want you to bloom, to *rediscover* yourself and *grow*. To believe and embrace that change is possible and that you deserve the good in the world. To *accept your past*, and *keep faith* that things could change for the better. And most of all, I want to give you the hope and safety to be vulnerable enough to make these changes, with me by your side.
+I want you to bloom, to *rediscover* yourself and *grow*. To believe and embrace that change is possible and that you deserve the good in the world. To *accept your past*, and *keep faith* that things could change for the better. And most of all, I want to give you the hope and safety to be vulnerable enough to make these changes, with me by your side.
 
 I'm not the sort of man who falls in love with people at first sight or touch. I'm way too skeptical and mistrusting of people to let anyone in.
 You were different, from the start- I wont say special, because that's delusion.
@@ -42,6 +75,14 @@ I know its scary- but its only ever real when its scary, and when you have no ex
 
 Forever and always loving you,
 Divij
+
+---
+
+<sub>Scroll to see more confessions and love stories below, as cherry blossoms fall...</sub>
+
+</div>
+
+---
 
 ## Deployment
 

@@ -5,6 +5,7 @@ body {
     min-height: 100vh;
     background: linear-gradient(120deg, #f5e6fa 0%, #ffe3ec 100%);
     overflow-x: hidden;
+    padding-top: 60px;
 }
 
 .parallax-couples {
@@ -191,6 +192,47 @@ body {
     color: #777;
     text-align: center;
 }
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 60px;
+    background: linear-gradient(90deg, #ffb6c1 0%, #e91e63 100%);
+    box-shadow: 0 2px 12px rgba(233,30,99,0.08);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.navbar-content {
+    width: 100vw;
+    max-width: 1200px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+}
+.navbar-title {
+    font-family: 'Dancing Script', cursive, Arial, sans-serif;
+    font-size: 2em;
+    color: #fff;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 12px #fff6fa;
+}
+.navbar-user {
+    font-size: 1.1em;
+    color: #fff;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* Sakura.js cherry blossom override for layering */
+.sakura {
+    z-index: 9999 !important;
+    pointer-events: none;
+}
+
 @media (max-width: 900px) {
     .parallax-couples { display: none; }
     .main-content { margin: 24px 4vw; }
