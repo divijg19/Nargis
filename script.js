@@ -10,14 +10,27 @@ document.addEventListener("DOMContentLoaded", function() {
         }, 600);
     }
 
-    // Parallax and scroll-based couple image logic
+    // Couple data for featured label
     const couples = [
-        { left: 'Hinata Hyuga', right: 'Naruto Uzumaki', label: 'Hinata & Naruto' },
-        { left: 'Asuna Yuuki', right: 'Kirito', label: 'Asuna & Kirito' },
-        { left: 'Misaka Mikoto', right: 'Accelerator', label: 'Misaka & Accelerator' }
+        { label: 'Guts & Casca' },
+        { label: 'Naruto & Hinata' },
+        { label: 'Ichigo & Orihime' },
+        { label: 'Kisuke & Yoruichi' },
+        { label: 'Inuyasha & Kagome' },
+        { label: 'Yusuke & Keiko' },
+        { label: 'Edward & Winry' },
+        { label: 'Roy Mustang & Riza Hawkeye' },
+        { label: 'Ban & Elaine' },
+        { label: 'Asuna & Kirito' },
+        { label: 'Dante & Lady' },
+        { label: 'Cloud & Tifa' },
+        { label: 'Geralt & Yennefer' },
+        { label: 'Aragorn & Arwen' },
+        { label: 'Jon Snow & Ygritte' },
+        { label: 'Batman & Catwoman' },
+        { label: 'Peter Parker & Mary Jane Watson' }
     ];
     const coupleCount = couples.length;
-    const coupleSections = coupleCount;
     const coupleHeight = window.innerHeight * 0.9;
     const leftCoupleEls = Array.from(document.querySelectorAll('.left-couple'));
     const rightCoupleEls = Array.from(document.querySelectorAll('.right-couple'));
