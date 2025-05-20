@@ -79,15 +79,6 @@ document.addEventListener("DOMContentLoaded", function() {
             const sectionEnd = (i + 1) * coupleHeight * 0.9;
             const leftEl = leftCoupleEls[i];
             const rightEl = rightCoupleEls[i];
-            if (leftEl && rightEl) {
-                // Set local image src if not already set
-                if (leftEl.querySelector('img') && !leftEl.querySelector('img').src.includes('/images/')) {
-                    leftEl.querySelector('img').src = `/images/${coupleImageMap[i].left}`;
-                }
-                if (rightEl.querySelector('img') && !rightEl.querySelector('img').src.includes('/images/')) {
-                    rightEl.querySelector('img').src = `/images/${coupleImageMap[i].right}`;
-                }
-            }
             if (scrollY >= sectionStart && scrollY < sectionEnd) {
                 leftEl.style.opacity = 1;
                 rightEl.style.opacity = 1;
@@ -95,7 +86,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 const progress = Math.min(1, Math.max(0, (scrollY - sectionStart) / (sectionEnd - sectionStart)));
                 leftEl.style.transform = `translateY(${-progress * 40}px) translateX(${progress * 18}vw)`;
                 rightEl.style.transform = `translateY(${-progress * 40}px) translateX(-${progress * 18}vw)`;
-                // Update featured couple label
                 if (featuredCouple) featuredCouple.textContent = couples[i].label;
             } else {
                 leftEl.style.opacity = 0;
