@@ -1,0 +1,5 @@
+# Prevent Jekyll from processing files and serve as a static site
+# See: https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jekyll/about-github-pages-and-jekyll
+exclude: ["README.md", "Gemfile", "Gemfile.lock", "body.html"]
+# Set the baseurl if deploying to a project page (e.g., /username/repo)
+# baseurl: "/nargis" # Uncomment and set if needed

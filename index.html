@@ -3,39 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>To, Nargis</title>
+    <title>Confession Garden | Anime Love Wall</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Montserrat', sans-serif;
             margin: 0;
             padding: 0;
             text-align: center;
+            background-color: #f0f0f0;
         }
-        .container {
-            padding: 50px;
+        .parallax-couples {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            top: 0;
+            left: 0;
         }
-        h1 {
-            color: #ff69b4;
+        .anime-couple {
+            position: absolute;
+            width: 50%;
+            height: auto;
         }
-        p {
+        .left-couple {
+            left: 0;
+            top: 0;
+        }
+        .right-couple {
+            right: 0;
+            top: 0;
+        }
+        .main-content {
+            position: relative;
+            z-index: 1;
+        }
+        .hero-section {
+            padding: 100px 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            margin: 50px auto;
+            max-width: 800px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .main-title {
+            font-family: 'Dancing Script', cursive;
+            font-size: 48px;
+            margin-bottom: 10px;
             color: #333;
+        }
+        .proposal-message {
             font-size: 18px;
-            line-height: 1.6;
+            margin: 10px 0 20px;
+            color: #666;
+        }
+        .confession-section {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            margin: 0 auto;
+            max-width: 800px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .confession-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #confessionInput {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ff69b4;
+            border-radius: 10px;
+            font-size: 16px;
+            resize: none;
+        }
+        .confess-btn {
+            background-color: #ff69b4;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 10px 20px;
+            transition: background-color 0.3s;
+        }
+        .confess-btn:hover {
+            background-color: #ff1493;
+        }
+        .confessions-list {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .confession-card {
+            background-color: #fff3f8;
+            border: 1px solid #ff69b4;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        .confession-intro {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .confession-body {
+            margin-bottom: 5px;
+        }
+        .confession-signoff {
+            font-style: italic;
+        }
+        .signature {
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #777;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1></h1>
-        <p>Nargis,</p>
-        <p>I have no doubt about this- I love you more than words can express, and I want to spend the rest of my life helping you become the person you want to be, and making you forever happy.</p>
-        <p>I want nothing more than the best for you, and despite all our miscommunication so far, would you give us both the chance of making things right and starting anew, earnestly?</p>
-        <p>With all my love,</p>
-        <p>Kami</p>
+    <div class="parallax-couples">
+        <div class="anime-couple left-couple" data-couple="0">
+            <img src="https://static.zerochan.net/Hinata.Hyuuga.full.2112822.jpg" alt="Hinata Hyuga" />
+        </div>
+        <div class="anime-couple right-couple" data-couple="0">
+            <img src="https://static.zerochan.net/Naruto.Uzumaki.full.2112821.jpg" alt="Naruto Uzumaki" />
+        </div>
+        <div class="anime-couple left-couple" data-couple="1">
+            <img src="https://static.zerochan.net/Asuna.Yuuki.full.1623702.jpg" alt="Asuna Yuuki" />
+        </div>
+        <div class="anime-couple right-couple" data-couple="1">
+            <img src="https://static.zerochan.net/Kirito.full.1623701.jpg" alt="Kirito" />
+        </div>
+        <div class="anime-couple left-couple" data-couple="2">
+            <img src="https://static.zerochan.net/Misaka.Mikoto.full.2109642.jpg" alt="Misaka Mikoto" />
+        </div>
+        <div class="anime-couple right-couple" data-couple="2">
+            <img src="https://static.zerochan.net/Accelerator.full.2109641.jpg" alt="Accelerator" />
+        </div>
     </div>
-    <img class="left-image" src="left-image.jpg" alt="Left Image">
-    <img class="right-image" src="right-image.jpg" alt="Right Image">
+    <div class="main-content">
+        <section class="hero-section">
+            <h1 class="main-title">Confession Garden</h1>
+            <div class="proposal-message">In the garden of hearts, every confession is a new beginning.<br><span class="featured-couple">Hinata & Naruto</span></div>
+        </section>
+        <section class="confession-section">
+            <form class="confession-form" id="confessionForm">
+                <textarea id="confessionInput" placeholder="Write your confession here..." required></textarea>
+                <button type="submit" class="confess-btn">Send Confession</button>
+            </form>
+            <div class="confessions-list" id="confessionsList">
+                <!-- Confessions will appear here -->
+            </div>
+        </section>
+        <footer class="footer">&copy; 2024 DivijG19. All rights reserved.</footer>
+    </div>
     <script src="script.js"></script>
 </body>
 </html>

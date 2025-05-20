@@ -42,3 +42,17 @@ I know its scary- but its only ever real when its scary, and when you have no ex
 
 Forever and always loving you,
 Divij
+
+## Deployment
+
+This site is configured for deployment on **GitHub Pages** using either the default GitHub Pages workflow or a custom GitHub Actions workflow.
+
+### To deploy:
+1. Push your changes to the `main` branch.
+2. GitHub Actions will build and deploy the site to GitHub Pages automatically (see `.github/workflows/deploy.yml`).
+3. Your site will be available at `https://<your-username>.github.io/<your-repo>/`.
+
+#### Notes
+- The `_config.yml` and `.nojekyll` files ensure your static files are served as-is.
+- If you use a custom domain, configure it in your repository settings.
+- The `body.html` file is not used in the deployed site.

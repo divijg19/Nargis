@@ -1,38 +1,206 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Montserrat', Arial, sans-serif;
     margin: 0;
     padding: 0;
-    text-align: center;
-    background-color: #f5f5f5;
+    min-height: 100vh;
+    background: linear-gradient(120deg, #f5e6fa 0%, #ffe3ec 100%);
+    overflow-x: hidden;
 }
 
-.container {
-    padding: 50px;
-}
-
-h1 {
-    color: #ff69b4;
-}
-
-p {
-    color: #333;
-    font-size: 18px;
-    line-height: 1.6;
-}
-
-/* Styling for images on the edges */
-.left-image, .right-image {
-    position: absolute;
+.parallax-couples {
+    position: fixed;
     top: 0;
-    height: 100vh;
-    width: auto;
-    max-width: 30%;
-}
-
-.left-image {
     left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1;
+}
+.anime-couple {
+    position: absolute;
+    bottom: 0;
+    width: 28vw;
+    max-width: 420px;
+    min-width: 180px;
+    height: 90vh;
+    display: flex;
+    align-items: flex-end;
+    opacity: 0;
+    transition: opacity 0.7s, filter 0.4s;
+}
+.left-couple {
+    left: 0;
+    justify-content: flex-start;
+}
+.right-couple {
+    right: 0;
+    justify-content: flex-end;
+}
+.anime-couple img {
+    height: 90vh;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 32px rgba(31,38,135,0.12));
+    opacity: 0.92;
+    transition: filter 0.4s;
 }
 
-.right-image {
-    right: 0;
+.main-content {
+    position: relative;
+    z-index: 2;
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+.hero-section {
+    width: 100%;
+    margin-top: 60px;
+    margin-bottom: 40px;
+    text-align: center;
+}
+.main-title {
+    font-family: 'Dancing Script', cursive, Arial, sans-serif;
+    color: #e91e63;
+    font-size: 3.2em;
+    margin-bottom: 18px;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 12px #fff6fa;
+}
+.proposal-message {
+    font-size: 1.3em;
+    color: #ad1457;
+    margin-bottom: 32px;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeInUp 1.2s cubic-bezier(.23,1.01,.32,1) 0.5s forwards;
+    text-align: center;
+}
+.featured-couple {
+    display: block;
+    font-size: 1.1em;
+    color: #e91e63;
+    margin-top: 10px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+.confession-section {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto 40px auto;
+    background: rgba(255,255,255,0.35);
+    box-shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
+    border-radius: 24px;
+    padding: 48px 32px 32px 32px;
+    backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(255,255,255,0.25);
+}
+.confession-form {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 36px;
+    gap: 16px;
+}
+.confession-form textarea {
+    resize: vertical;
+    min-height: 80px;
+    max-height: 200px;
+    border-radius: 12px;
+    border: 1.5px solid #e91e63;
+    padding: 14px;
+    font-size: 1.1em;
+    font-family: inherit;
+    background: rgba(255,255,255,0.7);
+    outline: none;
+    transition: border 0.2s;
+}
+.confession-form textarea:focus {
+    border: 2px solid #ad1457;
+}
+.confess-btn {
+    background: linear-gradient(90deg, #e91e63 0%, #ffb6c1 100%);
+    color: #fff;
+    border: none;
+    border-radius: 30px;
+    padding: 14px 38px;
+    font-size: 1.1em;
+    font-family: inherit;
+    cursor: pointer;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 8px rgba(233,30,99,0.08);
+    transition: background 0.3s, transform 0.2s;
+}
+.confess-btn:hover {
+    background: linear-gradient(90deg, #ffb6c1 0%, #e91e63 100%);
+    transform: scale(1.05);
+}
+.confessions-list {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+.confession-card {
+    background: rgba(255,255,255,0.85);
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(233,30,99,0.07);
+    padding: 22px 18px 18px 18px;
+    animation: fadeIn 1s;
+    border-left: 4px solid #e91e63;
+    font-size: 1.08em;
+    color: #333;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.confession-card:before {
+    content: '💌';
+    position: absolute;
+    left: -32px;
+    top: 18px;
+    font-size: 1.5em;
+}
+.confession-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+}
+.like-btn {
+    background: none;
+    border: none;
+    color: #e91e63;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.like-btn.liked {
+    color: #ad1457;
+}
+.like-count {
+    font-size: 1em;
+    color: #ad1457;
+}
+.footer {
+    margin-top: 40px;
+    font-size: 0.95em;
+    color: #777;
+    text-align: center;
+}
+@media (max-width: 900px) {
+    .parallax-couples { display: none; }
+    .main-content { margin: 24px 4vw; }
+    .confession-section { padding: 24px 8px; }
+}
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
