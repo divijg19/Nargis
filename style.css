@@ -233,10 +233,107 @@ body {
     pointer-events: none;
 }
 
+.confession-letter-section {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto 40px auto;
+    background: rgba(255,255,255,0.55);
+    box-shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
+    border-radius: 24px;
+    padding: 48px 32px 32px 32px;
+    backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(255,255,255,0.25);
+    margin-bottom: 48px;
+}
+.confession-letter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 18px;
+}
+.confession-letter h2 {
+    font-family: 'Dancing Script', cursive, Arial, sans-serif;
+    color: #e91e63;
+    font-size: 2.2em;
+    margin-bottom: 0.2em;
+}
+.confession-letter h3 {
+    color: #ad1457;
+    font-size: 1.3em;
+    margin-top: 0;
+}
+.confession-intro {
+    font-size: 1.1em;
+    color: #ad1457;
+    margin-bottom: 1em;
+}
+.confession-couples {
+    width: 100%;
+    margin: 18px 0;
+}
+.confession-couple-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 18px 0;
+}
+.confession-couple-img {
+    width: 44%;
+    max-width: 220px;
+    min-width: 90px;
+    border-radius: 18px;
+    box-shadow: 0 2px 12px rgba(233,30,99,0.13);
+    object-fit: cover;
+    opacity: 0.96;
+}
+.confession-couple-img.left {
+    margin-right: auto;
+}
+.confession-couple-img.right {
+    margin-left: auto;
+}
+.confession-quote {
+    font-style: italic;
+    color: #e91e63;
+    font-size: 1.1em;
+    margin: 12px 0;
+}
+.confession-letter-body {
+    text-align: left;
+    margin: 0 auto;
+    max-width: 600px;
+    color: #333;
+    font-size: 1.08em;
+    line-height: 1.7;
+}
+.confession-letter-body p {
+    margin-bottom: 1.1em;
+}
+.signature {
+    font-weight: bold;
+    color: #ad1457;
+    font-size: 1.1em;
+    margin-top: 1.5em;
+}
+.confession-letter-footer {
+    margin-top: 18px;
+    color: #ad1457;
+    font-size: 0.98em;
+}
 @media (max-width: 900px) {
     .parallax-couples { display: none; }
     .main-content { margin: 24px 4vw; }
     .confession-section { padding: 24px 8px; }
+    .confession-letter-section {
+        padding: 18px 4vw;
+    }
+    .confession-couple-img {
+        max-width: 120px;
+    }
+    .confession-letter-body {
+        font-size: 0.98em;
+    }
 }
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(40px); }
