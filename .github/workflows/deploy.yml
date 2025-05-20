@@ -1,4 +1,4 @@
-name: Deploy Jekyll with GitHub Pages dependencies preinstalled
+name: Deploy static site to GitHub Pages
 
 on:
   push:
@@ -6,29 +6,15 @@ on:
       - main  # Set this to your default branch
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Setup Ruby
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: '3.0'  # Specify the Ruby version you need
-
-    - name: Install Bundler
-      run: gem install bundler
-
-    - name: Install Jekyll and GitHub Pages dependencies
-      run: bundle install
-
-    - name: Build the Jekyll site
-      run: bundle exec jekyll build
-
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./_site
+        publish_dir: ./
