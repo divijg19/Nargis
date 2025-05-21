@@ -179,9 +179,64 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Animate proposal message with GSAP
-    if (proposalMessage) {
-        gsap.fromTo(proposalMessage, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 1.2, delay: 0.5, ease: "power3.out" });
+    // THEME TOGGLE BUTTON REWRITE
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+
+    const sunSVG = `<svg xmlns="http://www.w3.org/2000/svg" class="theme-svg sun" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#ec4899" stroke-width="2"><circle cx="12" cy="12" r="5" fill="#fbbf24"/><g stroke="#f59e42" stroke-width="2"><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></g></svg>`;
+    const moonSVG = `<svg xmlns="http://www.w3.org/2000/svg" class="theme-svg moon" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="#ec4899" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" fill="#fbbf24" stroke="#f59e42" stroke-width="2"/></svg>`;
+
+    function setTheme(theme) {
+      if (theme === 'dark') {
+        document.body.classList.add('dark');
+        document.documentElement.classList.add('dark');
+      } else {
+        document.body.classList.remove('dark');
+        document.documentElement.classList.remove('dark');
+      }
+      localStorage.setItem('theme', theme);
+      updateThemeIcon(theme);
+    }
+
+    function updateThemeIcon(theme) {
+      if (!themeIcon) return;
+      themeIcon.innerHTML = theme === 'dark' ? moonSVG : sunSVG;
+    }
+
+    function getPreferredTheme() {
+      return localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    }
+
+    if (themeToggle) {
+      themeToggle.addEventListener('click', () => {
+        const current = document.body.classList.contains('dark') ? 'dark' : 'light';
+        setTheme(current === 'dark' ? 'light' : 'dark');
+      });
+      setTheme(getPreferredTheme());
+    }
+
+    // On load, set theme from localStorage or system preference
+    (function () {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+    })();
+
+    // Back to Top button
+    const backToTop = document.getElementById('backToTop');
+    window.addEventListener('scroll', function() {
+      if (window.scrollY > 300) {
+        backToTop.classList.remove('hidden');
+        backToTop.style.display = 'block';
+      } else {
+        backToTop.classList.add('hidden');
+        backToTop.style.display = 'none';
+      }
+    });
+    if (backToTop) {
+      backToTop.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
     }
 });
 
