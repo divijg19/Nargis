@@ -1,103 +1,83 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>To, Nargis</title>
-    <!-- Tailwind CSS 4.1.7 CDN -->
-    <script src="https://cdn.tailwindcss.com/4.1.7"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Framer Motion (Motion One for vanilla JS) -->
-    <script src="https://unpkg.com/@motionone/dom@10.15.2/dist/motion.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <style>
-        body {
-            font-family: 'Montserrat', sans-serif;
-            background: linear-gradient(120deg, #f5e6fa 0%, #ffe3ec 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-        .glass {
-            background: rgba(255,255,255,0.35);
-            box-shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
-            border-radius: 24px;
-            backdrop-filter: blur(12px);
-            border: 1.5px solid rgba(255,255,255,0.25);
-        }
-        .parallax-couples {
-            pointer-events: none;
-        }
-        .anime-couple img {
-            filter: drop-shadow(0 8px 32px rgba(31,38,135,0.12));
-            opacity: 0.92;
-        }
-        @keyframes fadein {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .animate-fadein {
-            animation: fadein 0.8s ease-out forwards;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>To, Nargis</title>
+  <!-- Tailwind CSS 4.1.7 CDN -->
+  <script src="https://cdn.tailwindcss.com/4.1.7"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Framer Motion (Motion One) -->
+  <script src="https://unpkg.com/@motionone/dom@10.15.2/dist/motion.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    html, body { scroll-behavior: smooth; }
+    body { font-family: 'Montserrat', sans-serif; }
+  </style>
 </head>
 <body class="relative min-h-screen bg-gradient-to-br from-pink-100 to-pink-200 overflow-x-hidden">
-    <nav class="navbar fixed top-0 left-0 w-full z-50 bg-white/80 border-b border-pink-300 py-2 px-4 flex justify-between items-center shadow-sm backdrop-blur-md">
-        <div class="navbar-title font-dancing text-2xl text-pink-700">Confessions for Nargis</div>
-        <ul class="navbar-links flex gap-6 text-pink-600 font-semibold text-lg">
-            <li><a href="#home" class="hover:text-pink-800 transition">Home</a></li>
-            <li><a href="#letter" class="hover:text-pink-800 transition">Letter</a></li>
-            <li><a href="#confess" class="hover:text-pink-800 transition">Confess</a></li>
-            <li><a href="#wall" class="hover:text-pink-800 transition">Wall</a></li>
-        </ul>
-        <div class="navbar-user text-lg text-pink-500 font-semibold">To: Nargis</div>
-    </nav>
-    <div class="parallax-couples fixed inset-0 w-full h-full z-10 pointer-events-none">
-        <!-- Couple images will be injected by JS -->
-    </div>
-    <main class="main-content relative z-20 flex flex-col items-center justify-center gap-10 pt-36 pb-20 min-h-screen">
-        <section id="home" class="hero-section glass w-full max-w-2xl mx-auto p-10 flex flex-col items-center justify-center shadow-xl border border-pink-200/60 text-center animate-fadein">
-            <h1 class="main-title font-dancing text-5xl md:text-6xl text-pink-700 mb-3 drop-shadow">To, Nargis</h1>
-            <div class="proposal-message text-lg md:text-xl text-pink-500 mb-6 max-w-xl mx-auto">In the garden of my heart, where every flower blooms with your name, there's one blossom that outshines them all - the radiant Nargis.<br><br>Let this site be a confession, a letter, and a hope for us to bloom together.</div>
-            <div class="featured-couple text-pink-600 font-bold text-xl mt-2">Guts & Casca</div>
-        </section>
-        <section id="letter" class="confession-letter-section glass w-full max-w-2xl mx-auto p-10 shadow-xl border border-pink-200/60 flex flex-col items-center justify-center text-center animate-fadein" style="animation-delay:0.2s;">
-            <div class="confession-letter flex flex-col items-center w-full">
-                <h2 class="font-dancing text-3xl md:text-4xl text-pink-700 mb-3">My Dearest Nargis,</h2>
-                <div class="confession-letter-body text-base md:text-lg text-gray-700 leading-relaxed text-left md:text-center mx-auto max-w-xl">
-                    <p>In the garden of my heart, where every flower blooms with your name, there's one blossom that outshines them all - the radiant Nargis- otherwise known as the daffodils. The reason I start this letter of hope with the blossom of Nargis is due to the significance of the flower- rebirth, reconnection of worlds, and hope- the highest enduring form of love.</p>
-                    <p>You, the Hibiscus to my Hyacinth<br>You, with the potential to hark and bring forth new worlds and chapters of our lives.</p>
-                    <p>I beseech you with this phrase, and its word plays-<br><em>Ergo sumit narcissus - "Thus, let the narcissus bloom."</em></p>
-                    <p>I know it's been very tough for you, and I've tried to stay away so you dont suffer more due to my presence in your life. If you're reading this, I have inevitably failed.</p>
-                    <p>From the moment I met you- I knew you weren't perfect. You had flaws, and I loved you despite and because of them. They do not make you a lesser person. All the beautiful and loved things, were never meant to be ideal. Over time, I knew you were beautiful inside and out, and were gonna be <strong>perfect for me</strong>.</p>
-                    <p>I want you to bloom, to <em>rediscover</em> yourself and <em>grow</em>. To believe and embrace that change is possible and that you deserve the good in the world. To <em>accept your past</em>, and <em>keep faith</em> that things could change for the better. And most of all, I want to give you the hope and safety to be vulnerable enough to make these changes, with me by your side.</p>
-                    <p>I'm not the sort of man who falls in love with people at first sight or touch. I'm way too skeptical and mistrusting of people to let anyone in. You were different, from the start- I wont say special, because that's delusion.</p>
-                    <p>From the moment I saw you- I had a "Koi No Yokan" moment. I just knew from first interaction that we would eventually fall in love. But love doesnt mean it works out- love stories exist for a reason. You were my soulmate and I thoroughly believe in that- but soulmates doesnt mean it works out- karma exists for a reason. And Karma is a bitch- I like to believe we both had karma, and we paid it in full, in our own ways.</p>
-                    <p>I didnt get my heart broken. I didn't get hurt much. I got disappointed and frustrated at times, but I knew it was your journey you'd have to go through. But from the day I met you- I knew you would be worth getting my heart broken for, because I needed to be with you just that much.</p>
-                    <p>All of that's in the past- and now that I've communicated my thoughts and the intensity of my feelings for you through this letter- I want us to have the courage and faith to trust each other and grow together. To not have to worry about anything else other than forming a bond that would last. To take accountability and communicate, and trust each other to do our best with the way we know ourselves and each other. I'll wait till you're ready to conduct yourself like the graceful and classy beauty you definitely are, but I dont want to bear being away from you, princess.</p>
-                    <p>I've written so many poems and letters to you that I won't get to send. And if and when we date again, get together again- I'll write to you, my love.</p>
-                    <p>Do me a favour and make me the happiest I've been in my life- by actually giving me a chance to make you the happiest woman on Earth.</p>
-                    <p>I know its scary- but its only ever real when its scary, and when you have no explainable reason to be afraid- I won't hesitate this time to take you in my arms and keep you close.</p>
-                </div>
-                <div class="confession-letter-footer text-pink-500 font-semibold mt-8">
-                    Forever and always loving you,<br>Divij
-                </div>
-            </div>
-        </section>
-        <section id="confess" class="confession-section glass w-full max-w-2xl mx-auto p-10 shadow-xl border border-pink-200/60 flex flex-col items-center justify-center animate-fadein" style="animation-delay:0.4s;">
-            <form class="confession-form flex flex-col gap-4 w-full max-w-lg mx-auto items-center" id="confessionForm">
-                <textarea id="confessionInput" class="rounded-xl border border-pink-300 p-4 text-base bg-white/70 focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition w-full" placeholder="Write your own confession for Nargis..." required></textarea>
-                <button type="submit" class="confess-btn bg-gradient-to-r from-pink-500 to-pink-300 text-white rounded-full px-8 py-3 text-lg font-semibold shadow hover:from-pink-400 hover:to-pink-600 transition">Confess</button>
-            </form>
-        </section>
-        <section id="wall" class="confessions-wall-section w-full max-w-2xl mx-auto flex flex-col items-center justify-center animate-fadein" style="animation-delay:0.5s;">
-            <div class="confessions-list flex flex-col gap-4 mt-6 w-full max-w-lg mx-auto" id="confessionsList"></div>
-        </section>
-        <footer class="footer text-center text-gray-500 mt-16 mb-4 w-full animate-fadein" style="animation-delay:0.6s;">
-            &copy; 2025 Confessions for Nargis. Made with <span class="text-pink-500">&#10084;</span> and cherry blossoms.
-        </footer>
-    </main>
-    <script src="script.js"></script>
-    <script src="https://unpkg.com/sakura-js@1.0.0/dist/sakura.min.js"></script>
-    <script>new Sakura('body');</script>
+  <!-- Scroll Indicator -->
+  <div id="scrollIndicator" class="fixed top-0 left-0 h-1 bg-pink-400 z-[60] transition-all duration-300" style="width:0;"></div>
+  <!-- Navbar -->
+  <nav class="navbar fixed top-0 left-0 w-full z-50 bg-white/80 border-b border-pink-300 py-2 px-4 flex justify-between items-center shadow-sm backdrop-blur-md">
+    <div class="navbar-title font-dancing text-2xl text-pink-700">Confessions for Nargis</div>
+    <ul class="navbar-links flex gap-6 text-pink-600 font-semibold text-lg">
+      <li><a href="#home" class="hover:text-pink-800 transition">Home</a></li>
+      <li><a href="#letter" class="hover:text-pink-800 transition">Letter</a></li>
+      <li><a href="#confess" class="hover:text-pink-800 transition">Confess</a></li>
+      <li><a href="#wall" class="hover:text-pink-800 transition">Wall</a></li>
+    </ul>
+    <div class="navbar-user text-lg text-pink-500 font-semibold">To: Nargis</div>
+  </nav>
+  <!-- Parallax Couple Images -->
+  <div class="parallax-couples fixed inset-0 w-full h-full z-10 pointer-events-none"></div>
+  <main class="main-content relative z-20 flex flex-col items-center justify-center gap-10 pt-36 pb-20 min-h-screen">
+    <!-- Hero Section -->
+    <section id="home" class="hero-section glass w-full max-w-2xl mx-auto p-10 flex flex-col items-center justify-center shadow-xl border border-pink-200/60 text-center animate-fadein">
+      <h1 class="main-title font-dancing text-5xl md:text-6xl text-pink-700 mb-3 drop-shadow">To, Nargis</h1>
+      <div class="proposal-message text-lg md:text-xl text-pink-500 mb-6 max-w-xl mx-auto">In the garden of my heart, where every flower blooms with your name, there's one blossom that outshines them all - the radiant Nargis.<br><br>Let this site be a confession, a letter, and a hope for us to bloom together.</div>
+      <div class="featured-couple text-pink-600 font-bold text-xl mt-2">Guts & Casca</div>
+    </section>
+    <!-- Confession Letter Section -->
+    <section id="letter" class="confession-letter-section glass w-full max-w-2xl mx-auto p-10 shadow-xl border border-pink-200/60 flex flex-col items-center justify-center text-center animate-fadein" style="animation-delay:0.2s;">
+      <div class="confession-letter flex flex-col items-center w-full">
+        <h2 class="font-dancing text-3xl md:text-4xl text-pink-700 mb-3">My Dearest Nargis,</h2>
+        <div class="confession-letter-body text-base md:text-lg text-gray-700 leading-relaxed text-left md:text-center mx-auto max-w-xl">
+          <p>In the garden of my heart, where every flower blooms with your name, there's one blossom that outshines them all - the radiant Nargis- otherwise known as the daffodils. The reason I start this letter of hope with the blossom of Nargis is due to the significance of the flower- rebirth, reconnection of worlds, and hope- the highest enduring form of love.</p>
+          <p>You, the Hibiscus to my Hyacinth<br>You, with the potential to hark and bring forth new worlds and chapters of our lives.</p>
+          <p>I beseech you with this phrase, and its word plays-<br><em>Ergo sumit narcissus - "Thus, let the narcissus bloom."</em></p>
+          <p>I know it's been very tough for you, and I've tried to stay away so you dont suffer more due to my presence in your life. If you're reading this, I have inevitably failed.</p>
+          <p>From the moment I met you- I knew you weren't perfect. You had flaws, and I loved you despite and because of them. They do not make you a lesser person. All the beautiful and loved things, were never meant to be ideal. Over time, I knew you were beautiful inside and out, and were gonna be <strong>perfect for me</strong>.</p>
+          <p>I want you to bloom, to <em>rediscover</em> yourself and <em>grow</em>. To believe and embrace that change is possible and that you deserve the good in the world. To <em>accept your past</em>, and <em>keep faith</em> that things could change for the better. And most of all, I want to give you the hope and safety to be vulnerable enough to make these changes, with me by your side.</p>
+          <p>I'm not the sort of man who falls in love with people at first sight or touch. I'm way too skeptical and mistrusting of people to let anyone in. You were different, from the start- I wont say special, because that's delusion.</p>
+          <p>From the moment I saw you- I had a "Koi No Yokan" moment. I just knew from first interaction that we would eventually fall in love. But love doesnt mean it works out- love stories exist for a reason. You were my soulmate and I thoroughly believe in that- but soulmates doesnt mean it works out- karma exists for a reason. And Karma is a bitch- I like to believe we both had karma, and we paid it in full, in our own ways.</p>
+          <p>I didnt get my heart broken. I didn't get hurt much. I got disappointed and frustrated at times, but I knew it was your journey you'd have to go through. But from the day I met you- I knew you would be worth getting my heart broken for, because I needed to be with you just that much.</p>
+          <p>All of that's in the past- and now that I've communicated my thoughts and the intensity of my feelings for you through this letter- I want us to have the courage and faith to trust each other and grow together. To not have to worry about anything else other than forming a bond that would last. To take accountability and communicate, and trust each other to do our best with the way we know ourselves and each other. I'll wait till you're ready to conduct yourself like the graceful and classy beauty you definitely are, but I dont want to bear being away from you, princess.</p>
+          <p>I've written so many poems and letters to you that I won't get to send. And if and when we date again, get together again- I'll write to you, my love.</p>
+          <p>Do me a favour and make me the happiest I've been in my life- by actually giving me a chance to make you the happiest woman on Earth.</p>
+          <p>I know its scary- but its only ever real when its scary, and when you have no explainable reason to be afraid- I won't hesitate this time to take you in my arms and keep you close.</p>
+        </div>
+        <div class="confession-letter-footer text-pink-500 font-semibold mt-8">Forever and always loving you,<br>Divij</div>
+      </div>
+    </section>
+    <!-- Confession Form Section -->
+    <section id="confess" class="confession-section glass w-full max-w-2xl mx-auto p-10 shadow-xl border border-pink-200/60 flex flex-col items-center justify-center animate-fadein" style="animation-delay:0.4s;">
+      <form class="confession-form flex flex-col gap-4 w-full max-w-lg mx-auto items-center" id="confessionForm">
+        <textarea id="confessionInput" class="rounded-xl border border-pink-300 p-4 text-base bg-white/70 focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition w-full" placeholder="Write your own confession for Nargis..." required></textarea>
+        <button type="submit" class="confess-btn bg-gradient-to-r from-pink-500 to-pink-300 text-white rounded-full px-8 py-3 text-lg font-semibold shadow hover:from-pink-400 hover:to-pink-600 transition">Confess</button>
+      </form>
+    </section>
+    <!-- Confession Wall Section -->
+    <section id="wall" class="confessions-wall-section w-full max-w-2xl mx-auto flex flex-col items-center justify-center animate-fadein" style="animation-delay:0.5s;">
+      <div class="confessions-list flex flex-col gap-4 mt-6 w-full max-w-lg mx-auto" id="confessionsList"></div>
+    </section>
+    <!-- Footer -->
+    <footer class="footer text-center text-gray-500 mt-16 mb-4 w-full animate-fadein" style="animation-delay:0.6s;">
+      &copy; 2025 Confessions for Nargis. Made with <span class="text-pink-500">&#10084;</span> and cherry blossoms.
+    </footer>
+  </main>
+  <script src="script.js"></script>
+  <script src="https://unpkg.com/sakura-js@1.0.0/dist/sakura.min.js"></script>
+  <script>new Sakura('body');</script>
 </body>
 </html>

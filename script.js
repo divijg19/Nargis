@@ -185,6 +185,32 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
+// Scroll indicator and active nav link highlight
+window.addEventListener('scroll', function() {
+    // Scroll Indicator
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const scrollTop = window.scrollY;
+    const percent = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    const indicator = document.getElementById('scrollIndicator');
+    if (indicator) indicator.style.width = percent + '%';
+
+    // Active nav link highlight
+    const sections = ['home', 'letter', 'confess', 'wall'];
+    let current = sections[0];
+    for (let i = 0; i < sections.length; i++) {
+        const section = document.getElementById(sections[i]);
+        if (section && section.getBoundingClientRect().top - 120 <= 0) {
+            current = sections[i];
+        }
+    }
+    document.querySelectorAll('.navbar-links a').forEach(a => {
+        a.classList.remove('text-pink-800', 'font-bold', 'bg-pink-100');
+        if (a.getAttribute('href') === '#' + current) {
+            a.classList.add('text-pink-800', 'font-bold', 'bg-pink-100');
+        }
+    });
+});
+
 function showResponse() {
     const responseSection = document.getElementById("responseSection");
     if (responseSection) {

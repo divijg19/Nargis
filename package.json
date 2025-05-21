@@ -1,0 +1,35 @@
+{
+  "name": "nargis",
+  "version": "2.0.0",
+  "description": "A visually stunning, modern, and responsive confession website for Nargis, featuring glassmorphism, parallax, and microanimations. Built with Tailwind CSS 4, Framer Motion (Motion One), and deployable on GitHub Pages.",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve .",
+    "lint": "npx prettier --check .",
+    "format": "npx prettier --write .",
+    "build": "echo 'Static site, no build step required.'"
+  },
+  "keywords": [
+    "confession",
+    "glassmorphism",
+    "tailwindcss",
+    "framer-motion",
+    "parallax",
+    "static-site",
+    "github-pages"
+  ],
+  "author": "Divij",
+  "license": "MIT",
+  "dependencies": {
+    "serve": "^15.0.2"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.2"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not op_mini all"
+  ]
+}
