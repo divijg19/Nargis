@@ -43,18 +43,24 @@
 <body class="relative min-h-screen bg-gradient-to-br from-pink-100 to-pink-200 overflow-x-hidden">
     <nav class="navbar fixed top-0 left-0 w-full z-50 bg-white/80 border-b border-pink-300 py-2 px-4 flex justify-between items-center shadow-sm backdrop-blur-md">
         <div class="navbar-title font-dancing text-2xl text-pink-700">Confessions for Nargis</div>
+        <ul class="navbar-links flex gap-6 text-pink-600 font-semibold text-lg">
+            <li><a href="#home" class="hover:text-pink-800 transition">Home</a></li>
+            <li><a href="#letter" class="hover:text-pink-800 transition">Letter</a></li>
+            <li><a href="#confess" class="hover:text-pink-800 transition">Confess</a></li>
+            <li><a href="#wall" class="hover:text-pink-800 transition">Wall</a></li>
+        </ul>
         <div class="navbar-user text-lg text-pink-500 font-semibold">To: Nargis</div>
     </nav>
     <div class="parallax-couples fixed inset-0 w-full h-full z-10 pointer-events-none">
         <!-- Couple images will be injected by JS -->
     </div>
-    <main class="main-content relative z-20 flex flex-col items-center justify-center pt-36 pb-20 min-h-screen">
-        <section class="hero-section glass w-full max-w-2xl mx-auto my-8 p-10 flex flex-col items-center justify-center shadow-xl border border-pink-200/60 text-center animate-fadein">
+    <main class="main-content relative z-20 flex flex-col items-center justify-center gap-10 pt-36 pb-20 min-h-screen">
+        <section id="home" class="hero-section glass w-full max-w-2xl mx-auto p-10 flex flex-col items-center justify-center shadow-xl border border-pink-200/60 text-center animate-fadein">
             <h1 class="main-title font-dancing text-5xl md:text-6xl text-pink-700 mb-3 drop-shadow">To, Nargis</h1>
             <div class="proposal-message text-lg md:text-xl text-pink-500 mb-6 max-w-xl mx-auto">In the garden of my heart, where every flower blooms with your name, there's one blossom that outshines them all - the radiant Nargis.<br><br>Let this site be a confession, a letter, and a hope for us to bloom together.</div>
             <div class="featured-couple text-pink-600 font-bold text-xl mt-2">Guts & Casca</div>
         </section>
-        <section class="confession-letter-section glass w-full max-w-2xl mx-auto my-8 p-10 shadow-xl border border-pink-200/60 flex flex-col items-center justify-center text-center animate-fadein" style="animation-delay:0.2s;">
+        <section id="letter" class="confession-letter-section glass w-full max-w-2xl mx-auto p-10 shadow-xl border border-pink-200/60 flex flex-col items-center justify-center text-center animate-fadein" style="animation-delay:0.2s;">
             <div class="confession-letter flex flex-col items-center w-full">
                 <h2 class="font-dancing text-3xl md:text-4xl text-pink-700 mb-3">My Dearest Nargis,</h2>
                 <div class="confession-letter-body text-base md:text-lg text-gray-700 leading-relaxed text-left md:text-center mx-auto max-w-xl">
@@ -77,11 +83,13 @@
                 </div>
             </div>
         </section>
-        <section class="confession-section glass w-full max-w-2xl mx-auto my-8 p-10 shadow-xl border border-pink-200/60 flex flex-col items-center justify-center animate-fadein" style="animation-delay:0.4s;">
+        <section id="confess" class="confession-section glass w-full max-w-2xl mx-auto p-10 shadow-xl border border-pink-200/60 flex flex-col items-center justify-center animate-fadein" style="animation-delay:0.4s;">
             <form class="confession-form flex flex-col gap-4 w-full max-w-lg mx-auto items-center" id="confessionForm">
                 <textarea id="confessionInput" class="rounded-xl border border-pink-300 p-4 text-base bg-white/70 focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition w-full" placeholder="Write your own confession for Nargis..." required></textarea>
                 <button type="submit" class="confess-btn bg-gradient-to-r from-pink-500 to-pink-300 text-white rounded-full px-8 py-3 text-lg font-semibold shadow hover:from-pink-400 hover:to-pink-600 transition">Confess</button>
             </form>
+        </section>
+        <section id="wall" class="confessions-wall-section w-full max-w-2xl mx-auto flex flex-col items-center justify-center animate-fadein" style="animation-delay:0.5s;">
             <div class="confessions-list flex flex-col gap-4 mt-6 w-full max-w-lg mx-auto" id="confessionsList"></div>
         </section>
         <footer class="footer text-center text-gray-500 mt-16 mb-4 w-full animate-fadein" style="animation-delay:0.6s;">

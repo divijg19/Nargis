@@ -2,14 +2,14 @@ body {
     font-family: 'Montserrat', sans-serif;
     margin: 0;
     padding: 0;
-    text-align: center;
-    background: linear-gradient(120deg, #f5e6fa 0%, #ffe3ec 100%);
     min-height: 100vh;
-    overflow-x: hidden;
+    width: 100vw;
+    background: linear-gradient(120deg, #f5e6fa 0%, #ffe3ec 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
+    overflow-x: hidden;
 }
 
 .parallax-couples {
@@ -65,7 +65,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
+    gap: 2.5rem;
     padding-top: 7rem;
     padding-bottom: 4rem;
     margin: 0 auto;
@@ -79,7 +80,7 @@ body {
     padding: 2.5rem 2rem 2rem 2rem;
     backdrop-filter: blur(12px);
     border: 1.5px solid rgba(255,255,255,0.25);
-    margin: 2.5rem auto;
+    margin: 0 auto;
     max-width: 700px;
     width: 100%;
     display: flex;
@@ -87,11 +88,11 @@ body {
     align-items: center;
     justify-content: center;
     text-align: center;
-    gap: 0.5rem;
+    gap: 1.5rem;
 }
 
 .hero-section {
-    margin-top: 6rem;
+    margin-top: 0;
 }
 
 .confession-letter-section {
@@ -99,7 +100,7 @@ body {
 }
 
 .confession-section {
-    margin-bottom: 3rem;
+    margin-bottom: 0;
 }
 .main-title {
     font-family: 'Dancing Script', cursive, Arial, sans-serif;
@@ -263,17 +264,9 @@ body {
     z-index: 100;
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding-left: 0;
-    padding-right: 0;
-}
-.navbar-content {
-    width: 100vw;
-    max-width: 1200px;
-    display: flex;
-    align-items: center;
     justify-content: space-between;
     padding: 0 32px;
+    gap: 1.5rem;
 }
 .navbar-title {
     font-family: 'Dancing Script', cursive, Arial, sans-serif;
@@ -281,129 +274,82 @@ body {
     color: #fff;
     letter-spacing: 2px;
     text-shadow: 0 2px 12px #fff6fa;
-    flex: 1 1 0;
-    text-align: center;
+    flex: 0 0 auto;
+    text-align: left;
+}
+.navbar-links {
+    display: flex;
+    gap: 2.2rem;
+    align-items: center;
+    justify-content: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.navbar-links li a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.08em;
+    padding: 6px 16px;
+    border-radius: 18px;
+    transition: background 0.2s, color 0.2s;
+}
+.navbar-links li a:hover, .navbar-links li a:focus {
+    background: rgba(255,255,255,0.18);
+    color: #e91e63;
 }
 .navbar-user {
     font-size: 1.1em;
     color: #fff;
     font-weight: bold;
     letter-spacing: 1px;
-    flex: 1 1 0;
-    text-align: center;
-}
-
-/* Sakura.js cherry blossom override for layering */
-.sakura {
-    z-index: 9999 !important;
-    pointer-events: none;
-}
-
-.confession-letter-section {
-    width: 100%;
-    max-width: 700px;
-    margin: 0 auto 40px auto;
-    background: rgba(255,255,255,0.55);
-    box-shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
-    border-radius: 24px;
-    padding: 48px 32px 32px 32px;
-    backdrop-filter: blur(12px);
-    border: 1.5px solid rgba(255,255,255,0.25);
-    margin-bottom: 48px;
-}
-.confession-letter {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 18px;
-}
-.confession-letter h2 {
-    font-family: 'Dancing Script', cursive, Arial, sans-serif;
-    color: #e91e63;
-    font-size: 2.2em;
-    margin-bottom: 0.2em;
-}
-.confession-letter h3 {
-    color: #ad1457;
-    font-size: 1.3em;
-    margin-top: 0;
-}
-.confession-intro {
-    font-size: 1.1em;
-    color: #ad1457;
-    margin-bottom: 1em;
-}
-.confession-couples {
-    width: 100%;
-    margin: 18px 0;
-}
-.confession-couple-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 18px 0;
-}
-.confession-couple-img {
-    width: 44%;
-    max-width: 220px;
-    min-width: 90px;
-    border-radius: 18px;
-    box-shadow: 0 2px 12px rgba(233,30,99,0.13);
-    object-fit: cover;
-    opacity: 0.96;
-}
-.confession-couple-img.left {
-    margin-right: auto;
-}
-.confession-couple-img.right {
-    margin-left: auto;
-}
-.confession-quote {
-    font-style: italic;
-    color: #e91e63;
-    font-size: 1.1em;
-    margin: 12px 0;
-}
-.confession-letter-body {
-    text-align: left;
-    margin: 0 auto;
-    max-width: 600px;
-    color: #333;
-    font-size: 1.08em;
-    line-height: 1.7;
-}
-
-.confession-letter-body p {
-    margin-bottom: 1.1em;
-}
-.signature {
-    font-weight: bold;
-    color: #ad1457;
-    font-size: 1.1em;
-    margin-top: 1.5em;
-}
-.confession-letter-footer {
-    margin-top: 18px;
-    color: #ad1457;
-    font-size: 0.98em;
+    flex: 0 0 auto;
+    text-align: right;
 }
 @media (max-width: 900px) {
     .parallax-couples { display: none; }
     .main-content {
-        margin: 24px 2vw;
         padding-top: 5rem;
         padding-bottom: 2rem;
+        gap: 1.5rem;
     }
     .hero-section, .confession-section, .confession-letter-section {
-        padding: 20px 4vw;
+        padding: 1.5rem 0.5rem;
         max-width: 98vw;
-        text-align: center;
-        align-items: center;
+        gap: 1rem;
     }
-    .confession-letter-body {
+    .navbar {
+        flex-direction: column;
+        height: auto;
+        padding: 0.5rem 0.5rem;
+        gap: 0.5rem;
+    }
+    .navbar-links {
+        gap: 1.2rem;
+    }
+    .navbar-title, .navbar-user {
+        font-size: 1.1em;
         text-align: center;
-        font-size: 1em;
+    }
+}
+@media (max-width: 600px) {
+    .main-content {
+        gap: 1rem;
+    }
+    .hero-section, .confession-section, .confession-letter-section {
+        padding: 1rem 0.2rem 1rem 0.2rem;
+        border-radius: 16px;
+    }
+    .navbar {
+        flex-direction: column;
+        height: auto;
+        padding: 0.2rem 0.2rem;
+        gap: 0.2rem;
+    }
+    .navbar-links {
+        flex-direction: column;
+        gap: 0.7rem;
     }
 }
 @keyframes fadeInUp {
