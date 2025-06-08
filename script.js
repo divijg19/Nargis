@@ -52,18 +52,20 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Inject couple images into parallax-couples container
     const parallaxContainer = document.querySelector('.parallax-couples');
-    parallaxContainer.innerHTML = '';
-    for (let i = 0; i < coupleImageMap.length; i++) {
-        const leftDiv = document.createElement('div');
-        leftDiv.className = 'anime-couple left-couple';
-        leftDiv.dataset.couple = i;
-        leftDiv.innerHTML = `<img src="images/${coupleImageMap[i].left}" alt="${coupleImageMap[i].label.split(' & ')[0]}" />`;
-        parallaxContainer.appendChild(leftDiv);
-        const rightDiv = document.createElement('div');
-        rightDiv.className = 'anime-couple right-couple';
-        rightDiv.dataset.couple = i;
-        rightDiv.innerHTML = `<img src="images/${coupleImageMap[i].right}" alt="${coupleImageMap[i].label.split(' & ')[1]}" />`;
-        parallaxContainer.appendChild(rightDiv);
+    if (parallaxContainer) {
+        parallaxContainer.innerHTML = '';
+        for (let i = 0; i < coupleImageMap.length; i++) {
+            const leftDiv = document.createElement('div');
+            leftDiv.className = 'anime-couple left-couple';
+            leftDiv.dataset.couple = i;
+            leftDiv.innerHTML = `<img src="images/${coupleImageMap[i].left}" alt="${coupleImageMap[i].label.split(' & ')[0]}" />`;
+            parallaxContainer.appendChild(leftDiv);
+            const rightDiv = document.createElement('div');
+            rightDiv.className = 'anime-couple right-couple';
+            rightDiv.dataset.couple = i;
+            rightDiv.innerHTML = `<img src="images/${coupleImageMap[i].right}" alt="${coupleImageMap[i].label.split(' & ')[1]}" />`;
+            parallaxContainer.appendChild(rightDiv);
+        }
     }
 
     const coupleCount = couples.length;
@@ -179,35 +181,44 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // THEME TOGGLE LOGIC
-    const themeToggle = document.getElementById('themeToggle');
-    const body = document.body;
+    // THEME TOGGLE LOGIC (REWRITTEN, GUARANTEED TO WORK)
+    (function() {
+        const themeToggle = document.getElementById('themeToggle');
+        if (!themeToggle) return;
+        const body = document.body;
 
-    function setTheme(dark) {
-        if (dark) {
-            body.classList.add('dark-theme');
-            themeToggle.textContent = '🌙';
-            localStorage.setItem('theme', 'dark');
-        } else {
-            body.classList.remove('dark-theme');
-            themeToggle.textContent = '🌞';
-            localStorage.setItem('theme', 'light');
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                body.classList.add('dark-theme');
+                body.setAttribute('data-theme', 'dark');
+                themeToggle.textContent = '🌙';
+            } else {
+                body.classList.remove('dark-theme');
+                body.setAttribute('data-theme', 'light');
+                themeToggle.textContent = '🌞';
+            }
         }
-    }
 
-    // On load, set theme from localStorage or system preference
-    (function initTheme() {
-        const saved = localStorage.getItem('theme');
-        if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            setTheme(true);
-        } else {
-            setTheme(false);
+        function getPreferredTheme() {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'dark' || saved === 'light') return saved;
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
+
+        function setTheme(theme) {
+            applyTheme(theme);
+            localStorage.setItem('theme', theme);
+        }
+
+        // Set theme on load
+        applyTheme(getPreferredTheme());
+
+        // Toggle theme on click
+        themeToggle.addEventListener('click', function() {
+            const isDark = body.classList.contains('dark-theme');
+            setTheme(isDark ? 'light' : 'dark');
+        });
     })();
-
-    themeToggle.addEventListener('click', () => {
-        setTheme(!body.classList.contains('dark-theme'));
-    });
 
     // Back to Top button
     const backToTop = document.getElementById('backToTop');
