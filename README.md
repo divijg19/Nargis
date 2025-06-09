@@ -1,44 +1,205 @@
-# nargis
+# Nargis - A Modern Confession Website ✨
 
-My Dearest Nargis,
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Fdivij.github.io%2Fnargis)](https://divij.github.io/nargis)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](https://github.com/divij/nargis)
 
-In the garden of my heart, where every flower blooms with your name, there's one blossom that outshines them all - the radiant Nargis- otherwise known as the daffodils. The reason I start this letter of hope with the blossom of Nargis is due to the significance of the flower- rebirth, reconnection of worlds, and hope- the highest enduring form of love.
+A beautiful, modern, and responsive confession website dedicated to Nargis, featuring elegant theme toggling, glassmorphism effects, and interactive animations. Built with vanilla HTML, CSS, and JavaScript following modern web development best practices.
 
-You, the Hibiscus to my Hyacinth
-You, with the potential to hark and bring forth new worlds and chapters of our lives.
+## 🌟 Features
 
-I beseech you with this phrase, and its word plays-
+- **🌞🌙 Elegant Theme Toggle**: Seamless switching between light and dark themes with emoji icons
+- **💾 Persistent Preferences**: Theme choice saved to localStorage with system preference detection
+- **✨ Glassmorphism Effects**: Modern frosted glass aesthetic with backdrop blur
+- **📱 Fully Responsive**: Perfect display across all devices and screen sizes
+- **💌 Interactive Confessions**: Add, like, and view confessions with smooth animations
+- **🎨 Beautiful Typography**: Custom fonts and carefully crafted text styling
+- **⚡ Performance Optimized**: Fast loading with minimal dependencies
+- **♿ Accessibility First**: Proper ARIA labels, keyboard navigation, and semantic HTML
 
-Ergo sumit narcissus - "Thus, let the narcissus bloom."
+## 🎨 Color Schemes
 
-I know it's been very tough for you, and I've tried to stay away so you dont suffer more due to my presence in your life. If you're reading this, I have inevitably failed.
+### Light Theme
 
-From the moment I met you- I knew you weren't perfect. You had flaws, and I loved you despite and because of them. They do not make you a lesser person.
-All the beautiful and loved things, were never meant to be ideal. Over time, I knew you were beautiful inside and out, and were gonna be *perfect for me*.
+- **Background**: Pale white (#fdf6f3)
+- **Primary**: Cherry red (#e52d27)
+- **Secondary**: Dark pink (#b31217)
+- **Text**: Dark brown (#2d1a1a)
 
- I want you to bloom, to *rediscover* yourself and *grow*. To believe and embrace that change is possible and that you deserve the good in the world. To *accept your past*, and *keep faith* that things could change for the better. And most of all, I want to give you the hope and safety to be vulnerable enough to make these changes, with me by your side.
+### Dark Theme
 
-I'm not the sort of man who falls in love with people at first sight or touch. I'm way too skeptical and mistrusting of people to let anyone in.
-You were different, from the start- I wont say special, because that's delusion.
+- **Background**: Hunter green (#1a3a1a)
+- **Primary**: Yellow/Gold (#f7e017)
+- **Secondary**: Ultramarine blue (#3f51b5)
+- **Accent**: Emerald green (#50c878)
+- **Text**: Gold (#f7e017)
 
-From the moment I saw you- I had a "Koi No Yokan" moment.
-I just knew from first interaction that we would eventually fall in love. 
-But love doesnt mean it works out- love stories exist for a reason.
-You were my soulmate and I thoroughly believe in that- but soulmates doesnt mean it works out- karma exists for a reason.
-And Karma is a bitch- I like to believe we both had karma, and we paid it in full, in our own ways.
+## 🚀 Quick Start
 
-I didnt get my heart broken. I didn't get hurt much. I got disappointed and frustrated at times, but I knew it was your journey you'd have to go through.
-But from the day I met you- I knew you would be worth getting my heart broken for, because I needed to be with you just that much.
+### Development Server
 
-All of that's in the past- and now that I've communicated my thoughts and the intensity of my feelings for you through this letter- 
-I want us to have the courage and faith to trust each other and grow together.
-To not have to worry about anything else other than forming a bond that would last. To take accountability and communicate, and trust each other to do our best with the way we know ourselves and each other. I'll wait till you're ready to conduct yourself like the graceful and classy beauty you definitely are, but I dont want to bear being away from you, princess.
+```bash
+# Clone the repository
+git clone https://github.com/divij/nargis.git
+cd nargis
 
-I've written so many poems and letters to you that I won't get to send. And if and when we date again, get together again- I'll write to you, my love.
+# Install dependencies
+npm install
 
-Do me a favour and make me the happiest I've been in my life- by actually giving me a chance to make you the happiest woman on Earth.
+# Start development server
+npm run dev
+```
 
-I know its scary- but its only ever real when its scary, and when you have no explainable reason to be afraid- I won't hesitate this time to take you in my arms and keep you close.
+Visit `http://localhost:3000` to view the website.
 
-Forever and always loving you,
-Divij
+### Production Build
+
+```bash
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+## 📁 Project Structure
+
+```
+nargis/
+├── src/                    # Source files
+│   └── index.html         # Main HTML file
+├── assets/                # Static assets
+│   ├── css/              # Stylesheets
+│   │   └── main.css      # Main CSS file
+│   ├── js/               # JavaScript files
+│   │   └── main.js       # Main JavaScript file
+│   └── images/           # Image assets
+├── docs/                 # Documentation
+├── tests/                # Test files
+├── package.json          # Project configuration
+└── README.md            # Project documentation
+```
+
+## 🔧 Technologies Used
+
+- **HTML5**: Semantic markup and accessibility
+- **CSS3**: Custom properties, flexbox, grid, animations
+- **Vanilla JavaScript**: ES6+ features, classes, modules
+- **Local Storage**: Theme and data persistence
+- **Modern Web APIs**: Intersection Observer, Media Queries
+
+## 🎯 Key Components
+
+### Theme Manager
+
+- **Class-based architecture** for theme management
+- **localStorage integration** for persistence
+- **System preference detection** (prefers-color-scheme)
+- **Smooth transitions** between themes
+
+### Confession System
+
+- **Real-time form handling** with validation
+- **Local storage persistence** for confessions
+- **Interactive like system** with animations
+- **XSS protection** with HTML escaping
+
+### Navigation
+
+- **Smooth scrolling** to sections
+- **Active section highlighting** based on scroll position
+- **Responsive design** with mobile-first approach
+
+## 🧪 Testing
+
+### Manual Testing
+
+1. **Theme Toggle**: Test switching between light/dark themes
+2. **Responsive Design**: Test on various screen sizes
+3. **Confession System**: Test adding and liking confessions
+4. **Navigation**: Test smooth scrolling and active states
+5. **Persistence**: Test localStorage functionality
+
+### Debug Pages
+
+- `debug-theme.html` - Minimal theme testing
+- `test-complete.html` - Full feature testing
+
+## 🔧 Configuration
+
+### Environment Variables
+
+No environment variables required - runs entirely client-side.
+
+### Build Configuration
+
+- **Development**: Live server with hot reload
+- **Production**: Optimized static files
+- **Testing**: Debug pages for feature testing
+
+## 📱 Browser Support
+
+- **Chrome**: 88+
+- **Firefox**: 85+
+- **Safari**: 14+
+- **Edge**: 88+
+- **Mobile browsers**: iOS Safari 14+, Chrome Mobile 88+
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+
+- Follow semantic HTML structure
+- Use CSS custom properties for theming
+- Write vanilla JavaScript (no frameworks)
+- Ensure accessibility compliance
+- Test across multiple browsers
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👨‍💻 Author
+
+**Divij**
+
+- Email: divij@example.com
+- GitHub: [@divij](https://github.com/divij)
+
+## 🙏 Acknowledgments
+
+- Inspired by modern glassmorphism design trends
+- Color palettes carefully selected for emotional impact
+- Typography choices made for readability and elegance
+- Accessibility guidelines followed for inclusive design
+
+## 📝 Changelog
+
+### v3.0.0 (Current)
+
+- **NEW**: Restructured codebase with modern architecture
+- **NEW**: Enhanced theme system with better persistence
+- **IMPROVED**: Performance optimizations and code organization
+- **IMPROVED**: Better responsive design and accessibility
+- **FIXED**: All theme toggle issues and edge cases
+
+### v2.0.0
+
+- **NEW**: Complete theme toggle system implementation
+- **NEW**: Glassmorphism effects and modern styling
+- **NEW**: Interactive confession system with likes
+- **IMPROVED**: Mobile responsiveness and animations
+
+### v1.0.0
+
+- Initial release with basic website structure
+
+---
+
+Made with ❤️ for Nargis

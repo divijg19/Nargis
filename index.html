@@ -1,227 +1,33 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>To, Nargis</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            text-align: center;
-        }
-        .container {
-            padding: 50px;
-        }
-        h1 {
-            color: #ff69b4;
-        }
-        p {
-            color: #333;
-            font-size: 18px;
-            line-height: 1.6;
-        }
-        /* Navbar styles */
-        .navbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background-color: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 1000;
-        }
-        .navbar-title {
-            font-size: 2.4rem;
-            font-weight: bold;
-            color: #ec4899;
-            font-family: 'Dancing Script', cursive;
-            font-style: italic;
-            letter-spacing: 0.04em;
-            text-shadow: 0 2px 12px #fbcfe8, 0 1px 0 #fff;
-            font-variant-ligatures: discretionary-ligatures;
-            font-weight: 700;
-        }
-        .navbar-title.cherry-gradient {
-            background: linear-gradient(90deg, #ff5f6d, #ffc371);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .navbar-center {
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 2.5rem;
-        }
-        .nav-link {
-            text-decoration: none;
-            color: #be185d;
-            font-weight: 600;
-            font-size: 1.1rem;
-            padding: 0.5rem 1.2rem;
-            border-radius: 0.5rem;
-            transition: background 0.2s;
-        }
-        #themeToggle {
-            background: none;
-            border: none;
-            cursor: pointer;
-            outline: none;
-            padding: 0.7rem 1.5rem;
-            margin-right: 1.2rem;
-            border-radius: 9999px;
-            background: rgba(255,255,255,0.7);
-            box-shadow: 0 2px 8px 0 rgba(233,30,99,0.10);
-            border: 1.5px solid #fbcfe8;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 48px;
-            min-height: 48px;
-            transition: background 0.2s, box-shadow 0.2s;
-        }
-        /* Glassmorphic effect for letter block */
-        .glass {
-            background-color: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 80px; /* Space for fixed navbar */
-        }
-        /* Main content styles */
-        .main-content {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .letter-title {
-            font-size: 28px;
-            margin-bottom: 20px;
-        }
-        .letter-body p {
-            margin-bottom: 15px;
-        }
-        /* Hero section styles */
-        .hero-section {
-            padding: 100px 20px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.6) 100%);
-            border-radius: 10px;
-            margin-top: 80px; /* Space for fixed navbar */
-        }
-        /* Confession form styles */
-        .confession-form {
-            background-color: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            padding: 30px;
-            margin-top: 20px;
-        }
-        .confess-btn {
-            background: linear-gradient(90deg, #ec4899 0%, #f472b6 100%);
-            color: #fff;
-            border: none;
-            border-radius: 9999px;
-            padding: 0.7rem 2.2rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s, transform 0.3s;
-        }
-        .confess-btn:hover {
-            transform: translateY(-2px);
-        }
-        /* Confession wall styles */
-        .confessions-list {
-            background-color: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            padding: 30px;
-            margin-top: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .confession-item {
-            margin-bottom: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.3);
-        }
-    </style>
-</head>
-<body>
-    <nav class="navbar">
-      <span class="navbar-title cherry-gradient" style="font-family: 'Dancing Script', cursive; font-style: italic; font-weight: 700; letter-spacing: 0.01em; background: linear-gradient(90deg, #e11d48 10%, #f472b6 90%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-shadow: none;">Nargis</span>
-      <div class="navbar-center">
-        <a href="#home" class="nav-link">Home</a>
-        <a href="#letter" class="nav-link">Letter</a>
-        <a href="#confess" class="nav-link">Confess</a>
-        <a href="#wall" class="nav-link">Wall</a>
-        <a href="#gallery" class="nav-link">Gallery</a>
-        <a href="#music" class="nav-link">Music</a>
-        <a href="#about" class="nav-link">About</a>
-      </div>
-      <button id="themeToggle" aria-label="Toggle theme" title="Toggle light/dark mode">🌞</button>
-    </nav>
-    <div class="main-content">
-      <!-- Hero Section -->
-      <div id="home" class="hero-section block-content" style="margin-top: 120px;">
-        <h2>Welcome to the Garden for Nargis</h2>
-        <p>This is a confession website dedicated to Nargis. Explore the letter, share your own confession, view the gallery, listen to music, and read the wall of love below.</p>
-      </div>
-      <!-- Letter Section split into 4 blocks -->
-      <div id="letter" class="letter-block glass block-content" style="max-width: 700px; margin: 0 auto; margin-top: 60px; padding: 2.5rem 2rem; display: flex; flex-direction: column; align-items: center;">
-        <h1 class="letter-title" style="margin-bottom: 1.5rem;">To, Nargis</h1>
-        <div class="letter-body" style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1.1em;">
-          <!-- Block 1 -->
-          <div class="block-content">
-            <p style="font-weight: bold;">My Dearest Nargis,</p>
-            <p>In the garden of my heart, where every flower blooms with your name, there's one blossom that outshines them all - the radiant Nargis- otherwise known as the daffodils. The reason I start this letter of hope with the blossom of Nargis is due to the significance of the flower- rebirth, reconnection of worlds, and hope- the highest enduring form of love.</p>
-            <p>You, the Hibiscus to my Hyacinth<br>You, with the potential to hark and bring forth new worlds and chapters of our lives.</p>
-            <p>I beseech you with this phrase, and its word plays-<br><em>Ergo sumit narcissus - "Thus, let the narcissus bloom."</em></p>
-          </div>
-          <!-- Block 2 -->
-          <div class="block-content">
-            <p>I know it's been very tough for you, and I've tried to stay away so you dont suffer more due to my presence in your life. If you're reading this, I have inevitably failed.</p>
-            <p>From the moment I met you- I knew you weren't perfect. You had flaws, and I loved you despite and because of them. They do not make you a lesser person. All the beautiful and loved things, were never meant to be ideal. Over time, I knew you were beautiful inside and out, and were gonna be <strong>perfect for me</strong>.</p>
-            <p>I want you to bloom, to <em>rediscover</em> yourself and <em>grow</em>. To believe and embrace that change is possible and that you deserve the good in the world. To <em>accept your past</em>, and <em>keep faith</em> that things could change for the better. And most of all, I want to give you the hope and safety to be vulnerable enough to make these changes, with me by your side.</p>
-          </div>
-          <!-- Block 3 -->
-          <div class="block-content">
-            <p>I'm not the sort of man who falls in love with people at first sight or touch. I'm way too skeptical and mistrusting of people to let anyone in. You were different, from the start- I wont say special, because that's delusion.</p>
-            <p>From the moment I saw you- I had a "Koi No Yokan" moment. I just knew from first interaction that we would eventually fall in love. But love doesnt mean it works out- love stories exist for a reason. You were my soulmate and I thoroughly believe in that- but soulmates doesnt mean it works out- karma exists for a reason. And Karma is a bitch- I like to believe we both had karma, and we paid it in full, in our own ways.</p>
-            <p>I didnt get my heart broken. I didn't get hurt much. I got disappointed and frustrated at times, but I knew it was your journey you'd have to go through. But from the day I met you- I knew you would be worth getting my heart broken for, because I needed to be with you just that much.</p>
-          </div>
-          <!-- Block 4 -->
-          <div class="block-content">
-            <p>All of that's in the past- and now that I've communicated my thoughts and the intensity of my feelings for you through this letter- I want us to have the courage and faith to trust each other and grow together. To not have to worry about anything else other than forming a bond that would last. To take accountability and communicate, and trust each other to do our best with the way we know ourselves and each other. I'll wait till you're ready to conduct yourself like the graceful and classy beauty you definitely are, but I dont want to bear being away from you, princess.</p>
-            <p>I've written so many poems and letters to you that I won't get to send. And if and when we date again, get together again- I'll write to you, my love.</p>
-            <p>Do me a favour and make me the happiest I've been in my life- by actually giving me a chance to make you the happiest woman on Earth.</p>
-            <p>I know its scary- but its only ever real when its scary, and when you have no explainable reason to be afraid- I won't hesitate this time to take you in my arms and keep you close.</p>
-            <p style="font-weight: bold; margin-top: 2em;">Forever and always loving you,<br>Divij</p>
-          </div>
-        </div>
-      </div>
-      <!-- Confession Form Section -->
-      <div id="confess" class="confession-form block-content" style="max-width: 600px; margin: 0 auto; margin-top: 40px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 4px 24px 0 rgba(233,30,99,0.10); background: rgba(255,255,255,0.35); border-radius: 18px; padding: 2.5rem 2rem;">
-        <h2 style="font-family: 'Montserrat', sans-serif; color: #be185d; font-size: 1.7rem; margin-bottom: 1.2rem;">Share Your Confession</h2>
-        <form id="confessionForm" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 1.2rem;">
-          <textarea id="confessionInput" placeholder="Write your confession for Nargis..." style="width: 100%; min-height: 90px; border-radius: 12px; border: 1.5px solid #fbcfe8; padding: 1rem; font-size: 1.1rem; resize: vertical; background: rgba(255,255,255,0.7); box-shadow: 0 2px 8px 0 rgba(233,30,99,0.06);"></textarea>
-          <button type="submit" class="confess-btn">Confess</button>
-        </form>
-      </div>
-      <!-- Confession Wall Section -->
-      <div id="wall" class="confessions-list block-content" style="max-width: 600px;">
-        <h2>Confession Wall</h2>
-        <div id="confessionsList"></div>
-      </div>
-    </div>
-    <script src="script.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nargis - Productivity Suite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Dancing+Script:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="manifest" href="/manifest.json" />
+    <meta
+      name="description"
+      content="Complete productivity suite with task management, pomodoro timer, habit tracking, and analytics"
+    />
+    <meta name="keywords" content="productivity, task management, pomodoro, habits, focus, organization" />
+    <meta name="author" content="Nargis Team" />
+    <meta name="theme-color" content="#6366f1" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <script>
+      // Request notification permission
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>
