@@ -1,62 +1,63 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useTaskStore } from '../stores/tasks';
-import NavBar from '../components/NavBar.vue';
+import { computed, ref } from "vue";
+import { useTaskStore } from "../stores/tasks";
 
 const taskStore = useTaskStore();
-const newTaskTitle = ref('');
-const filter = ref('all');
+const newTaskTitle = ref("");
+const filter = ref("all");
 
 const tasks = computed(() => taskStore.tasks);
-const completedTasks = computed(() =>
-  tasks.value.filter(task => task.completed)
+const _completedTasks = computed(() =>
+  tasks.value.filter((task) => task.completed),
 );
-const inProgressTasks = computed(() =>
-  tasks.value.filter(task => task.status === 'inProgress')
+const _inProgressTasks = computed(() =>
+  tasks.value.filter((task) => task.status === "inProgress"),
 );
-const highPriorityTasks = computed(() =>
-  tasks.value.filter(task => task.priority === 'high')
+const _highPriorityTasks = computed(() =>
+  tasks.value.filter((task) => task.priority === "high"),
 );
 
-const filteredTasks = computed(() => {
+const _filteredTasks = computed(() => {
   const allTasks = tasks.value;
 
   switch (filter.value) {
-    case 'todo':
-      return allTasks.filter(task => !task.completed && task.status === 'todo');
-    case 'in-progress':
+    case "todo":
       return allTasks.filter(
-        task => !task.completed && task.status === 'inProgress'
+        (task) => !task.completed && task.status === "todo",
       );
-    case 'completed':
-      return allTasks.filter(task => task.completed);
+    case "in-progress":
+      return allTasks.filter(
+        (task) => !task.completed && task.status === "inProgress",
+      );
+    case "completed":
+      return allTasks.filter((task) => task.completed);
     default:
       return allTasks;
   }
 });
 
-const addTask = () => {
+const _addTask = () => {
   if (newTaskTitle.value.trim()) {
     taskStore.addTask({
       title: newTaskTitle.value.trim(),
-      priority: 'medium',
+      priority: "medium",
     });
-    newTaskTitle.value = '';
+    newTaskTitle.value = "";
   }
 };
 
-const toggleTask = (id: string) => {
+const _toggleTask = (id: string) => {
   taskStore.toggleTask(id);
 };
 
-const deleteTask = (id: string) => {
+const _deleteTask = (id: string) => {
   taskStore.deleteTask(id);
 };
 
-const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
+const _formatDate = (date: Date) => {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
   }).format(date);
 };
 </script>

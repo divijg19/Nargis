@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed } from "vue";
 
 interface Props {
   isRunning: boolean;
   currentTime: number;
-  sessionType: 'focus' | 'shortBreak' | 'longBreak';
+  sessionType: "focus" | "shortBreak" | "longBreak";
   progress: number;
   formattedTime: string;
   todaySessionsCount: number;
@@ -17,27 +17,27 @@ const emit = defineEmits<{
   resetTimer: [];
 }>();
 
-const currentSessionLabel = computed(() => {
+const _currentSessionLabel = computed(() => {
   switch (props.sessionType) {
-    case 'focus':
-      return 'Focus Time';
-    case 'shortBreak':
-      return 'Short Break';
-    case 'longBreak':
-      return 'Long Break';
+    case "focus":
+      return "Focus Time";
+    case "shortBreak":
+      return "Short Break";
+    case "longBreak":
+      return "Long Break";
     default:
-      return 'Pomodoro';
+      return "Pomodoro";
   }
 });
 
-const progressPercentage = computed(() => Math.round(props.progress));
+const _progressPercentage = computed(() => Math.round(props.progress));
 
-const toggleTimer = () => {
-  emit('toggleTimer');
+const _toggleTimer = () => {
+  emit("toggleTimer");
 };
 
-const resetTimer = () => {
-  emit('resetTimer');
+const _resetTimer = () => {
+  emit("resetTimer");
 };
 </script>
 

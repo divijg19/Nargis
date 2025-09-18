@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { CheckIcon } from '@heroicons/vue/24/solid';
-import type { Habit } from '../stores/habits';
+import type { Habit } from "../stores/habits";
 
 interface Props {
   habits: Habit[];
@@ -16,14 +15,14 @@ const emit = defineEmits<{
   checkCompletion: [habitId: string];
 }>();
 
-const toggleHabit = (habitId: string) => {
-  emit('toggleHabit', habitId);
+const _toggleHabit = (habitId: string) => {
+  emit("toggleHabit", habitId);
 };
 
-const isCompletedToday = (habitId: string) => {
+const _isCompletedToday = (habitId: string) => {
   // This would typically check the habit completion for today
   // For now, we'll emit an event to let the parent handle it
-  emit('checkCompletion', habitId);
+  emit("checkCompletion", habitId);
   return false; // Default to false, parent should handle the actual logic
 };
 </script>

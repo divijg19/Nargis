@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { CheckIcon } from '@heroicons/vue/24/solid';
-import type { Task } from '../stores/tasks';
+import type { Task } from "../stores/tasks";
 
 interface Props {
   tasks: Task[];
@@ -15,33 +14,33 @@ const emit = defineEmits<{
   toggleTask: [taskId: string];
 }>();
 
-const toggleTask = (taskId: string) => {
-  emit('toggleTask', taskId);
+const _toggleTask = (taskId: string) => {
+  emit("toggleTask", taskId);
 };
 
-const getStatusColor = (status: string) => {
+const _getStatusColor = (status: string) => {
   switch (status) {
-    case 'todo':
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-    case 'inProgress':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-    case 'done':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+    case "todo":
+      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+    case "inProgress":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+    case "done":
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
     default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+      return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
   }
 };
 
-const getStatusLabel = (status: string) => {
+const _getStatusLabel = (status: string) => {
   switch (status) {
-    case 'todo':
-      return 'To Do';
-    case 'inProgress':
-      return 'In Progress';
-    case 'done':
-      return 'Done';
+    case "todo":
+      return "To Do";
+    case "inProgress":
+      return "In Progress";
+    case "done":
+      return "Done";
     default:
-      return 'Unknown';
+      return "Unknown";
   }
 };
 </script>

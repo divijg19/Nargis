@@ -11,8 +11,8 @@ interface Props {
 withDefaults(defineProps<Props>(), {
   subtitle: undefined,
   icon: undefined,
-  iconBg: 'bg-blue-100 dark:bg-blue-900',
-  iconColor: 'text-blue-600 dark:text-blue-400',
+  iconBg: "bg-blue-100 dark:bg-blue-900",
+  iconColor: "text-blue-600 dark:text-blue-400",
 });
 </script>
 

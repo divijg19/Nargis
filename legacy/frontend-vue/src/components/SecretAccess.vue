@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import { useSecretAccess } from '@/composables/useSecretAccess';
+import { computed, ref, watch } from "vue";
+import { useRouter } from "vue-router";
+import { useSecretAccess } from "@/composables/useSecretAccess";
+
 // import { useConfessionsStore } from '@/stores/confessions'
 
 const router = useRouter();
@@ -14,17 +15,17 @@ const { konamiIndex, clickCount, isSecretUnlocked, secretHistory } =
 
 // UI state
 const showUnlockedNotification = ref(false);
-const lastUnlockMethod = ref('');
+const lastUnlockMethod = ref("");
 
 // Check if in development mode
-const isDevelopment = computed(
-  () => import.meta.env.DEV || import.meta.env.MODE === 'development'
+const _isDevelopment = computed(
+  () => import.meta.env.DEV || import.meta.env.MODE === "development",
 );
 
 // Watch for secret unlock events
 watch(
   () => isSecretUnlocked,
-  isUnlocked => {
+  (isUnlocked) => {
     if (isUnlocked && secretHistory.length > 0) {
       const latestAccess = secretHistory[secretHistory.length - 1];
       lastUnlockMethod.value = latestAccess.method;
@@ -32,10 +33,10 @@ watch(
 
       // Navigate to secret page after showing notification
       setTimeout(() => {
-        router.push('/secret/nargis');
+        router.push("/secret/nargis");
       }, 2000);
     }
-  }
+  },
 );
 </script>
 

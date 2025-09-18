@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useTaskStore } from '../stores/tasks';
+import { computed, ref } from "vue";
 // import { usePomodoroStore } from '../stores/pomodoro'
-import { useHabitStore } from '../stores/habits';
-import NavBar from '../components/NavBar.vue';
+import { useHabitStore } from "../stores/habits";
+import { useTaskStore } from "../stores/tasks";
 
 const taskStore = useTaskStore();
 // const pomodoroStore = usePomodoroStore()
@@ -12,24 +11,24 @@ const habitStore = useHabitStore();
 const currentDate = ref(new Date());
 const selectedDate = ref<Date | null>(null);
 
-const daysOfWeek = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
+const _daysOfWeek = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
 ];
 
-const currentMonthYear = computed(() => {
-  return currentDate.value.toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
+const _currentMonthYear = computed(() => {
+  return currentDate.value.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
   });
 });
 
-const calendarDays = computed(() => {
+const _calendarDays = computed(() => {
   const year = currentDate.value.getFullYear();
   const month = currentDate.value.getMonth();
 
@@ -61,34 +60,34 @@ const calendarDays = computed(() => {
   return days;
 });
 
-const previousMonth = () => {
+const _previousMonth = () => {
   currentDate.value = new Date(
     currentDate.value.getFullYear(),
     currentDate.value.getMonth() - 1,
-    1
+    1,
   );
 };
 
-const nextMonth = () => {
+const _nextMonth = () => {
   currentDate.value = new Date(
     currentDate.value.getFullYear(),
     currentDate.value.getMonth() + 1,
-    1
+    1,
   );
 };
 
-const goToToday = () => {
+const _goToToday = () => {
   currentDate.value = new Date();
   selectedDate.value = new Date();
 };
 
-const selectDate = (date: Date) => {
+const _selectDate = (date: Date) => {
   selectedDate.value = date;
 };
 
-const openQuickAdd = (date: Date) => {
+const _openQuickAdd = (date: Date) => {
   // Mock function - would open a modal to quickly add tasks/habits
-  console.log('Quick add for', date);
+  console.log("Quick add for", date);
 };
 
 const isSameDay = (date1: Date, date2: Date) => {
@@ -101,7 +100,7 @@ const isSameDay = (date1: Date, date2: Date) => {
 
 const getTasksForDate = (date: Date) => {
   // Mock function - would filter tasks for the specific date
-  return taskStore.tasks.filter(task => {
+  return taskStore.tasks.filter((task) => {
     const taskDate = new Date(task.createdAt);
     return isSameDay(taskDate, date);
   });
@@ -115,14 +114,14 @@ const getFocusSessionsForDate = (date: Date) => {
 
 const getHabitsForDate = (date: Date) => {
   // Mock function - would return completed habits for the date
-  return habitStore.habits.filter(habit =>
-    habitStore.isHabitCompletedOnDate(habit.id, date)
+  return habitStore.habits.filter((habit) =>
+    habitStore.isHabitCompletedOnDate(habit.id, date),
   );
 };
 
-const getDueTasksForDate = (date: Date) => {
+const _getDueTasksForDate = (date: Date) => {
   // Mock function - would return tasks due on this date
-  return taskStore.tasks.filter(task => {
+  return taskStore.tasks.filter((task) => {
     // Assuming tasks have a dueDate property
     return (
       task.dueDate && isSameDay(new Date(task.dueDate), date) && !task.completed
@@ -130,10 +129,10 @@ const getDueTasksForDate = (date: Date) => {
   });
 };
 
-const getProductivityScore = (date: Date) => {
+const _getProductivityScore = (date: Date) => {
   // Mock calculation of productivity score for the date
   const tasks = getTasksForDate(date);
-  const completedTasks = tasks.filter(t => t.completed).length;
+  const completedTasks = tasks.filter((t) => t.completed).length;
   const focusSessions = getFocusSessionsForDate(date);
   const habits = getHabitsForDate(date).length;
 
@@ -142,12 +141,12 @@ const getProductivityScore = (date: Date) => {
   return Math.min(100, score);
 };
 
-const formatSelectedDate = (date: Date) => {
-  return date.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+const _formatSelectedDate = (date: Date) => {
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 };
 </script>

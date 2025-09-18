@@ -1,19 +1,19 @@
-import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { defineStore } from "pinia";
+import { computed, ref } from "vue";
 
 export interface PomodoroSession {
   id: string;
-  type: 'focus' | 'shortBreak' | 'longBreak';
+  type: "focus" | "shortBreak" | "longBreak";
   duration: number; // in seconds
   completedAt: Date;
   taskId?: string;
 }
 
-export const usePomodoroStore = defineStore('pomodoro', () => {
+export const usePomodoroStore = defineStore("pomodoro", () => {
   const isRunning = ref(false);
   const isPaused = ref(false);
   const currentTime = ref(25 * 60); // 25 minutes in seconds
-  const sessionType = ref<'focus' | 'shortBreak' | 'longBreak'>('focus');
+  const sessionType = ref<"focus" | "shortBreak" | "longBreak">("focus");
   const sessionCount = ref(0);
   const sessions = ref<PomodoroSession[]>([]);
 
@@ -40,13 +40,13 @@ export const usePomodoroStore = defineStore('pomodoro', () => {
   const formattedTime = computed(() => {
     const minutes = Math.floor(currentTime.value / 60);
     const seconds = currentTime.value % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
   });
 
   const todaySessionsCount = computed(() => {
     const today = new Date().toDateString();
     return sessions.value.filter(
-      session => session.completedAt.toDateString() === today
+      (session) => session.completedAt.toDateString() === today,
     ).length;
   });
 
@@ -54,7 +54,7 @@ export const usePomodoroStore = defineStore('pomodoro', () => {
   const timeLeft = computed(() => currentTime.value);
   const totalFocusTime = computed(() => {
     return sessions.value
-      .filter(s => s.type === 'focus')
+      .filter((s) => s.type === "focus")
       .reduce((total, session) => total + session.duration, 0);
   });
   const bestStreak = computed(() => {
@@ -63,7 +63,7 @@ export const usePomodoroStore = defineStore('pomodoro', () => {
     let currentStreak = 0;
 
     for (const session of sessions.value) {
-      if (session.type === 'focus') {
+      if (session.type === "focus") {
         currentStreak++;
         maxStreak = Math.max(maxStreak, currentStreak);
       } else {
@@ -76,7 +76,7 @@ export const usePomodoroStore = defineStore('pomodoro', () => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    return sessions.value.filter(session => session.completedAt >= oneWeekAgo)
+    return sessions.value.filter((session) => session.completedAt >= oneWeekAgo)
       .length;
   });
 
@@ -134,19 +134,19 @@ export const usePomodoroStore = defineStore('pomodoro', () => {
     sessions.value.push(session);
 
     // Update session count
-    if (sessionType.value === 'focus') {
+    if (sessionType.value === "focus") {
       sessionCount.value++;
     }
 
     // Determine next session type
-    if (sessionType.value === 'focus') {
+    if (sessionType.value === "focus") {
       if (sessionCount.value % settings.value.sessionsUntilLongBreak === 0) {
-        sessionType.value = 'longBreak';
+        sessionType.value = "longBreak";
       } else {
-        sessionType.value = 'shortBreak';
+        sessionType.value = "shortBreak";
       }
     } else {
-      sessionType.value = 'focus';
+      sessionType.value = "focus";
     }
 
     reset();
@@ -158,15 +158,15 @@ export const usePomodoroStore = defineStore('pomodoro', () => {
     }
 
     // Show notification
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('Pomodoro Session Complete!', {
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification("Pomodoro Session Complete!", {
         body: `${session.type} session finished. Time for a ${sessionType.value}!`,
-        icon: '/icons/icon-192x192.png',
+        icon: "/icons/icon-192x192.png",
       });
     }
   };
 
-  const switchSession = (type: 'focus' | 'shortBreak' | 'longBreak') => {
+  const switchSession = (type: "focus" | "shortBreak" | "longBreak") => {
     sessionType.value = type;
     reset();
   };
@@ -185,19 +185,19 @@ export const usePomodoroStore = defineStore('pomodoro', () => {
   const completeSession = complete;
   const skipSession = () => {
     // Skip current session and move to next
-    if (sessionType.value === 'focus') {
+    if (sessionType.value === "focus") {
       sessionCount.value++;
       if (sessionCount.value % settings.value.sessionsUntilLongBreak === 0) {
-        sessionType.value = 'longBreak';
+        sessionType.value = "longBreak";
       } else {
-        sessionType.value = 'shortBreak';
+        sessionType.value = "shortBreak";
       }
     } else {
-      sessionType.value = 'focus';
+      sessionType.value = "focus";
     }
     reset();
   };
-  const setMode = (mode: 'focus' | 'shortBreak' | 'longBreak') => {
+  const setMode = (mode: "focus" | "shortBreak" | "longBreak") => {
     sessionType.value = mode;
     reset();
   };
@@ -205,14 +205,14 @@ export const usePomodoroStore = defineStore('pomodoro', () => {
   const updateSettings = (newSettings: Partial<typeof settings.value>) => {
     settings.value = { ...settings.value, ...newSettings };
     localStorage.setItem(
-      'nargis_pomodoro_settings',
-      JSON.stringify(settings.value)
+      "nargis_pomodoro_settings",
+      JSON.stringify(settings.value),
     );
     reset();
   };
 
   const playNotificationSound = () => {
-    const audio = new Audio('/assets/audio/notification.mp3');
+    const audio = new Audio("/assets/audio/notification.mp3");
     audio.play().catch(() => {
       // Fallback to beep if audio file not available
       const audioContext = new AudioContext();
@@ -227,7 +227,7 @@ export const usePomodoroStore = defineStore('pomodoro', () => {
       gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.01);
       gainNode.gain.exponentialRampToValueAtTime(
         0.001,
-        audioContext.currentTime + 0.5
+        audioContext.currentTime + 0.5,
       );
 
       oscillator.start(audioContext.currentTime);
@@ -237,27 +237,27 @@ export const usePomodoroStore = defineStore('pomodoro', () => {
 
   const saveSessions = () => {
     localStorage.setItem(
-      'nargis_pomodoro_sessions',
-      JSON.stringify(sessions.value)
+      "nargis_pomodoro_sessions",
+      JSON.stringify(sessions.value),
     );
   };
 
   const loadSessions = () => {
-    const saved = localStorage.getItem('nargis_pomodoro_sessions');
+    const saved = localStorage.getItem("nargis_pomodoro_sessions");
     if (saved) {
       sessions.value = JSON.parse(saved).map(
         (
-          session: Omit<PomodoroSession, 'completedAt'> & {
+          session: Omit<PomodoroSession, "completedAt"> & {
             completedAt: string;
-          }
+          },
         ) => ({
           ...session,
           completedAt: new Date(session.completedAt),
-        })
+        }),
       );
     }
 
-    const savedSettings = localStorage.getItem('nargis_pomodoro_settings');
+    const savedSettings = localStorage.getItem("nargis_pomodoro_settings");
     if (savedSettings) {
       settings.value = { ...settings.value, ...JSON.parse(savedSettings) };
     }

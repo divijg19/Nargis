@@ -2,19 +2,19 @@ export default {
   plugins: {
     tailwindcss: {},
     autoprefixer: {},
-    'postcss-preset-env': {
+    "postcss-preset-env": {
       stage: 3,
       features: {
-        'nesting-rules': true,
-        'custom-media-queries': true,
-        'media-query-ranges': true,
+        "nesting-rules": true,
+        "custom-media-queries": true,
+        "media-query-ranges": true,
       },
     },
     cssnano:
-      process.env.NODE_ENV === 'production'
+      process.env.NODE_ENV === "production"
         ? {
             preset: [
-              'default',
+              "default",
               {
                 discardComments: {
                   removeAll: true,

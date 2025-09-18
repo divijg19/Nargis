@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue';
-import { usePomodoroStore } from '../stores/pomodoro';
-import NavBar from '../components/NavBar.vue';
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import { usePomodoroStore } from "../stores/pomodoro";
 
-type TimerMode = 'focus' | 'shortBreak' | 'longBreak';
+type TimerMode = "focus" | "shortBreak" | "longBreak";
 
 const pomodoroStore = usePomodoroStore();
 const timerInterval = ref<NodeJS.Timeout | null>(null);
@@ -11,15 +10,15 @@ const autoStart = ref(false);
 const soundEnabled = ref(true);
 
 const modes = {
-  focus: { name: 'Focus', duration: 25, icon: '🍅' },
-  shortBreak: { name: 'Short Break', duration: 5, icon: '☕' },
-  longBreak: { name: 'Long Break', duration: 15, icon: '🏖️' },
+  focus: { name: "Focus", duration: 25, icon: "🍅" },
+  shortBreak: { name: "Short Break", duration: 5, icon: "☕" },
+  longBreak: { name: "Long Break", duration: 15, icon: "🏖️" },
 };
 
-const timerColors = {
-  focus: 'text-red-500',
-  shortBreak: 'text-green-500',
-  longBreak: 'text-blue-500',
+const _timerColors = {
+  focus: "text-red-500",
+  shortBreak: "text-green-500",
+  longBreak: "text-blue-500",
 };
 
 const circumference = 2 * Math.PI * 45;
@@ -27,27 +26,27 @@ const circumference = 2 * Math.PI * 45;
 const currentMode = computed(() => pomodoroStore.currentMode);
 const timeLeft = computed(() => pomodoroStore.timeLeft);
 const isRunning = computed(() => pomodoroStore.isRunning);
-const sessionCount = computed(() => pomodoroStore.sessionCount);
-const todaySessionsCount = computed(() => pomodoroStore.todaySessionsCount);
-const totalFocusTime = computed(() =>
-  Math.round(pomodoroStore.totalFocusTime / 60)
+const _sessionCount = computed(() => pomodoroStore.sessionCount);
+const _todaySessionsCount = computed(() => pomodoroStore.todaySessionsCount);
+const _totalFocusTime = computed(() =>
+  Math.round(pomodoroStore.totalFocusTime / 60),
 );
-const bestStreak = computed(() => pomodoroStore.bestStreak);
-const weeklySessionsCount = computed(() => pomodoroStore.weeklySessionsCount);
+const _bestStreak = computed(() => pomodoroStore.bestStreak);
+const _weeklySessionsCount = computed(() => pomodoroStore.weeklySessionsCount);
 
-const formattedTime = computed(() => {
+const _formattedTime = computed(() => {
   const minutes = Math.floor(timeLeft.value / 60);
   const seconds = timeLeft.value % 60;
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 });
 
-const strokeDashoffset = computed(() => {
+const _strokeDashoffset = computed(() => {
   const totalTime = modes[currentMode.value].duration * 60;
   const progress = (totalTime - timeLeft.value) / totalTime;
   return circumference - progress * circumference;
 });
 
-const toggleTimer = () => {
+const _toggleTimer = () => {
   if (isRunning.value) {
     pomodoroStore.pauseTimer();
     if (timerInterval.value) {
@@ -60,7 +59,7 @@ const toggleTimer = () => {
   }
 };
 
-const resetTimer = () => {
+const _resetTimer = () => {
   pomodoroStore.resetTimer();
   if (timerInterval.value) {
     clearInterval(timerInterval.value);
@@ -68,7 +67,7 @@ const resetTimer = () => {
   }
 };
 
-const skipSession = () => {
+const _skipSession = () => {
   pomodoroStore.skipSession();
   if (timerInterval.value) {
     clearInterval(timerInterval.value);
@@ -83,7 +82,7 @@ const skipSession = () => {
   }
 };
 
-const setMode = (mode: TimerMode) => {
+const _setMode = (mode: TimerMode) => {
   pomodoroStore.setMode(mode);
   if (timerInterval.value) {
     clearInterval(timerInterval.value);
@@ -117,8 +116,9 @@ const startInterval = () => {
 
 const playNotificationSound = () => {
   // Create a simple notification sound
-  const audioContext = new (window.AudioContext ||
-    (window as any).webkitAudioContext)();
+  const audioContext = new (
+    window.AudioContext || (window as any).webkitAudioContext
+  )();
   const oscillator = audioContext.createOscillator();
   const gainNode = audioContext.createGain();
 
@@ -126,13 +126,13 @@ const playNotificationSound = () => {
   gainNode.connect(audioContext.destination);
 
   oscillator.frequency.value = 800;
-  oscillator.type = 'sine';
+  oscillator.type = "sine";
 
   gainNode.gain.setValueAtTime(0, audioContext.currentTime);
   gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.1);
   gainNode.gain.exponentialRampToValueAtTime(
     0.01,
-    audioContext.currentTime + 0.5
+    audioContext.currentTime + 0.5,
   );
 
   oscillator.start(audioContext.currentTime);

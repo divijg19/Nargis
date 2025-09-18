@@ -1,35 +1,27 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
-import { useTaskStore } from '../stores/tasks';
-import { useHabitStore } from '../stores/habits';
-import { usePomodoroStore } from '../stores/pomodoro';
-
-import NavBar from '../components/NavBar.vue';
-import StatCard from '../components/StatCard.vue';
-import DashboardCard from '../components/DashboardCard.vue';
-import ActionButton from '../components/ActionButton.vue';
-import TaskPreview from '../components/TaskPreview.vue';
-import PomodoroPreview from '../components/PomodoroPreview.vue';
-import HabitPreview from '../components/HabitPreview.vue';
+import { computed, onMounted } from "vue";
+import { useHabitStore } from "../stores/habits";
+import { usePomodoroStore } from "../stores/pomodoro";
+import { useTaskStore } from "../stores/tasks";
 
 const taskStore = useTaskStore();
 const habitStore = useHabitStore();
 const pomodoroStore = usePomodoroStore();
 
-const weeklyProgress = computed(() => {
+const _weeklyProgress = computed(() => {
   // Calculate weekly progress based on completed tasks and habits
-  const tasksThisWeek = taskStore.tasks.filter(task => {
+  const tasksThisWeek = taskStore.tasks.filter((task) => {
     const taskDate = new Date(task.updatedAt);
     const weekStart = new Date();
     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-    return taskDate >= weekStart && task.status === 'done';
+    return taskDate >= weekStart && task.status === "done";
   }).length;
 
   const target = 20; // Weekly target
   return Math.min(Math.round((tasksThisWeek / target) * 100), 100);
 });
 
-const togglePomodoro = () => {
+const _togglePomodoro = () => {
   if (pomodoroStore.isRunning) {
     pomodoroStore.pauseTimer();
   } else {
@@ -37,7 +29,7 @@ const togglePomodoro = () => {
   }
 };
 
-const resetPomodoro = () => {
+const _resetPomodoro = () => {
   pomodoroStore.resetTimer();
 };
 

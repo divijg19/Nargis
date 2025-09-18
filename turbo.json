@@ -1,27 +1,15 @@
 {
-    "$schema": "https://turbo.build/schema.json",
-    "tasks": {
-        "build": {
-            "description": "Builds all apps and packages for production.",
-            "dependsOn": [
-                "^build"
-            ],
-            "outputs": [
-                ".next/**",
-                "!.next/cache/**",
-                "dist/**"
-            ]
-        },
-        "dev": {
-            "description": "Starts all apps in development mode.",
-            "cache": false,
-            "persistent": true
-        },
-        "lint": {
-            "description": "Lints all packages."
-        },
-        "typecheck": {
-            "description": "Type-checks all packages."
-        }
-    }
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {},
+    "typecheck": {}
+  }
 }

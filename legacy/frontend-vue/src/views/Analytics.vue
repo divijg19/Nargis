@@ -1,42 +1,38 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
-// import { useTaskStore } from '../stores/tasks'
-// import { usePomodoroStore } from '../stores/pomodoro'
-// import { useHabitStore } from '../stores/habits'
-import NavBar from '../components/NavBar.vue';
+import { computed, onMounted, ref } from "vue";
 
 // const taskStore = useTaskStore()
 // const pomodoroStore = usePomodoroStore()
 // const habitStore = useHabitStore()
 
-const selectedPeriod = ref('week');
-const productivityChart = ref<HTMLCanvasElement>();
-const taskChart = ref<HTMLCanvasElement>();
+const _selectedPeriod = ref("week");
+const _productivityChart = ref<HTMLCanvasElement>();
+const _taskChart = ref<HTMLCanvasElement>();
 
-const timePeriods = [
-  { label: 'Week', value: 'week' },
-  { label: 'Month', value: 'month' },
-  { label: 'Quarter', value: 'quarter' },
-  { label: 'Year', value: 'year' },
+const _timePeriods = [
+  { label: "Week", value: "week" },
+  { label: "Month", value: "month" },
+  { label: "Quarter", value: "quarter" },
+  { label: "Year", value: "year" },
 ];
 
-const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const monthLabels = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
+const _daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const _monthLabels = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
-const metrics = computed(() => {
+const _metrics = computed(() => {
   // Mock data - in a real app, this would be calculated from stores
   return {
     tasksCompleted: 47,
@@ -50,55 +46,55 @@ const metrics = computed(() => {
   };
 });
 
-const insights = computed(() => [
+const _insights = computed(() => [
   {
     id: 1,
-    icon: '🎯',
-    title: 'Peak Performance Time',
+    icon: "🎯",
+    title: "Peak Performance Time",
     description:
       "You're most productive between 9 AM and 11 AM. Schedule important tasks during this window.",
   },
   {
     id: 2,
-    icon: '📈',
-    title: 'Streak Building',
+    icon: "📈",
+    title: "Streak Building",
     description:
-      'Your habit completion rate improved by 15% this month. Keep up the momentum!',
+      "Your habit completion rate improved by 15% this month. Keep up the momentum!",
   },
   {
     id: 3,
-    icon: '⏰',
-    title: 'Focus Sessions',
+    icon: "⏰",
+    title: "Focus Sessions",
     description:
-      'You completed 23% more Pomodoro sessions compared to last week.',
+      "You completed 23% more Pomodoro sessions compared to last week.",
   },
 ]);
 
-const recommendations = computed(() => [
+const _recommendations = computed(() => [
   {
     id: 1,
-    icon: '🍅',
-    title: 'Try Longer Focus Sessions',
+    icon: "🍅",
+    title: "Try Longer Focus Sessions",
     description:
-      'Consider 45-minute focus blocks for complex tasks based on your completion patterns.',
+      "Consider 45-minute focus blocks for complex tasks based on your completion patterns.",
   },
   {
     id: 2,
-    icon: '📅',
-    title: 'Schedule Buffer Time',
+    icon: "📅",
+    title: "Schedule Buffer Time",
     description:
-      'Add 15-minute buffers between tasks to improve completion rates.',
+      "Add 15-minute buffers between tasks to improve completion rates.",
   },
   {
     id: 3,
-    icon: '🎨',
-    title: 'Vary Your Environment',
+    icon: "🎨",
+    title: "Vary Your Environment",
     description:
-      'Your productivity increases 20% when working in different locations.',
+      "Your productivity increases 20% when working in different locations.",
   },
 ]);
 
-const getActivityForDay = (dayIndex: number) => {
+const _getActivityForDay = (dayIndex: number) => {
   // Mock activity data - returns array of activity levels for each week
   // dayIndex affects the random seed for consistent data
   const weeks = 52;
@@ -109,13 +105,13 @@ const getActivityForDay = (dayIndex: number) => {
   return activities;
 };
 
-const getActivityColor = (level: number) => {
+const _getActivityColor = (level: number) => {
   const colors = [
-    'bg-gray-100 dark:bg-gray-700',
-    'bg-green-200 dark:bg-green-800',
-    'bg-green-400 dark:bg-green-600',
-    'bg-green-600 dark:bg-green-500',
-    'bg-green-800 dark:bg-green-400',
+    "bg-gray-100 dark:bg-gray-700",
+    "bg-green-200 dark:bg-green-800",
+    "bg-green-400 dark:bg-green-600",
+    "bg-green-600 dark:bg-green-500",
+    "bg-green-800 dark:bg-green-400",
   ];
   return colors[level] || colors[0];
 };
@@ -128,7 +124,7 @@ onMounted(() => {
 const initializeCharts = () => {
   // Mock chart initialization
   // In a real app, you would use Chart.js or similar library
-  console.log('Charts would be initialized here');
+  console.log("Charts would be initialized here");
 };
 </script>
 

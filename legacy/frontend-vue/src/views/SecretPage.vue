@@ -1,56 +1,51 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useConfessionsStore, type Confession } from '@/stores/confessions';
-import {
-  ChevronLeftIcon,
-  ArrowDownTrayIcon as DownloadIcon,
-  TrashIcon,
-} from '@heroicons/vue/24/outline';
+import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
+import { type Confession, useConfessionsStore } from "@/stores/confessions";
 
 const router = useRouter();
 const confessionsStore = useConfessionsStore();
 
 // Form state
 const newConfession = ref({
-  content: '',
-  mood: undefined as Confession['mood'] | undefined,
+  content: "",
+  mood: undefined as Confession["mood"] | undefined,
   tags: [] as string[],
 });
 
-const newTag = ref('');
+const newTag = ref("");
 const isSubmitting = ref(false);
 const showClearConfirm = ref(false);
 
 // Mood options
 const moods = [
-  { value: 'happy', emoji: '😊', label: 'Happy' },
-  { value: 'sad', emoji: '😢', label: 'Sad' },
-  { value: 'angry', emoji: '😠', label: 'Angry' },
-  { value: 'confused', emoji: '😕', label: 'Confused' },
-  { value: 'excited', emoji: '🤗', label: 'Excited' },
-  { value: 'peaceful', emoji: '😌', label: 'Peaceful' },
+  { value: "happy", emoji: "😊", label: "Happy" },
+  { value: "sad", emoji: "😢", label: "Sad" },
+  { value: "angry", emoji: "😠", label: "Angry" },
+  { value: "confused", emoji: "😕", label: "Confused" },
+  { value: "excited", emoji: "🤗", label: "Excited" },
+  { value: "peaceful", emoji: "😌", label: "Peaceful" },
 ] as const;
 
 // Computed
-const confessions = computed(() => confessionsStore.confessions);
-const totalConfessions = computed(() => confessionsStore.totalConfessions);
+const _confessions = computed(() => confessionsStore.confessions);
+const _totalConfessions = computed(() => confessionsStore.totalConfessions);
 
-const unlockMethod = computed(() => {
+const _unlockMethod = computed(() => {
   const history = confessionsStore.secretAccessHistory;
   if (history.length > 0) {
     const latest = history[history.length - 1];
     return `Unlocked via ${latest.method}`;
   }
-  return 'Secret access';
+  return "Secret access";
 });
 
 // Methods
-const goBack = () => {
-  router.push('/');
+const _goBack = () => {
+  router.push("/");
 };
 
-const selectMood = (mood: Confession['mood']) => {
+const _selectMood = (mood: Confession["mood"]) => {
   newConfession.value.mood =
     newConfession.value.mood === mood ? undefined : mood;
 };
@@ -63,41 +58,41 @@ const addTag = () => {
     newConfession.value.tags.length < 5
   ) {
     newConfession.value.tags.push(tag);
-    newTag.value = '';
+    newTag.value = "";
   }
 };
 
-const handleTagKeydown = (event: KeyboardEvent) => {
-  if (event.key === ',') {
+const _handleTagKeydown = (event: KeyboardEvent) => {
+  if (event.key === ",") {
     event.preventDefault();
     addTag();
   }
 };
 
-const removeTag = (tagToRemove: string) => {
+const _removeTag = (tagToRemove: string) => {
   const index = newConfession.value.tags.indexOf(tagToRemove);
   if (index > -1) {
     newConfession.value.tags.splice(index, 1);
   }
 };
 
-const submitConfession = async () => {
+const _submitConfession = async () => {
   if (!newConfession.value.content.trim() || isSubmitting.value) return;
 
   isSubmitting.value = true;
 
   try {
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate async operation
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate async operation
 
     confessionsStore.addConfession(
       newConfession.value.content,
       newConfession.value.mood,
-      newConfession.value.tags
+      newConfession.value.tags,
     );
 
     // Reset form
     newConfession.value = {
-      content: '',
+      content: "",
       mood: undefined,
       tags: [],
     };
@@ -105,39 +100,39 @@ const submitConfession = async () => {
     // Show success feedback
     showSuccessMessage();
   } catch (error) {
-    console.error('Error saving confession:', error);
+    console.error("Error saving confession:", error);
   } finally {
     isSubmitting.value = false;
   }
 };
 
-const deleteConfession = (id: string) => {
+const _deleteConfession = (id: string) => {
   confessionsStore.deleteConfession(id);
 };
 
-const exportConfessions = () => {
+const _exportConfessions = () => {
   confessionsStore.exportConfessions();
 };
 
-const confirmClearAll = () => {
+const _confirmClearAll = () => {
   confessionsStore.clearAllConfessions();
   showClearConfirm.value = false;
 };
 
-const getMoodEmoji = (mood: Confession['mood']) => {
-  return moods.find(m => m.value === mood)?.emoji || '💭';
+const _getMoodEmoji = (mood: Confession["mood"]) => {
+  return moods.find((m) => m.value === mood)?.emoji || "💭";
 };
 
-const formatDate = (date: Date) => {
-  return new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(
+const _formatDate = (date: Date) => {
+  return new Intl.RelativeTimeFormat("en", { numeric: "auto" }).format(
     Math.round((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-    'day'
+    "day",
   );
 };
 
 const showSuccessMessage = () => {
   // Create temporary success notification
-  const notification = document.createElement('div');
+  const notification = document.createElement("div");
   notification.innerHTML = `
     <div style="
       position: fixed;
@@ -157,7 +152,7 @@ const showSuccessMessage = () => {
     </div>
   `;
 
-  const style = document.createElement('style');
+  const style = document.createElement("style");
   style.textContent = `
     @keyframes slideDown {
       from { opacity: 0; transform: translateX(-50%) translateY(-20px); }

@@ -1,64 +1,63 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useHabitStore } from '../stores/habits';
-import NavBar from '../components/NavBar.vue';
+import { computed, ref } from "vue";
+import { useHabitStore } from "../stores/habits";
 
 const habitStore = useHabitStore();
-const newHabitName = ref('');
-const newHabitCategory = ref('health');
+const newHabitName = ref("");
+const newHabitCategory = ref("health");
 
 const habits = computed(() => habitStore.habits);
-const activeHabits = computed(() => habits.value.filter(h => !h.archived));
-const bestStreakDays = computed(() =>
-  Math.max(...habits.value.map(h => h.bestStreak || 0), 0)
+const _activeHabits = computed(() => habits.value.filter((h) => !h.archived));
+const _bestStreakDays = computed(() =>
+  Math.max(...habits.value.map((h) => h.bestStreak || 0), 0),
 );
-const overallCompletionRate = computed(() => {
+const _overallCompletionRate = computed(() => {
   if (habits.value.length === 0) return 0;
   const total = habits.value.reduce(
     (sum, habit) => sum + getCompletionRate(habit),
-    0
+    0,
   );
   return Math.round(total / habits.value.length);
 });
-const todayCompletedCount = computed(
-  () => habits.value.filter(habit => isCompletedToday(habit.id)).length
+const _todayCompletedCount = computed(
+  () => habits.value.filter((habit) => isCompletedToday(habit.id)).length,
 );
 
 const categoryIcons = {
-  health: '💪',
-  productivity: '⚡',
-  learning: '📚',
-  social: '👥',
-  creative: '🎨',
-  other: '📝',
+  health: "💪",
+  productivity: "⚡",
+  learning: "📚",
+  social: "👥",
+  creative: "🎨",
+  other: "📝",
 };
 
 const categoryColors = {
-  health: 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400',
-  productivity: 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400',
+  health: "bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400",
+  productivity: "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400",
   learning:
-    'bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-400',
-  social: 'bg-pink-100 text-pink-600 dark:bg-pink-900 dark:text-pink-400',
+    "bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-400",
+  social: "bg-pink-100 text-pink-600 dark:bg-pink-900 dark:text-pink-400",
   creative:
-    'bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-400',
-  other: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
+    "bg-yellow-100 text-yellow-600 dark:bg-yellow-900 dark:text-yellow-400",
+  other: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400",
 };
 
-const addHabit = () => {
+const _addHabit = () => {
   if (newHabitName.value.trim()) {
     habitStore.addHabit({
       name: newHabitName.value.trim(),
       category: newHabitCategory.value,
     });
-    newHabitName.value = '';
+    newHabitName.value = "";
   }
 };
 
-const deleteHabit = (id: string) => {
+const _deleteHabit = (id: string) => {
   habitStore.deleteHabit(id);
 };
 
-const toggleHabitForToday = (habitId: string) => {
+const _toggleHabitForToday = (habitId: string) => {
   habitStore.toggleHabitForDate(habitId, new Date());
 };
 
@@ -66,17 +65,17 @@ const isCompletedToday = (habitId: string) => {
   return habitStore.isHabitCompletedOnDate(habitId, new Date());
 };
 
-const isHabitCompletedOnDate = (habitId: string, date: Date) => {
+const _isHabitCompletedOnDate = (habitId: string, date: Date) => {
   return habitStore.isHabitCompletedOnDate(habitId, date);
 };
 
-const getCategoryIcon = (category: string) => {
+const _getCategoryIcon = (category: string) => {
   return (
     categoryIcons[category as keyof typeof categoryIcons] || categoryIcons.other
   );
 };
 
-const getCategoryColors = (category: string) => {
+const _getCategoryColors = (category: string) => {
   return (
     categoryColors[category as keyof typeof categoryColors] ||
     categoryColors.other
@@ -87,7 +86,7 @@ const getCompletionRate = (habit: any) => {
   if (!habit.completedDays || habit.completedDays.length === 0) return 0;
 
   const daysSinceCreation = Math.ceil(
-    (Date.now() - new Date(habit.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+    (Date.now() - new Date(habit.createdAt).getTime()) / (1000 * 60 * 60 * 24),
   );
 
   if (daysSinceCreation === 0) return 0;
@@ -95,7 +94,7 @@ const getCompletionRate = (habit: any) => {
   return Math.round((habit.completedDays.length / daysSinceCreation) * 100);
 };
 
-const getLastSevenDays = () => {
+const _getLastSevenDays = () => {
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const date = new Date();
@@ -105,10 +104,10 @@ const getLastSevenDays = () => {
   return days;
 };
 
-const formatDate = (date: Date) => {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
+const _formatDate = (date: Date) => {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
   }).format(date);
 };
 </script>

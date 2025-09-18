@@ -1,51 +1,51 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue';
-import { useThemeStore } from '../stores/theme';
-import { useTaskStore } from '../stores/tasks';
+import { computed, nextTick, ref } from "vue";
+import { useTaskStore } from "../stores/tasks";
+import { useThemeStore } from "../stores/theme";
 
 const themeStore = useThemeStore();
 const taskStore = useTaskStore();
 
 const isMobileMenuOpen = ref(false);
 const showQuickAdd = ref(false);
-const quickTaskTitle = ref('');
-const quickTaskPriority = ref('medium');
+const quickTaskTitle = ref("");
+const quickTaskPriority = ref("medium");
 const quickTaskInput = ref<HTMLInputElement>();
 
 const isDark = computed(() => themeStore.isDark);
 
-const navigationItems = [
-  { label: 'Dashboard', path: '/', icon: '🏠' },
-  { label: 'Tasks', path: '/tasks', icon: '✅' },
-  { label: 'Focus', path: '/pomodoro', icon: '🍅' },
-  { label: 'Habits', path: '/habits', icon: '🎯' },
-  { label: 'Calendar', path: '/calendar', icon: '📅' },
-  { label: 'Analytics', path: '/analytics', icon: '📊' },
+const _navigationItems = [
+  { label: "Dashboard", path: "/", icon: "🏠" },
+  { label: "Tasks", path: "/tasks", icon: "✅" },
+  { label: "Focus", path: "/pomodoro", icon: "🍅" },
+  { label: "Habits", path: "/habits", icon: "🎯" },
+  { label: "Calendar", path: "/calendar", icon: "📅" },
+  { label: "Analytics", path: "/analytics", icon: "📊" },
 ];
 
-const toggleTheme = () => {
-  themeStore.setTheme(isDark.value ? 'light' : 'dark');
+const _toggleTheme = () => {
+  themeStore.setTheme(isDark.value ? "light" : "dark");
 };
 
-const toggleMobileMenu = () => {
+const _toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value;
 };
 
-const closeMobileMenu = () => {
+const _closeMobileMenu = () => {
   isMobileMenuOpen.value = false;
 };
 
-const quickAddTask = async () => {
+const _quickAddTask = async () => {
   showQuickAdd.value = true;
   await nextTick();
   quickTaskInput.value?.focus();
 };
 
-const addQuickTask = () => {
+const _addQuickTask = () => {
   if (quickTaskTitle.value.trim()) {
     taskStore.addTask({
       title: quickTaskTitle.value.trim(),
-      priority: quickTaskPriority.value as 'low' | 'medium' | 'high',
+      priority: quickTaskPriority.value as "low" | "medium" | "high",
     });
     closeQuickAdd();
   }
@@ -53,8 +53,8 @@ const addQuickTask = () => {
 
 const closeQuickAdd = () => {
   showQuickAdd.value = false;
-  quickTaskTitle.value = '';
-  quickTaskPriority.value = 'medium';
+  quickTaskTitle.value = "";
+  quickTaskPriority.value = "medium";
 };
 </script>
 

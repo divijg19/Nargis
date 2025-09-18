@@ -1,5 +1,6 @@
 .github/workflows/deploy.yml
 .gitignore
+.turbo/daemon/27d391d570c8249d-turbo.log.2025-09-18
 .vscode/settings.json
 Codebase.txt
 README.md
@@ -14,7 +15,6 @@ apps/api-py/main.py
 apps/api-py/pyproject.toml
 apps/api-py/uv.lock
 apps/web/README.md
-apps/web/bun.lock
 apps/web/next-env.d.ts
 apps/web/next.config.ts
 apps/web/package.json

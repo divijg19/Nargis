@@ -1,5 +1,5 @@
-import { ref, onMounted, onUnmounted } from 'vue';
-import { useConfessionsStore } from '@/stores/confessions';
+import { onMounted, onUnmounted, ref } from "vue";
+import { useConfessionsStore } from "@/stores/confessions";
 
 interface SecretAccessOptions {
   konamiCode?: string[];
@@ -13,18 +13,18 @@ export const useSecretAccess = (options: SecretAccessOptions = {}) => {
 
   const defaultOptions = {
     konamiCode: [
-      'ArrowUp',
-      'ArrowUp',
-      'ArrowDown',
-      'ArrowDown',
-      'ArrowLeft',
-      'ArrowRight',
-      'ArrowLeft',
-      'ArrowRight',
-      'KeyB',
-      'KeyA',
+      "ArrowUp",
+      "ArrowUp",
+      "ArrowDown",
+      "ArrowDown",
+      "ArrowLeft",
+      "ArrowRight",
+      "ArrowLeft",
+      "ArrowRight",
+      "KeyB",
+      "KeyA",
     ],
-    secretTriggers: ['nargis', 'divij', 'confession', 'love'],
+    secretTriggers: ["nargis", "divij", "confession", "love"],
     clickThreshold: 7,
     resetDelay: 3000,
   };
@@ -34,7 +34,7 @@ export const useSecretAccess = (options: SecretAccessOptions = {}) => {
   // State
   const konamiIndex = ref(0);
   const clickCount = ref(0);
-  const typedString = ref('');
+  const typedString = ref("");
   const isListening = ref(false);
   const lastActivity = ref<Date | null>(null);
 
@@ -58,7 +58,7 @@ export const useSecretAccess = (options: SecretAccessOptions = {}) => {
 
   const showSecretUnlockedFeedback = (method: string) => {
     // Create a temporary notification element
-    const notification = document.createElement('div');
+    const notification = document.createElement("div");
     notification.innerHTML = `
       <div style="
         position: fixed;
@@ -86,7 +86,7 @@ export const useSecretAccess = (options: SecretAccessOptions = {}) => {
     `;
 
     // Add animation styles
-    const style = document.createElement('style');
+    const style = document.createElement("style");
     style.textContent = `
       @keyframes slideInRight {
         from {
@@ -109,7 +109,7 @@ export const useSecretAccess = (options: SecretAccessOptions = {}) => {
 
     // Remove after 3 seconds
     setTimeout(() => {
-      notification.style.animation = 'fadeOut 0.5s ease-out';
+      notification.style.animation = "fadeOut 0.5s ease-out";
       setTimeout(() => {
         document.body.removeChild(notification);
         document.head.removeChild(style);
@@ -120,7 +120,7 @@ export const useSecretAccess = (options: SecretAccessOptions = {}) => {
   const resetCounters = () => {
     konamiIndex.value = 0;
     clickCount.value = 0;
-    typedString.value = '';
+    typedString.value = "";
     lastActivity.value = new Date();
   };
 
@@ -130,14 +130,14 @@ export const useSecretAccess = (options: SecretAccessOptions = {}) => {
         konamiIndex.value++;
 
         if (konamiIndex.value === config.konamiCode.length) {
-          triggerSecret('konami-code');
+          triggerSecret("konami-code");
         }
       } else {
         konamiIndex.value = 0;
       }
     };
 
-    document.addEventListener('keydown', keydownHandler);
+    document.addEventListener("keydown", keydownHandler);
   };
 
   const setupClickTrigger = () => {
@@ -146,13 +146,13 @@ export const useSecretAccess = (options: SecretAccessOptions = {}) => {
 
       // Check if clicking on logo/title
       if (
-        target.closest('.navbar-title') ||
-        target.closest('[data-secret-trigger]')
+        target.closest(".navbar-title") ||
+        target.closest("[data-secret-trigger]")
       ) {
         clickCount.value++;
 
         if (clickCount.value === config.clickThreshold) {
-          triggerSecret('multiple-clicks');
+          triggerSecret("multiple-clicks");
         }
 
         // Reset click count after delay
@@ -163,7 +163,7 @@ export const useSecretAccess = (options: SecretAccessOptions = {}) => {
       }
     };
 
-    document.addEventListener('click', clickHandler);
+    document.addEventListener("click", clickHandler);
   };
 
   const setupTypeTrigger = () => {
@@ -171,8 +171,8 @@ export const useSecretAccess = (options: SecretAccessOptions = {}) => {
       // Only track if not in an input field
       const target = _e.target as HTMLElement;
       if (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
         target.isContentEditable
       ) {
         return;
@@ -196,11 +196,11 @@ export const useSecretAccess = (options: SecretAccessOptions = {}) => {
       // Clear typed string after delay
       if (resetTimeout) clearTimeout(resetTimeout);
       resetTimeout = setTimeout(() => {
-        typedString.value = '';
+        typedString.value = "";
       }, config.resetDelay);
     };
 
-    document.addEventListener('keypress', keypressHandler);
+    document.addEventListener("keypress", keypressHandler);
   };
 
   const setupSpecialCombinations = () => {
@@ -208,25 +208,25 @@ export const useSecretAccess = (options: SecretAccessOptions = {}) => {
     let shiftCount = 0;
 
     const specialKeyHandler = (e: KeyboardEvent) => {
-      if (e.key === 'Control') {
+      if (e.key === "Control") {
         ctrlCount++;
         setTimeout(() => ctrlCount--, 1000);
       }
 
-      if (e.key === 'Shift') {
+      if (e.key === "Shift") {
         shiftCount++;
         setTimeout(() => shiftCount--, 1000);
       }
 
       // Secret combination: Ctrl pressed 5 times + Shift pressed 3 times
       if (ctrlCount >= 5 && shiftCount >= 3) {
-        triggerSecret('key-combination');
+        triggerSecret("key-combination");
         ctrlCount = 0;
         shiftCount = 0;
       }
     };
 
-    document.addEventListener('keydown', specialKeyHandler);
+    document.addEventListener("keydown", specialKeyHandler);
   };
 
   const startListening = () => {
@@ -245,17 +245,17 @@ export const useSecretAccess = (options: SecretAccessOptions = {}) => {
     isListening.value = false;
 
     if (keydownHandler) {
-      document.removeEventListener('keydown', keydownHandler);
+      document.removeEventListener("keydown", keydownHandler);
       keydownHandler = null;
     }
 
     if (clickHandler) {
-      document.removeEventListener('click', clickHandler);
+      document.removeEventListener("click", clickHandler);
       clickHandler = null;
     }
 
     if (keypressHandler) {
-      document.removeEventListener('keypress', keypressHandler);
+      document.removeEventListener("keypress", keypressHandler);
       keypressHandler = null;
     }
 
