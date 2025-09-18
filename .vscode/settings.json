@@ -1,3 +1,10 @@
 {
-  "git.ignoreLimitWarning": true
+  "git.ignoreLimitWarning": true,
+  "python.defaultInterpreterPath": "${workspaceFolder}/apps/api-py/.venv/Scripts/python.exe",
+  // 👇 Treat bun.lock as JSONC (syntax highlighting, comments/trailing commas allowed)
+  "files.associations": {
+    "bun.lock": "jsonc"
+  },
+  // 👇 Disable built-in JSON/JSONC validation (Biome or Bun will handle consistency)
+  "json.validate.enable": false,
 }

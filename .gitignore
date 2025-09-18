@@ -1,0 +1,55 @@
+# /.gitignore
+
+# ----------------------------------------------------------------
+# General
+# ----------------------------------------------------------------
+# OS-specific
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDEs
+.idea/
+.vscode/
+!.vscode/settings.json # Optional: keep if you want to share settings
+
+# Environment variables
+.env*
+!/.env.example
+
+# Logs & Caches
+logs/
+*.log
+.eslintcache
+.cache/
+
+# ----------------------------------------------------------------
+# JavaScript / Bun / Node
+# ----------------------------------------------------------------
+node_modules/
+.bun/
+bun.lockb
+*.tsbuildinfo
+
+# Build outputs
+.next/
+dist/
+out/
+build/
+
+# Testing
+coverage/
+*.lcov
+
+# ----------------------------------------------------------------
+# Python
+# ----------------------------------------------------------------
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ----------------------------------------------------------------
+# Go
+# ----------------------------------------------------------------
+*.bin
