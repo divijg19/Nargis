@@ -7,6 +7,7 @@ README.md
 apps/api-go/Dockerfile
 apps/api-go/README.md
 apps/api-go/go.mod
+apps/api-go/go.sum
 apps/api-go/main.go
 apps/api-py/.python-version
 apps/api-py/Dockerfile
