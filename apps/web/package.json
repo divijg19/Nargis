@@ -1,0 +1,40 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An AI-powered comprehensive productivity suite with task management, Pomodoro timer, habit tracking, and analytics",
+  "keywords": [
+    "ai",
+    "productivity",
+    "task-management",
+    "voice-first",
+    "nextjs",
+    "react",
+    "typescript"
+  ],
+  "author": {
+    "name": "Divij",
+    "email": "divijganjoo2003@gmail.com"
+  },
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "next": "^15.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.3",
+    "@types/node": "^20.14.9",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "postcss": "^8.4.39",
+    "tailwindcss": "^4.0.0",
+    "@types/bun": "latest"
+  }
+}

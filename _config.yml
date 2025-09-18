@@ -1,3 +1,0 @@
-# Prevent Jekyll from processing files and serve as a static site
-exclude: ['README.md']
-# baseurl: "/nargis" # Uncomment and set if needed

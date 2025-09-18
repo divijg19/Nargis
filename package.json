@@ -1,125 +1,21 @@
 {
-  "name": "@nargis/app",
-  "version": "6.0.0",
-  "type": "module",
-  "private": true,
-  "description": "A modern, comprehensive productivity suite with task management, Pomodoro timer, habit tracking, and analytics - featuring a secret confession subpage",
-  "keywords": [
-    "productivity",
-    "task-management",
-    "pomodoro",
-    "habits",
-    "vue3",
-    "typescript",
-    "pwa",
-    "modern",
-    "responsive",
-    "focus",
-    "organization"
-  ],
-  "author": {
-    "name": "Divij",
-    "email": "divij@example.com"
-  },
-  "license": "MIT",
-  "homepage": "https://divij.github.io/nargis",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/divij/nargis.git"
-  },
-  "scripts": {
-    "dev": "vite --host --port 3000 --open",
-    "build": "vue-tsc --noEmit && vite build",
-    "build:analyze": "vue-tsc --noEmit && vite build --mode analyze",
-    "preview": "vite preview --port 3000 --open",
-    "preview:build": "npm run build && npm run preview",
-    "type-check": "vue-tsc --noEmit",
-    "lint": "eslint . --fix",
-    "lint:check": "eslint .",
-    "lint:style": "stylelint \"**/*.{css,vue,scss}\" --fix",
-    "lint:style:check": "stylelint \"**/*.{css,vue,scss}\"",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:run": "vitest run",
-    "test:coverage": "vitest --coverage",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "clean": "rm -rf node_modules dist .vite coverage",
-    "clean:cache": "rm -rf .vite node_modules/.cache",
-    "setup": "npm install && npm run build",
-    "ci": "npm run lint:check && npm run format:check && npm run type-check && npm run test:run && npm run build"
-  },
-  "dependencies": {
-    "@heroicons/vue": "^2.2.0",
-    "@tailwindcss/aspect-ratio": "^0.4.2",
-    "@tailwindcss/container-queries": "^0.1.1",
-    "@tailwindcss/forms": "^0.5.10",
-    "@tailwindcss/typography": "^0.5.16",
-    "@vueuse/core": "^13.3.0",
-    "chart.js": "^4.4.9",
-    "date-fns": "^4.1.0",
-    "dayjs": "^1.11.13",
-    "localforage": "^1.10.0",
-    "pinia": "^3.0.3",
-    "sortablejs": "^1.15.6",
-    "tailwindcss": "^3.4.17",
-    "uuid": "^11.1.0",
-    "vue": "^3.5.16",
-    "vue-chartjs": "^5.3.2",
-    "vue-draggable-plus": "^0.6.0",
-    "vue-router": "^4.5.1",
-    "workbox-window": "^7.3.0"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.52.0",
-    "@tsconfig/node20": "^20.1.5",
-    "@types/node": "^22.15.30",
-    "@types/sortablejs": "^1.15.8",
-    "@types/uuid": "^10.0.0",
-    "@typescript-eslint/eslint-plugin": "^8.33.1",
-    "@typescript-eslint/parser": "^8.33.1",
-    "@vitejs/plugin-vue": "^5.2.4",
-    "@vue/eslint-config-prettier": "^10.2.0",
-    "@vue/eslint-config-typescript": "^14.5.0",
-    "@vue/tsconfig": "^0.7.0",
-    "autoprefixer": "^10.4.21",
-    "cssnano": "^7.0.7",
-    "eslint": "^9.28.0",
-    "eslint-plugin-vue": "^10.2.0",
-    "postcss": "^8.5.4",
-    "postcss-preset-env": "^10.2.1",
-    "prettier": "^3.5.3",
-    "stylelint": "^16.20.0",
-    "stylelint-config-recommended-vue": "^1.6.0",
-    "stylelint-config-standard": "^38.0.0",
-    "typescript": "~5.8.3",
-    "vite": "^6.3.5",
-    "vite-bundle-analyzer": "^0.22.0",
-    "vite-plugin-pwa": "^1.0.0",
-    "vitest": "^3.2.2",
-    "vue-tsc": "^2.2.10"
-  },
-  "engines": {
-    "node": ">=20.0.0",
-    "npm": ">=10.0.0"
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead",
-    "not ie 11"
-  ],
-  "pwa": {
-    "name": "Nargis",
-    "shortName": "Nargis",
-    "description": "Modern productivity suite with task management, pomodoro timer, habit tracking, and analytics",
-    "themeColor": "#6366f1",
-    "backgroundColor": "#ffffff",
-    "display": "standalone",
-    "orientation": "portrait",
-    "scope": "/",
-    "startUrl": "/"
-  }
+    "name": "nargis",
+    "private": true,
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
+    "scripts": {
+        "dev": "turbo dev",
+        "build": "turbo build",
+        "lint": "biome lint .",
+        "unsafe": "biome lint . --fix --unsafe",
+        "format": "biome format --write .",
+        "typecheck": "turbo typecheck"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "latest",
+        "turbo": "latest"
+    },
+    "packageManager": "bun@1.2.21"
 }

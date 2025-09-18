@@ -1,9 +1,0 @@
-node_modules/
-dist/
-build/
-.git/
-.github/
-docs/
-*.min.css
-*.min.js
-package-lock.json
