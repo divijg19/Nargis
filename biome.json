@@ -13,7 +13,8 @@
       "!.next",
       "!dist",
       "!build",
-      "!bun.lock"
+      "!bun.lock",
+      "!legacy"
     ]
   },
   "formatter": {
