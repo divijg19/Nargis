@@ -11,18 +11,21 @@
     "dev:api-py": "cd apps/api-py && uv run uvicorn main:app --reload",
     "dev:api-go": "cd apps/api-go && go run main.go",
     "build": "turbo build",
+    "clean": "turbo clean",
     "lint": "biome lint .",
     "unsafe": "biome lint . --write --unsafe",
     "format": "biome format --write .",
     "typecheck": "turbo typecheck"
   },
   "devDependencies": {
-    "@biomejs/biome": "latest",
+    "@biomejs/biome": "^2.2.4",
+    "@emnapi/wasi-threads": "^1.1.0",
     "concurrently": "^9.2.1",
-    "turbo": "latest"
+    "turbo": "^2.5.6"
   },
   "packageManager": "bun@1.2.22",
   "trustedDependencies": [
-    "@tailwindcss/oxide"
+    "@tailwindcss/oxide",
+    "sharp"
   ]
 }

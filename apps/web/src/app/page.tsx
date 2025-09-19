@@ -100,8 +100,9 @@ export default function Home() {
         <button
           type="button"
           onClick={handleToggleRecording}
-          className={`px-8 py-4 text-xl font-semibold rounded-full shadow-lg transition-transform transform hover:scale-105 ${isRecording ? "bg-red-500 text-white" : "bg-indigo-600 text-white"
-            }`}
+          className={`px-8 py-4 text-xl font-semibold rounded-full shadow-lg transition-transform transform hover:scale-105 ${
+            isRecording ? "bg-red-500 text-white" : "bg-indigo-600 text-white"
+          }`}
         >
           {isRecording ? "Stop Recording" : "Start Recording"}
         </button>
