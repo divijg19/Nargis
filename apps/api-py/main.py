@@ -64,13 +64,11 @@ async def speech_to_text(audio_file: UploadFile = File(...)):
 
     waveform, sample_rate = sf.read(io.BytesIO(wav_audio_bytes))
     
-    # --- THE DEFINITIVE FIX ---
-    # We provide all necessary parameters in a single, clean call.
+    # --- THIS IS THE CORRECT, STABLE CALL ---
     result = stt_pipeline(
         {"raw": waveform, "sampling_rate": sample_rate},
-        return_timestamps=True,        # Fixes the >30s ValueError CRASH
-        return_attention_mask=True,    # Fixes the Feature Extractor DEPRECATION WARNING
-        generate_kwargs={
+        return_timestamps=True,  # CRITICAL: Fixes the >30s ValueError crash
+        generate_kwargs={        # RECOMMENDED: Fixes the 'task' deprecation warning
             "task": "transcribe",
         }
     )
