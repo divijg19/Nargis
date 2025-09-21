@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently \"bun:dev:web\" \"bun:dev:api-py\" \"bun:dev:api-go\"",
+    "dev": "concurrently --kill-others --names \"WEB,API-PY,API-GO\" --prefix-colors \"blue,green,magenta\" \"bun:dev:web\" \"bun:dev:api-py\" \"bun:dev:api-go\"",
     "dev:web": "cd apps/web && bun run dev",
     "dev:api-py": "cd apps/api-py && uv run uvicorn main:app --reload",
     "dev:api-go": "cd apps/api-go && go run main.go",
