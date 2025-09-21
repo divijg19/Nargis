@@ -2,7 +2,6 @@
 .gitignore
 .turbo/cache/751e8541bda49840-meta.json
 .turbo/cache/751e8541bda49840.tar.zst
-.turbo/cookies/1.cookie
 .turbo/cookies/2.cookie
 .turbo/cookies/3.cookie
 .turbo/cookies/4.cookie
@@ -11,6 +10,8 @@
 .turbo/cookies/7.cookie
 .turbo/cookies/8.cookie
 .turbo/daemon/27d391d570c8249d-turbo.log.2025-09-19
+.turbo/daemon/27d391d570c8249d-turbo.log.2025-09-20
+.turbo/daemon/27d391d570c8249d-turbo.log.2025-09-21
 .vscode/settings.json
 Codebase.txt
 README.md
