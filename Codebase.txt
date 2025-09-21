@@ -7,6 +7,8 @@
 .turbo/cookies/4.cookie
 .turbo/cookies/5.cookie
 .turbo/cookies/6.cookie
+.turbo/cookies/7.cookie
+.turbo/cookies/8.cookie
 .turbo/daemon/27d391d570c8249d-turbo.log.2025-09-19
 .turbo/daemon/27d391d570c8249d-turbo.log.2025-09-20
 .turbo/daemon/27d391d570c8249d-turbo.log.2025-09-21

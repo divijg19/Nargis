@@ -70,12 +70,12 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Sending complete %d byte audio stream to Python...", ab.buffer.Len())
-	// This function now handles both STT and LLM calls.
-	transcribeAndProcess(ab.buffer.Bytes())
+	// Pass the WebSocket connection down to the orchestrator.
+	transcribeAndProcess(ab.buffer.Bytes(), ws)
 }
 
-// transcribeAndProcess orchestrates the two-step AI pipeline.
-func transcribeAndProcess(audioData []byte) {
+// transcribeAndProcess orchestrates the two-step AI pipeline and sends the result back.
+func transcribeAndProcess(audioData []byte, ws *websocket.Conn) {
 	// --- Step 1: Speech-to-Text ---
 	sttURL := "http://localhost:8000/stt"
 	sttBody := &bytes.Buffer{}
@@ -153,7 +153,7 @@ func transcribeAndProcess(audioData []byte) {
 	}
 	defer llmResp.Body.Close()
 
-	// Read and log the final LLM response.
+	// Read the final LLM response body.
 	llmResponseBody, err := io.ReadAll(llmResp.Body)
 	if err != nil {
 		log.Printf("Error reading LLM response body: %v", err)
@@ -161,15 +161,22 @@ func transcribeAndProcess(audioData []byte) {
 	}
 
 	log.Printf("Final LLM response received: %s", string(llmResponseBody))
+
+	// --- Step 3: Send the final response back to the browser ---
+	log.Println("Sending response back to client...")
+	// We use WriteMessage to send the raw JSON bytes down the WebSocket.
+	if err := ws.WriteMessage(websocket.TextMessage, llmResponseBody); err != nil {
+		log.Printf("Error writing message back to client: %v", err)
+	}
 }
 
 // main starts the HTTP server.
 func main() {
-	// Create a new logger with a prefix for system events
+	// Create a new logger with a prefix for system events for better DX.
 	sysLog := log.New(os.Stdout, "[SYSTEM] ", log.LstdFlags)
 
 	http.HandleFunc("/ws", handleConnections)
-	sysLog.Println("Go WebSocket server starting on :8080") // Use the new logger
+	sysLog.Println("Go WebSocket server starting on :8080")
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		sysLog.Fatalf("ListenAndServe: %v", err)
