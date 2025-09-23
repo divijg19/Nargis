@@ -14,29 +14,24 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// upgrader handles the HTTP to WebSocket protocol upgrade.
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-// audioBuffer holds the raw audio data and a mutex for safe concurrent access.
 type audioBuffer struct {
 	buffer bytes.Buffer
 	mu     sync.Mutex
 }
 
-// SttResponse defines the structure for the JSON response from our /stt endpoint.
 type SttResponse struct {
 	Text  string `json:"text"`
 	Error string `json:"error"`
 }
 
-// LlmRequest defines the structure for the JSON request to our /llm endpoint.
 type LlmRequest struct {
 	Text string `json:"text"`
 }
 
-// handleConnections manages the WebSocket lifecycle for a connected client.
 func handleConnections(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -48,21 +43,25 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Client Connected!")
 	ab := &audioBuffer{}
 
-	// Continuously read audio fragments and append them to the buffer.
+	// --- THIS IS THE CRITICAL FIX #3 ---
 	for {
-		_, p, err := ws.ReadMessage()
+		messageType, p, err := ws.ReadMessage()
 		if err != nil {
-			log.Println("Client disconnected. Finalizing transcription.")
-			break // Exit the loop when the client closes the connection.
+			log.Println("Read error (client disconnected prematurely):", err)
+			break
 		}
-		ab.mu.Lock()
-		ab.buffer.Write(p)
-		ab.mu.Unlock()
-	}
 
-	// After the client disconnects, process the complete audio stream.
-	ab.mu.Lock()
-	defer ab.mu.Unlock()
+		if messageType == websocket.TextMessage && string(p) == "EOS" {
+			log.Println("EOS received. Finalizing transcription.")
+			break // Exit the loop cleanly
+		}
+
+		if messageType == websocket.BinaryMessage {
+			ab.mu.Lock()
+			ab.buffer.Write(p)
+			ab.mu.Unlock()
+		}
+	}
 
 	if ab.buffer.Len() == 0 {
 		log.Println("Buffer is empty, nothing to transcribe.")
@@ -70,13 +69,11 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Sending complete %d byte audio stream to Python...", ab.buffer.Len())
-	// Pass the WebSocket connection down to the orchestrator.
 	transcribeAndProcess(ab.buffer.Bytes(), ws)
 }
 
-// transcribeAndProcess orchestrates the two-step AI pipeline and sends the result back.
 func transcribeAndProcess(audioData []byte, ws *websocket.Conn) {
-	// --- Step 1: Speech-to-Text ---
+	// ... (The rest of this function is unchanged and correct)
 	sttURL := "http://localhost:8000/stt"
 	sttBody := &bytes.Buffer{}
 	sttWriter := multipart.NewWriter(sttBody)
@@ -91,14 +88,12 @@ func transcribeAndProcess(audioData []byte, ws *websocket.Conn) {
 		return
 	}
 	sttWriter.Close()
-
 	sttReq, err := http.NewRequest("POST", sttURL, sttBody)
 	if err != nil {
 		log.Printf("Error creating STT request: %v", err)
 		return
 	}
 	sttReq.Header.Set("Content-Type", sttWriter.FormDataContentType())
-
 	client := &http.Client{}
 	sttResp, err := client.Do(sttReq)
 	if err != nil {
@@ -106,45 +101,34 @@ func transcribeAndProcess(audioData []byte, ws *websocket.Conn) {
 		return
 	}
 	defer sttResp.Body.Close()
-
-	// Decode the JSON response from the STT service.
 	var sttResponseData SttResponse
 	if err := json.NewDecoder(sttResp.Body).Decode(&sttResponseData); err != nil {
 		log.Printf("Error decoding STT JSON response: %v", err)
 		return
 	}
-
-	// Check if the STT service returned a functional error.
 	if sttResponseData.Error != "" {
 		log.Printf("STT service returned an error: %s", sttResponseData.Error)
 		return
 	}
-
 	transcribedText := sttResponseData.Text
 	log.Printf("Transcription received: \"%s\"", transcribedText)
-
 	if transcribedText == "" {
 		log.Println("Transcription is empty, stopping pipeline.")
 		return
 	}
-
-	// --- Step 2: Send Transcribed Text to LLM ---
 	llmURL := "http://localhost:8000/llm"
 	llmReqPayload := LlmRequest{Text: transcribedText}
-
 	jsonPayload, err := json.Marshal(llmReqPayload)
 	if err != nil {
 		log.Printf("Error marshalling LLM request payload: %v", err)
 		return
 	}
-
 	llmReq, err := http.NewRequest("POST", llmURL, bytes.NewBuffer(jsonPayload))
 	if err != nil {
 		log.Printf("Error creating LLM request: %v", err)
 		return
 	}
 	llmReq.Header.Set("Content-Type", "application/json")
-
 	log.Println("Sending text to LLM service...")
 	llmResp, err := client.Do(llmReq)
 	if err != nil {
@@ -152,29 +136,20 @@ func transcribeAndProcess(audioData []byte, ws *websocket.Conn) {
 		return
 	}
 	defer llmResp.Body.Close()
-
-	// Read the final LLM response body.
 	llmResponseBody, err := io.ReadAll(llmResp.Body)
 	if err != nil {
 		log.Printf("Error reading LLM response body: %v", err)
 		return
 	}
-
 	log.Printf("Final LLM response received: %s", string(llmResponseBody))
-
-	// --- Step 3: Send the final response back to the browser ---
 	log.Println("Sending response back to client...")
-	// We use WriteMessage to send the raw JSON bytes down the WebSocket.
 	if err := ws.WriteMessage(websocket.TextMessage, llmResponseBody); err != nil {
 		log.Printf("Error writing message back to client: %v", err)
 	}
 }
 
-// main starts the HTTP server.
 func main() {
-	// Create a new logger with a prefix for system events for better DX.
 	sysLog := log.New(os.Stdout, "[SYSTEM] ", log.LstdFlags)
-
 	http.HandleFunc("/ws", handleConnections)
 	sysLog.Println("Go WebSocket server starting on :8080")
 	err := http.ListenAndServe(":8080", nil)
