@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { AppProviders } from '@/components/layout/AppProviders';
+import { NavBar } from '@/components/ui/NavBar';
+import { ToastViewport } from '@/components/ui/Toasts';
 
 // Define the primary and monospaced fonts for the application
 const inter = Inter({
@@ -29,11 +32,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${inter.variable} ${jetbrains_mono.variable} font-sans antialiased`}
-      >
-        {/* The 'children' prop will be your page.tsx component */}
-        {children}
+      <body className={`${inter.variable} ${jetbrains_mono.variable} font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen`}>
+        <AppProviders>
+          <NavBar />
+          <main id="main" className="pt-2 pb-10">
+            {children}
+          </main>
+          <ToastViewport />
+        </AppProviders>
       </body>
     </html>
   );

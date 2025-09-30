@@ -7,8 +7,8 @@ import sys
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from transformers import AutoProcessor, AutoModelForSpeechSeq2Seq
 from openai import OpenAI
+from typing import Optional
 
 # Force all output streams to use UTF-8 encoding to prevent 'charmap' errors on Windows.
 if sys.stdout.encoding != 'utf-8':
@@ -27,15 +27,38 @@ except Exception as e:
     logging.warning(f"Failed to initialize Ollama client. Is Ollama running? Error: {e}")
     ollama_client = None
 
-logging.info("Loading STT model and processor (stable CPU configuration)...")
 device = "cpu"
-stt_processor = AutoProcessor.from_pretrained("openai/whisper-base")
-stt_model = AutoModelForSpeechSeq2Seq.from_pretrained("openai/whisper-base")
-stt_model.to(device)
-logging.info("STT model and processor loaded successfully.")
+stt_processor = None  # lazy init later
+stt_model = None      # lazy init later
+_stt_lock = asyncio.Lock()
+
+async def ensure_stt_loaded():
+    global stt_processor, stt_model
+    if stt_model is not None:
+        return
+    async with _stt_lock:
+        if stt_model is not None:
+            return
+        logging.info("Lazy loading Whisper STT model...")
+        from transformers import AutoProcessor, AutoModelForSpeechSeq2Seq  # type: ignore
+        local_proc = AutoProcessor.from_pretrained("openai/whisper-base")
+        local_model = AutoModelForSpeechSeq2Seq.from_pretrained("openai/whisper-base")
+        local_model.to(device)
+        stt_processor = local_proc
+        stt_model = local_model
+        logging.info("STT model ready.")
 
 # --- FastAPI App & Data Models ---
 app = FastAPI(title="Nargis AI Service")
+
+# --- Routers (REST CRUD Phase P2) ---
+from routers import tasks as tasks_router  # type: ignore
+from routers import habits as habits_router  # type: ignore
+from routers import pomodoro as pomodoro_router  # type: ignore
+
+app.include_router(tasks_router.router)
+app.include_router(habits_router.router)
+app.include_router(pomodoro_router.router)
 class LLMRequest(BaseModel):
     text: str
 
@@ -60,29 +83,24 @@ def convert_audio_to_wav_sync(audio_bytes: bytes) -> bytes:
 
 def run_stt_inference_sync(wav_audio_bytes: bytes) -> str:
     logging.info("Running STT inference with model.generate()...")
+    assert stt_processor is not None and stt_model is not None, "STT model not loaded"
     waveform, sample_rate = sf.read(io.BytesIO(wav_audio_bytes))
-    
     inputs = stt_processor(
-        waveform, 
-        sampling_rate=sample_rate, 
+        waveform,
+        sampling_rate=sample_rate,
         return_tensors="pt"
     )
     input_features = inputs.input_features.to(device)
     attention_mask = inputs.get("attention_mask")
     if attention_mask is not None:
         attention_mask = attention_mask.to(device)
-
-    # We provide the model with explicit instructions on its task and language.
     forced_decoder_ids = stt_processor.get_decoder_prompt_ids(language="english", task="transcribe")
-
     predicted_ids = stt_model.generate(
         input_features,
         attention_mask=attention_mask,
         forced_decoder_ids=forced_decoder_ids
     )
-
     transcription = stt_processor.batch_decode(predicted_ids, skip_special_tokens=True)[0]
-    
     logging.info(f"Transcription complete: '{transcription}'")
     return transcription
 
@@ -116,10 +134,12 @@ async def speech_to_text(audio_file: UploadFile = File(...)):
     audio_bytes = await audio_file.read()
     loop = asyncio.get_running_loop()
     try:
+        await ensure_stt_loaded()
         wav_audio_bytes = await loop.run_in_executor(None, convert_audio_to_wav_sync, audio_bytes)
         transcribed_text = await loop.run_in_executor(None, run_stt_inference_sync, wav_audio_bytes)
         return {"text": transcribed_text}
     except Exception as e:
+        logging.exception("STT processing failed")
         return {"error": str(e)}
 
 @app.post("/llm")
