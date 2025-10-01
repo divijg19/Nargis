@@ -12,6 +12,7 @@
 .idea/
 .vscode/
 !.vscode/settings.json # Optional: keep if you want to share settings
+AGENTS.md
 
 # Environment variables
 .env*

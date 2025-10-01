@@ -60,6 +60,7 @@
 .turbo/daemon/27d391d570c8249d-turbo.log.2025-10-01
 .vscode/settings.json
 AGENTS.md
+Codebase.txt
 README.md
 apps/api-go/Dockerfile
 apps/api-go/README.md
