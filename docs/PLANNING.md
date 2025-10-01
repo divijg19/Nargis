@@ -1,74 +1,352 @@
-# 📊 Compact Tech Stack Table
+# 📋 Project Planning – Nargis
 
-| Layer / Domain            | Final Choice (Optimal)                                                                                                                                   | Notes / Why Chosen                                                             |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| **Frontend (UI + Voice)** | React + TypeScript + Tailwind <br> WebRTC (audio) <br> WebSockets (data)                                                                                 | Familiar stack, recruiter-friendly, WebRTC for voice, WebSockets for live sync |
-| **Backend (Core)**        | Go (Voice Gateway, real-time streaming) <br> Python (FastAPI microservices for AI/ML)                                                                    | Showcases both Go concurrency + Python AI/ML strength                          |
-| **Event & Context**       | Redis Streams (event bus) <br> Redis (session + cache) <br> Context Manager (Python)                                                                     | Lightweight, reliable fan-out + unified brain service                          |
-| **Database Layer**        | PostgreSQL (relational) <br> pgvector (embeddings) <br> TimescaleDB (optional metrics)                                                                   | Solid RDBMS, vector search, time-series support                                |
-| **AI / ML Layer**         | Whisper (STT, streaming) <br> ElevenLabs (TTS, fallback: Coqui/Piper) <br> OpenAI GPT (LLM, fallback: Llama/Claude) <br> OpenAI/HF embeddings (pgvector) | Cloud-first for UX, local fallbacks for privacy demo                           |
-| **Integrations**          | Google Sheets (bi-directional sync) <br> Google Calendar (two-way) <br> Notion (optional)                                                                | Practical productivity integrations, easy demo value                           |
-| **Security**              | OAuth2 (Google) <br> JWT API sessions <br> TLS + KMS <br> Optional client-side/E2E encryption                                                            | Standard, portfolio-safe, privacy-first features                               |
-| **DevOps & Deployment**   | Docker + Compose (dev) <br> Fly.io / Render / ECS (prod) <br> GitHub Actions CI/CD <br> OpenTelemetry + Sentry                                           | MVP → scalable growth path                                                     |
-| **Optional Stretch**      | Pinecone/Weaviate (vector DB at scale) <br> Mojo (ML inference) <br> Rust (perf hotspots)                                                                | Reserved for scale/performance or advanced demos                               |
+## Vision Statement
+
+**Nargis** is an AI-powered productivity platform that combines task management, habit tracking, and intelligent assistance into a seamless, voice-enhanced experience. Built to showcase modern full-stack development with real-time architecture and AI/ML integration.
 
 ---
 
-# ✅ Stack → Implementation Map
+## Project Goals
 
-### **1. Frontend**
+### Primary Objectives
+1. **Portfolio Showcase**: Demonstrate full-stack + AI/ML engineering capabilities
+2. **Real-World Utility**: Build a tool that's genuinely useful for personal productivity
+3. **Modern Patterns**: Implement current best practices in web development
+4. **Scalable Architecture**: Design for future growth and feature expansion
 
-* [ ] Setup React + TS + Tailwind project (Vite/Next.js)
-* [ ] Implement WebRTC microphone capture & audio streaming to Go gateway
-* [ ] Implement WebSockets connection for live updates (tasks, journals, habits)
-* [ ] Build basic UI: task list, journal editor, habit tracker (real-time updates)
+### Technical Goals
+- Master Next.js 15 with App Router and React Server Components
+- Build production-grade FastAPI services
+- Implement real-time features with WebSockets
+- Integrate AI/ML models (Whisper, LLMs) effectively
+- Demonstrate polyglot architecture (TypeScript, Python, Go)
 
-### **2. Backend (Core)**
+---
 
-* [ ] Go service: WebRTC signaling + audio gateway (streaming audio → STT microservice)
-* [ ] Go service: WebSocket server for pushing live updates to clients
-* [ ] Python (FastAPI): AI orchestration service (STT → LLM → TTS, journaling, task mgmt logic)
+## Target Audience
 
-### **3. Event & Context**
+### Primary Users
+- **Self**: Personal productivity tool for daily use
+- **Recruiters**: Technical showcase for job applications
+- **Developers**: Open-source inspiration and learning resource
 
-* [ ] Deploy Redis instance (with Streams enabled)
-* [ ] Build Context Manager microservice (Python) to unify voice/web/sheets changes into single context state
-* [ ] Pub/Sub events: “task\_update”, “journal\_update”, “habit\_update”, “voice\_transcript”
+### User Personas
 
-### **4. Database Layer**
+#### Persona 1: Busy Professional
+- Needs quick task capture and organization
+- Values streak tracking for habit building
+- Uses Pomodoro for focused work sessions
+- Wants insights into productivity patterns
 
-* [ ] Setup PostgreSQL with pgvector extension
-* [ ] Define schema: users, tasks, journals, habits, embeddings, sync logs
-* [ ] Build basic ORM models (SQLAlchemy or Prisma if TS service joins later)
+#### Persona 2: Developer/Student
+- Needs project and learning task management
+- Tracks coding habits and study sessions
+- Uses timer for deep work
+- Interested in AI-powered suggestions
 
-### **5. AI / ML Layer**
+---
 
-* [ ] Integrate Whisper (STT) with streaming chunks
-* [ ] Integrate OpenAI GPT for LLM calls (journal insights, task suggestions, summaries)
-* [ ] Integrate ElevenLabs for natural voice TTS (streamed back to client)
-* [ ] Store embeddings in pgvector (for personalized retrieval, journaling insights)
+## Feature Roadmap
 
-### **6. Integrations**
+### ✅ Phase 1: Core MVP (Complete)
+**Timeline**: Weeks 1-15
 
-* [ ] Implement Google OAuth2 flow (Sheets/Calendar access)
-* [ ] Google Sheets bi-directional sync: detect edits → publish event → reflect in Postgres
-* [ ] Google Calendar sync: create/update events from tasks, listen for changes
+#### Features
+- Task management with CRUD operations
+- Habit tracking with streaks
+- Pomodoro timer with sessions
+- Dashboard with stats
+- Theme support (light/dark)
+- Toast notifications
+- Domain event system
+- Voice transcription (Whisper)
+- AI chat (Ollama)
 
-### **7. Security**
+#### Technical Achievements
+- Monorepo with Turborepo
+- Type-safe full-stack
+- Event-driven architecture
+- Optimistic UI patterns
+- Accessibility foundations
 
-* [ ] Setup OAuth2 login (Google) + JWT issuance for frontend API calls
-* [ ] Enforce TLS in all connections (use dev cert locally, Let’s Encrypt in prod)
-* [ ] Add journal encryption option (e.g., AES keys derived client-side)
+---
 
-### **8. DevOps**
+### 🔨 Phase 2: Data Persistence (Current)
+**Timeline**: Weeks 16-20
 
-* [ ] Dockerize Go gateway, Python AI service, Context Manager, Postgres, Redis
-* [ ] Write Docker Compose config for local dev
-* [ ] Setup CI/CD with GitHub Actions (lint, test, build, deploy to Fly.io/Render)
-* [ ] Setup observability: request logging, error tracking (Sentry), metrics export (Prometheus/OpenTelemetry)
+#### Planned Features
+- PostgreSQL database integration
+- User authentication
+- Multi-user support
+- Data migrations
+- Backup and export
 
-### **9. Optional Stretch**
+#### Technical Goals
+- ORM integration (Prisma/SQLAlchemy)
+- Connection pooling
+- Transaction management
+- Security hardening
+- Environment configuration
 
-* [ ] Swap vector store from pgvector → Pinecone for scale demo
-* [ ] Experiment with local Llama + Coqui STT/TTS for privacy/offline mode
-* [ ] Profile Go service; rewrite bottlenecks in Rust if needed
+---
+
+### 📅 Phase 3: Enhanced AI (Planned)
+**Timeline**: Weeks 21-26
+
+#### Planned Features
+- **Natural Language Task Creation**: "Remind me to call mom tomorrow at 2pm"
+- **Voice-Driven Workflow**: Hands-free task and habit management
+- **AI Coaching**: Personalized productivity insights
+- **Smart Prioritization**: AI-suggested task ordering
+- **Habit Insights**: Pattern detection and recommendations
+- **Context-Aware Responses**: AI remembers your goals and preferences
+
+#### Technical Goals
+- Streaming LLM responses
+- Text-to-Speech integration
+- Vector embeddings for semantic search
+- RAG for personalized context
+- Fine-tuned models for productivity domain
+
+---
+
+### 📅 Phase 4: Integrations (Planned)
+**Timeline**: Weeks 27-32
+
+#### Planned Features
+- **Google Calendar**: Two-way sync for tasks and events
+- **Notion**: Export notes and journals
+- **Slack**: Task notifications and updates
+- **Email**: Digest reports and reminders
+- **Webhooks**: Custom automation
+
+#### Technical Goals
+- OAuth2 integration
+- Webhook system
+- API versioning
+- Rate limiting
+- Third-party SDK management
+
+---
+
+### 📅 Phase 5: Production Polish (Planned)
+**Timeline**: Weeks 33-38
+
+#### Planned Features
+- Mobile-optimized PWA
+- Offline mode with sync
+- Collaborative features
+- Analytics dashboard
+- Export/import data
+- Customizable workflows
+
+#### Technical Goals
+- Service workers
+- CDN optimization
+- Performance tuning
+- Security audit
+- Load testing
+- Documentation completion
+
+---
+
+## Architecture Overview
+
+### System Components
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     User Interfaces                     │
+│  Web App (Next.js) │ Mobile PWA │ Voice Interface       │
+└─────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────┐
+│                   API Gateway Layer                     │
+│        WebSocket Server (Go) │ REST API (FastAPI)      │
+└─────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────┐
+│                   Business Logic Layer                  │
+│  Task Service │ Habit Service │ Pomodoro Service        │
+│  Event Dispatcher │ Feature Flags                       │
+└─────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────┐
+│                      Data Layer                         │
+│  PostgreSQL │ Redis Cache │ File Storage                │
+└─────────────────────────────────────────────────────────┘
+                           ↓
+┌─────────────────────────────────────────────────────────┐
+│                   External Services                     │
+│  Whisper STT │ Ollama LLM │ Calendar APIs               │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Design Principles
+
+#### 1. Event-Driven Architecture
+- All state changes emit domain events
+- Loose coupling between features
+- Easy to add observers and side effects
+- Natural audit trail
+
+#### 2. Optimistic UI
+- Instant feedback for user actions
+- Background synchronization
+- Conflict resolution strategies
+- Graceful error recovery
+
+#### 3. Feature Flags
+- Progressive rollout of features
+- A/B testing capabilities
+- Easy rollback mechanism
+- Per-user or percentage-based
+
+#### 4. Type Safety
+- End-to-end TypeScript
+- Shared type definitions
+- Runtime validation with Pydantic
+- OpenAPI schema generation
+
+#### 5. Accessibility First
+- WCAG AA compliance target
+- Keyboard navigation
+- Screen reader support
+- High contrast modes
+
+---
+
+## Technical Decisions
+
+### Why Monorepo?
+- **Shared code**: Types, utilities, configs
+- **Atomic commits**: Change frontend + backend together
+- **Consistent tooling**: Single lint/format/test setup
+- **Easy refactoring**: IDE understands full codebase
+
+### Why Context API over Redux?
+- **Built-in**: No extra dependencies
+- **Sufficient scale**: App isn't overly complex
+- **Modern patterns**: Hooks + reducers provide Redux-like patterns
+- **Performance**: Context + memo handles our use case well
+
+### Why In-Memory First?
+- **Fast iteration**: No DB setup during prototyping
+- **Clear interfaces**: Repository pattern makes swap easy
+- **Easy testing**: No DB mocking needed initially
+- **Migration path**: Well-defined when ready for PostgreSQL
+
+### Why Lazy Load Whisper?
+- **Startup speed**: Dev server starts instantly
+- **Memory efficiency**: 2GB+ model only loaded when needed
+- **Better DX**: Iterate on UI without waiting for model
+- **Production ready**: Same pattern works in prod
+
+---
+
+## Success Criteria
+
+### MVP Success (✅ Achieved)
+- [x] Working task/habit/pomodoro features
+- [x] Voice transcription functional
+- [x] AI chat responding
+- [x] Real-time updates
+- [x] Clean, accessible UI
+- [x] Type-safe codebase
+
+### Production Success (🎯 Target)
+- [ ] 500+ lines of test coverage
+- [ ] Database persistence
+- [ ] User authentication
+- [ ] Deployed and accessible online
+- [ ] < 100ms API response time
+- [ ] Lighthouse score > 90
+- [ ] 10+ GitHub stars
+- [ ] Featured on personal portfolio
+
+### Career Success (🎯 Target)
+- [ ] Landed job interviews mentioning project
+- [ ] Demonstrated in technical interviews
+- [ ] Referenced in resume/cover letters
+- [ ] Contributed to open-source community
+- [ ] Learned and shipped AI/ML in production
+
+---
+
+## Risk Management
+
+### Technical Risks
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| AI model costs | High | Use local Ollama, cache responses |
+| WebSocket scaling | Medium | Start simple, add Redis pub/sub later |
+| Database performance | Medium | Proper indexing, query optimization |
+| Complex state management | Low | Keep contexts focused, use events |
+
+### Scope Risks
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| Feature creep | High | Strict sprint planning, MVP focus |
+| Over-engineering | Medium | Build for today, not future scale |
+| Perfectionism | Medium | Ship early, iterate based on feedback |
+| Burnout | Low | Consistent pace, celebrate wins |
+
+---
+
+## Learning Objectives
+
+### Core Skills to Develop
+- ✅ Next.js 15 App Router
+- ✅ React 19 patterns
+- ✅ Tailwind CSS v4
+- ✅ FastAPI async patterns
+- ✅ WebSocket real-time communication
+- ✅ AI/ML model integration
+- ⏳ PostgreSQL design
+- ⏳ Authentication & security
+- ⏳ Production deployment
+- ⏳ Monitoring & observability
+
+### Soft Skills
+- Product thinking and prioritization
+- Technical documentation
+- Code organization at scale
+- Performance optimization
+- User experience design
+
+---
+
+## Timeline Summary
+
+| Phase | Duration | Status | Key Deliverable |
+|-------|----------|--------|-----------------|
+| Phase 1: MVP | 15 weeks | ✅ Complete | Working productivity suite |
+| Phase 2: Persistence | 5 weeks | 🔨 Current | Database integration |
+| Phase 3: Enhanced AI | 6 weeks | 📅 Planned | Voice-driven workflows |
+| Phase 4: Integrations | 6 weeks | 📅 Planned | External service sync |
+| Phase 5: Polish | 6 weeks | 📅 Planned | Production-ready |
+
+**Total Estimated Timeline**: ~38 weeks (9 months)  
+**Current Progress**: Week 15 (~40% complete)
+
+---
+
+## Open Questions
+
+### Technical
+- [ ] Choose ORM: Prisma vs SQLAlchemy?
+- [ ] TTS provider: ElevenLabs vs open-source?
+- [ ] Hosting: Vercel + Fly.io vs all Render?
+- [ ] Monitoring: Self-hosted vs SaaS?
+
+### Product
+- [ ] Monetization strategy (if any)?
+- [ ] Mobile app or PWA sufficient?
+- [ ] Collaborative features priority?
+- [ ] Target launch date?
+
+---
+
+*Last updated: October 2025*

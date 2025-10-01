@@ -1,102 +1,130 @@
 "use client";
 
-import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { DashboardCard } from "@/components/ui/DashboardCard";
+import HabitModal from "@/components/ui/HabitModal";
 import { StatCard } from "@/components/ui/StatCard";
+import { TaskModal } from "@/components/ui/TaskModal";
 import { TaskPreview } from "@/components/ui/TaskPreview";
 import { useHabitStore } from "@/contexts/HabitContext";
 import { usePomodoroStore } from "@/contexts/PomodoroContext";
 import { useTaskStore } from "@/contexts/TaskContext";
+import type { CreateHabitRequest, CreateTaskRequest } from "@/types";
 
 function DashboardContent() {
-    const { todayTasks, completedToday, tasksByStatus, toggleTask, loadTasks } =
-        useTaskStore();
-
-    const { totalStreaks } = useHabitStore();
+    const {
+        todayTasks,
+        completedToday,
+        tasksByStatus,
+        toggleTask,
+        loadTasks,
+        addTask,
+    } = useTaskStore();
+    const { totalStreaks, addHabit } = useHabitStore();
     const { todaySessionsCount } = usePomodoroStore();
+    const router = useRouter();
+
+    const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+    const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
 
     useEffect(() => {
         loadTasks();
     }, [loadTasks]);
 
+    const handleCreateTask = (taskData: CreateTaskRequest) => {
+        addTask(taskData);
+    };
+
+    const handleCreateHabit = (habitData: CreateHabitRequest) => {
+        addHabit(habitData);
+    };
+
+    const handleStartFocus = () => {
+        router.push("/pomodoro");
+    };
+
     const weeklyProgress = Math.round(
         (completedToday / Math.max(todayTasks.length, 1)) * 100,
     );
 
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return "Good morning";
+        if (hour < 18) return "Good afternoon";
+        return "Good evening";
+    };
+
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div className="min-h-screen">
+            {/* Hero Header */}
+            <header className="mb-8">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center py-6">
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                                Welcome back!
-                            </h1>
-                            <p className="text-gray-600 dark:text-gray-400 mt-1">
-                                Here's your productivity overview
-                            </p>
-                        </div>
+                    <div className="py-6">
+                        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-3 animate-fade-in">
+                            {getGreeting()}! 👋
+                        </h1>
+                        <p className="text-lg text-gray-600 dark:text-gray-400 animate-slide-up">
+                            Here's your productivity overview for today
+                        </p>
                     </div>
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pb-8">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                    <StatCard title="Tasks Completed" value={completedToday} icon="✅" />
                     <StatCard
-                        title="Tasks Completed Today"
-                        value={completedToday}
-                        icon="✅"
-                    />
-                    <StatCard
-                        title="Pomodoros Completed"
+                        title="Focus Sessions"
                         value={todaySessionsCount}
                         icon="🍅"
                     />
-                    <StatCard title="Total Streaks" value={totalStreaks} icon="🔥" />
+                    <StatCard title="Active Streaks" value={totalStreaks} icon="🔥" />
                     <StatCard
-                        title="Weekly Goal"
+                        title="Weekly Progress"
                         value={`${weeklyProgress}%`}
                         icon="📊"
                     />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                {/* Main Content Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+                    {/* Quick Actions */}
                     <DashboardCard title="Quick Actions" className="lg:col-span-1">
                         <div className="space-y-3">
                             <ActionButton
                                 icon="➕"
-                                label="Add Task"
+                                label="Create Task"
                                 variant="primary"
-                                onClick={() => console.log("Add task clicked")}
+                                onClick={() => setIsTaskModalOpen(true)}
                                 className="w-full"
-                            />{" "}
-                            {/* TODO: Hook up to task creation modal */}
+                            />
                             <ActionButton
                                 icon="🍅"
-                                label="Start Focus"
+                                label="Start Focus Session"
                                 variant="secondary"
-                                onClick={() => console.log("Start focus clicked")}
+                                onClick={handleStartFocus}
                                 className="w-full"
-                            />{" "}
-                            {/* TODO: Open Pomodoro panel inline */}
+                            />
                             <ActionButton
                                 icon="⚡"
-                                label="Track Habit"
+                                label="Log Habit"
                                 variant="secondary"
-                                onClick={() => console.log("Track habit clicked")}
+                                onClick={() => setIsHabitModalOpen(true)}
                                 className="w-full"
-                            />{" "}
-                            {/* TODO: Increment selected habit */}
+                            />
                         </div>
                     </DashboardCard>
 
+                    {/* Today's Tasks */}
                     <DashboardCard
                         title="Today's Tasks"
                         className="lg:col-span-2"
                         headerAction={
-                            <span className="text-sm text-gray-500 dark:text-gray-400">
-                                {todayTasks.length} tasks
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                {todayTasks.length} {todayTasks.length === 1 ? "task" : "tasks"}
                             </span>
                         }
                     >
@@ -108,37 +136,66 @@ function DashboardContent() {
                     </DashboardCard>
                 </div>
 
-                <div className="grid grid-cols-1 gap-8">
-                    <DashboardCard title="Task Overview">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="text-center">
-                                <div className="text-2xl font-bold text-gray-600 dark:text-gray-300">
-                                    {tasksByStatus.todo.length}
-                                </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                    To Do
-                                </div>
+                {/* Task Overview */}
+                <DashboardCard title="Task Status Overview">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                        <div className="text-center p-6 rounded-xl bg-gray-50 dark:bg-gray-700/30 transition-all hover:shadow-md">
+                            <div className="text-4xl font-bold text-gray-700 dark:text-gray-300 mb-2 tabular-nums">
+                                {tasksByStatus.todo.length}
                             </div>
-                            <div className="text-center">
-                                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                                    {tasksByStatus.inProgress.length}
-                                </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                    In Progress
-                                </div>
+                            <div className="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                                To Do
                             </div>
-                            <div className="text-center">
-                                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                                    {tasksByStatus.done.length}
-                                </div>
-                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                    Completed
-                                </div>
+                            <div className="mt-2 w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                                <div
+                                    className="bg-gray-500 dark:bg-gray-400 h-2 rounded-full"
+                                    style={{ width: "100%" }}
+                                />
                             </div>
                         </div>
-                    </DashboardCard>
-                </div>
+                        <div className="text-center p-6 rounded-xl bg-blue-50 dark:bg-blue-900/20 transition-all hover:shadow-md">
+                            <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2 tabular-nums">
+                                {tasksByStatus.inProgress.length}
+                            </div>
+                            <div className="text-sm font-medium text-blue-700 dark:text-blue-300 uppercase tracking-wide">
+                                In Progress
+                            </div>
+                            <div className="mt-2 w-full bg-blue-200 dark:bg-blue-800/30 rounded-full h-2">
+                                <div
+                                    className="bg-blue-500 h-2 rounded-full"
+                                    style={{ width: "100%" }}
+                                />
+                            </div>
+                        </div>
+                        <div className="text-center p-6 rounded-xl bg-green-50 dark:bg-green-900/20 transition-all hover:shadow-md">
+                            <div className="text-4xl font-bold text-green-600 dark:text-green-400 mb-2 tabular-nums">
+                                {tasksByStatus.done.length}
+                            </div>
+                            <div className="text-sm font-medium text-green-700 dark:text-green-300 uppercase tracking-wide">
+                                Completed
+                            </div>
+                            <div className="mt-2 w-full bg-green-200 dark:bg-green-800/30 rounded-full h-2">
+                                <div
+                                    className="bg-green-500 h-2 rounded-full"
+                                    style={{ width: "100%" }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </DashboardCard>
             </main>
+
+            {/* Modals */}
+            <TaskModal
+                isOpen={isTaskModalOpen}
+                onClose={() => setIsTaskModalOpen(false)}
+                onSubmit={handleCreateTask}
+            />
+            <HabitModal
+                isOpen={isHabitModalOpen}
+                onClose={() => setIsHabitModalOpen(false)}
+                onSubmit={handleCreateHabit}
+            />
         </div>
     );
 }

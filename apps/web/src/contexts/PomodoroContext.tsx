@@ -437,11 +437,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
             emitDomainEvent(
                 buildEvent("pomodoro.sessions.synced", { count: sessions.length }),
             );
-            push({
-                title: "Pomodoro Synced",
-                message: `${sessions.length} sessions`,
-                variant: "info",
-            });
+            // Silent load - no toast notification to avoid spam
         } catch (error) {
             console.error("Failed to load pomodoro sessions:", error);
             push({
