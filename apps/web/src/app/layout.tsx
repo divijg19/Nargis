@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { AppProviders } from '@/components/layout/AppProviders';
-import { NavBar } from '@/components/ui/NavBar';
-import { ToastViewport } from '@/components/ui/Toasts';
+import { AppProviders } from "@/components/layout/AppProviders";
+import { Footer } from "@/components/ui/Footer";
+import { NavBar } from "@/components/ui/NavBar";
+import { ToastViewport } from "@/components/ui/Toasts";
 
 // Define the primary and monospaced fonts for the application
 const inter = Inter({
@@ -32,12 +33,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${jetbrains_mono.variable} font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen`}>
+      <body
+        className={`${inter.variable} ${jetbrains_mono.variable} font-sans antialiased bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 text-gray-900 dark:text-gray-100 min-h-screen`}
+      >
         <AppProviders>
           <NavBar />
-          <main id="main" className="pt-2 pb-10">
+          <main id="main" className="pt-20 pb-24 min-h-screen">
             {children}
           </main>
+          <Footer />
           <ToastViewport />
         </AppProviders>
       </body>

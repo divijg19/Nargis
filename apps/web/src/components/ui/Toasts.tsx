@@ -5,7 +5,7 @@ import { useToasts } from '@/contexts/ToastContext';
 export function ToastViewport() {
     const { toasts, dismiss } = useToasts();
     return (
-        <div className="fixed bottom-4 right-4 flex flex-col gap-2 z-50 max-w-sm">
+        <div className="fixed top-20 right-4 flex flex-col gap-2 z-50 max-w-sm">
             {toasts.map(t => (
                 <div key={t.id} className={`rounded-md shadow px-4 py-3 text-sm border bg-white dark:bg-gray-800 flex items-start gap-3 ${variantClass(t.variant)}`}>
                     <div className="flex-1">

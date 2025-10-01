@@ -7,22 +7,29 @@
 .DS_Store
 .AppleDouble
 .LSOverride
+Thumbs.db
 
 # IDEs
 .idea/
 .vscode/
-!.vscode/settings.json # Optional: keep if you want to share settings
+!.vscode/settings.json
 AGENTS.md
 
 # Environment variables
-.env*
-!/.env.example
+.env
+.env.*
+!.env.example
 
 # Logs & Caches
 logs/
 *.log
 .eslintcache
 .cache/
+
+# Backups
+*.old.*
+*.backup
+*.bak
 
 # ----------------------------------------------------------------
 # JavaScript / Bun / Node
@@ -37,6 +44,7 @@ bun.lockb
 dist/
 out/
 build/
+.turbo/
 
 # Testing
 coverage/
@@ -47,7 +55,52 @@ coverage/
 # ----------------------------------------------------------------
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .venv/
+venv/
+env/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ----------------------------------------------------------------
+# Go
+# ----------------------------------------------------------------
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# ----------------------------------------------------------------
+# Database & Storage
+# ----------------------------------------------------------------
+*.db
+*.sqlite
+*.sqlite3
+data/
+pgdata/
+
+# ----------------------------------------------------------------
+# Secrets & Credentials
+# ----------------------------------------------------------------
+*.pem
+*.key
+*.cert
+secrets/
+credentials/
+
+# ----------------------------------------------------------------
+# Misc
+# ----------------------------------------------------------------
+Codebase.txt
 venv/
 
 # ----------------------------------------------------------------

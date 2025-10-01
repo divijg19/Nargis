@@ -204,11 +204,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         try {
             const tasks = await listTasks();
             dispatch({ type: "SET_TASKS", payload: tasks });
-            push({
-                title: "Tasks Synced",
-                message: `${tasks.length} loaded`,
-                variant: "info",
-            });
+            // Silent load - no toast notification to avoid spam
         } catch (error) {
             console.error("Failed to load tasks:", error);
             dispatch({ type: "SET_LOADING", payload: false });

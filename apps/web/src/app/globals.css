@@ -6,6 +6,20 @@
   /* Font variables are injected by next/font in layout.tsx */
   --font-sans: var(--font-inter);
   --font-mono: var(--font-jetbrains-mono);
+  
+  /* Spacing & Layout */
+  --nav-height: 3.5rem;
+  --content-max-width: 80rem;
+  
+  /* Transitions */
+  --transition-fast: 150ms;
+  --transition-base: 200ms;
+  --transition-slow: 300ms;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
 @theme inline {
@@ -19,7 +33,19 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --shadow-sm: 0 1px 2px 0 rgb(255 255 255 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(255 255 255 / 0.05);
+    --shadow-lg: 0 10px 15px -3px rgb(255 255 255 / 0.05);
   }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  transition: background-color 200ms ease-in-out, color 200ms ease-in-out;
 }
 
 body {
@@ -27,21 +53,165 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  min-height: 100vh;
+  transition: background-color 200ms ease-in-out, color 200ms ease-in-out;
 }
 
 /* Focus styles - ensure visible outlines for accessibility */
 :focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid #3b82f6;
   outline-offset: 2px;
+  border-radius: 4px;
 }
 
-/* Dark mode scrollbar (subtle) */
+/* Selection styling */
+::selection {
+  background-color: #3b82f6;
+  color: white;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
 @media (prefers-color-scheme: dark) {
-  ::-webkit-scrollbar {
-    width: 10px;
+  ::-webkit-scrollbar-track {
+    background: #111827;
   }
-  ::-webkit-scrollbar-track { background: #111827; }
-  ::-webkit-scrollbar-thumb { background: #374151; border-radius: 6px; }
-  ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+  ::-webkit-scrollbar-thumb {
+    background: #374151;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #4b5563;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--transition-base) ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp var(--transition-base) ease-out;
+}
+
+.animate-slide-down {
+  animation: slideDown var(--transition-base) ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn var(--transition-base) ease-out;
+}
+
+/* Utility classes */
+.transition-all {
+  transition-property: all;
+  transition-duration: var(--transition-base);
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift {
+  transition: transform var(--transition-fast) ease, box-shadow var(--transition-fast) ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Glass morphism - with explicit dark mode support */
+.glass {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background-color 200ms ease-in-out;
+}
+
+.dark .glass {
+  background: rgba(17, 24, 39, 0.95);
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not(.light) .glass {
+    background: rgba(17, 24, 39, 0.95);
+  }
+}
+
+/* Page transitions */
+@layer utilities {
+  .page-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .section-spacing {
+    @apply space-y-8;
+  }
 }

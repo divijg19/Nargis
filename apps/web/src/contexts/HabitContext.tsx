@@ -251,11 +251,7 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
         try {
             const habits = await listHabits();
             dispatch({ type: "SET_HABITS", payload: habits });
-            push({
-                title: "Habits Synced",
-                message: `${habits.length} loaded`,
-                variant: "info",
-            });
+            // Silent load - no toast notification to avoid spam
         } catch (error) {
             console.error("Failed to load habits:", error);
             dispatch({ type: "SET_LOADING", payload: false });
