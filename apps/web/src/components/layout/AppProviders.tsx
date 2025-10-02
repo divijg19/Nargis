@@ -9,17 +9,17 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
-    return (
-        <ThemeProvider>
-            <ToastProvider>
-                <RealtimeProvider>
-                    <TaskProvider>
-                        <HabitProvider>
-                            <PomodoroProvider>{children}</PomodoroProvider>
-                        </HabitProvider>
-                    </TaskProvider>
-                </RealtimeProvider>
-            </ToastProvider>
-        </ThemeProvider>
-    );
+  return (
+    <ThemeProvider>
+      <ToastProvider>
+        <RealtimeProvider>
+          <TaskProvider>
+            <HabitProvider>
+              <PomodoroProvider>{children}</PomodoroProvider>
+            </HabitProvider>
+          </TaskProvider>
+        </RealtimeProvider>
+      </ToastProvider>
+    </ThemeProvider>
+  );
 }
