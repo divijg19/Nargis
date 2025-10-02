@@ -20,17 +20,7 @@
 .turbo/cache/e459638290551847.tar.zst
 .turbo/cookies/10.cookie
 .turbo/cookies/11.cookie
-.turbo/cookies/12.cookie
-.turbo/cookies/13.cookie
-.turbo/cookies/14.cookie
-.turbo/cookies/15.cookie
-.turbo/cookies/16.cookie
-.turbo/cookies/17.cookie
-.turbo/cookies/18.cookie
-.turbo/cookies/19.cookie
 .turbo/cookies/2.cookie
-.turbo/cookies/20.cookie
-.turbo/cookies/21.cookie
 .turbo/cookies/3.cookie
 .turbo/cookies/4.cookie
 .turbo/cookies/5.cookie

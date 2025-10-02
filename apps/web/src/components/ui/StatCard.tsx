@@ -2,37 +2,43 @@ import type { StatCardProps } from "@/types";
 import { cn } from "@/utils";
 
 /**
- * Statistics display card component with enhanced visuals and depth
- * Converted from Vue StatCard.vue
+ * Premium statistics display card with voice-first design
+ * Enhanced with glass morphism and fluid animations
  */
 export function StatCard({ title, value, icon, className }: StatCardProps) {
-    return (
-        <div
-            className={cn(
-                "group relative bg-gradient-to-br from-white/90 to-gray-50/90 dark:from-gray-800/90 dark:to-gray-850/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/60 dark:border-gray-700/60 p-6 transition-all duration-300 hover:shadow-xl hover:shadow-gray-200/50 dark:hover:shadow-gray-900/50 hover:scale-[1.02] hover:-translate-y-1 animate-scale-in overflow-hidden",
-                className,
-            )}
-        >
-            {/* Animated gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+  return (
+    <div
+      className={cn(
+        "group relative glass bg-card/90 backdrop-blur-xl rounded-2xl shadow-lg border border-border p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20 hover:scale-105 hover:border-primary/40 animate-scale-in overflow-hidden",
+        className,
+      )}
+    >
+      {/* Premium animated gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/10 to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-            <div className="relative z-10 flex items-center justify-between">
-                <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
-                        {title}
-                    </p>
-                    <p className="text-4xl font-bold text-gray-900 dark:text-white tabular-nums tracking-tight">
-                        {value}
-                    </p>
-                </div>
-                <div className="flex-shrink-0 ml-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                        <span className="text-2xl" aria-hidden="true">
-                            {icon}
-                        </span>
-                    </div>
-                </div>
-            </div>
+      <div className="relative z-10 flex items-center justify-between">
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-muted-foreground mb-2.5 uppercase tracking-wider">
+            {title}
+          </p>
+          <p className="text-4xl font-bold bg-gradient-brand bg-clip-text text-transparent tabular-nums tracking-tight">
+            {value}
+          </p>
         </div>
-    );
+        <div className="flex-shrink-0 ml-4">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-brand flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
+              <span className="text-2xl" aria-hidden="true">
+                {icon}
+              </span>
+            </div>
+            <div
+              className="absolute inset-0 rounded-2xl bg-gradient-brand opacity-20 blur-lg scale-110 group-hover:opacity-30 transition-opacity duration-300"
+              aria-hidden="true"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
