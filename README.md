@@ -112,20 +112,39 @@ Nargis/
 ### Quick Start
 
 ```bash
-# Clone the repository
+## Clone the repository
 git clone https://github.com/divijg19/Nargis.git
 cd Nargis
 
-# Install dependencies
+## Install dependencies
 bun install
 
-# Start all services concurrently
-bun run dev
+## Local development environment
+Copy the frontend example env and adjust if needed:
 
-# Or start individually:
+```bash
+cp apps/web/.env.example apps/web/.env.local
+# edit apps/web/.env.local if you need to change ports or hostnames
+```
+
+Start all services concurrently:
+
+```bash
+bun run dev
+```
+
+Or start individually (services read configuration from environment variables):
+
+```bash
+# Frontend
 bun run dev:web      # Next.js on http://localhost:3000
+
+# Python API (reads env vars, default localhost:8000)
 bun run dev:api-py   # FastAPI on http://localhost:8000
+
+# Go WebSocket (reads STT_URL/LLM_URL env vars; default ws://localhost:8080)
 bun run dev:api-go   # Go WebSocket on ws://localhost:8080
+```
 ```
 
 ### Available Commands

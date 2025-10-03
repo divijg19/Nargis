@@ -1,0 +1,9 @@
+fastapi>=0.118.0
+hf-xet>=1.1.10
+openai>=2.1.0
+python-dotenv>=1.1.1
+python-multipart>=0.0.20
+soundfile>=0.13.1
+torch>=2.8.0
+transformers>=4.56.2
+uvicorn>=0.37.0

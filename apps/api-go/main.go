@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -73,8 +74,13 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 }
 
 func transcribeAndProcess(audioData []byte, ws *websocket.Conn) {
-	// ... (The rest of this function is unchanged and correct)
-	sttURL := "http://localhost:8000/stt"
+	// Resolve backend URLs from environment for production deploys.
+	// STT_URL and LLM_URL should be set to the Python service base (e.g. https://api.example.com)
+	sttBase := os.Getenv("STT_URL")
+	if sttBase == "" {
+		sttBase = "http://localhost:8000"
+	}
+	sttURL := strings.TrimRight(sttBase, "/") + "/stt"
 	sttBody := &bytes.Buffer{}
 	sttWriter := multipart.NewWriter(sttBody)
 	part, err := sttWriter.CreateFormFile("audio_file", "audio.webm")
@@ -116,7 +122,11 @@ func transcribeAndProcess(audioData []byte, ws *websocket.Conn) {
 		log.Println("Transcription is empty, stopping pipeline.")
 		return
 	}
-	llmURL := "http://localhost:8000/llm"
+	llmBase := os.Getenv("LLM_URL")
+	if llmBase == "" {
+		llmBase = sttBase
+	}
+	llmURL := strings.TrimRight(llmBase, "/") + "/llm"
 	llmReqPayload := LlmRequest{Text: transcribedText}
 	jsonPayload, err := json.Marshal(llmReqPayload)
 	if err != nil {

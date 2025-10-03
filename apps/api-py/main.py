@@ -4,11 +4,16 @@ import soundfile as sf
 import subprocess
 import asyncio
 import sys
-from fastapi import FastAPI, UploadFile, File
+import os
+import uuid
+from typing import Optional, List
+from contextvars import ContextVar
+from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
-from typing import Optional
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 # Force all output streams to use UTF-8 encoding to prevent 'charmap' errors on Windows.
 if sys.stdout.encoding != 'utf-8':
@@ -16,8 +21,19 @@ if sys.stdout.encoding != 'utf-8':
 if sys.stderr.encoding != 'utf-8':
     sys.stderr.reconfigure(encoding='utf-8')
 
-# Configure logging for better Developer Experience (DX)
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - [%(levelname)s] - %(message)s')
+request_id_ctx: ContextVar[str] = ContextVar("request_id", default="-")
+
+class RequestIdFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:  # type: ignore
+        record.request_id = request_id_ctx.get("-")  # type: ignore
+        return True
+
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format='%(asctime)s %(levelname)s request_id=%(request_id)s %(message)s'
+)
+logging.getLogger().addFilter(RequestIdFilter())
 
 # --- AI Model & API Client Setup ---
 try:
@@ -51,6 +67,17 @@ async def ensure_stt_loaded():
 # --- FastAPI App & Data Models ---
 app = FastAPI(title="Nargis AI Service")
 
+class CorrelationIdMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):  # type: ignore
+        # Propagate X-Request-ID or create one
+        rid = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+        request_id_ctx.set(rid)
+        response: Response = await call_next(request)
+        response.headers["X-Request-ID"] = rid
+        return response
+
+app.add_middleware(CorrelationIdMiddleware)
+
 # --- Routers (REST CRUD Phase P2) ---
 from routers import tasks as tasks_router  # type: ignore
 from routers import habits as habits_router  # type: ignore
@@ -63,8 +90,21 @@ class LLMRequest(BaseModel):
     text: str
 
 # --- Middleware (CORS) ---
-origins = ["http://localhost:3000"]
-app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+def parse_origins(value: Optional[str]) -> List[str]:
+    if not value:
+        return ["http://localhost:3000"]
+    parts = [p.strip() for p in value.split(",") if p.strip()]
+    return parts or ["http://localhost:3000"]
+
+allowed_origins = parse_origins(os.getenv("ALLOWED_ORIGINS"))
+logging.info(f"CORS allow_origins={allowed_origins}")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- CPU-Bound Helper Functions ---
 def convert_audio_to_wav_sync(audio_bytes: bytes) -> bytes:
@@ -129,6 +169,17 @@ def run_llm_sync(text: str) -> dict:
 async def health():
     return {"status": "ok"}
 
+@app.get("/ready")
+async def ready():
+    # Do NOT force heavy model load unless explicitly requested to avoid cold start penalty.
+    stt_loaded = stt_model is not None
+    ollama_ok = ollama_client is not None
+    return {
+        "status": "ready" if (ollama_ok) else "degraded",
+        "sttLoaded": stt_loaded,
+        "ollamaClient": ollama_ok,
+    }
+
 @app.post("/stt")
 async def speech_to_text(audio_file: UploadFile = File(...)):
     audio_bytes = await audio_file.read()
@@ -150,3 +201,13 @@ async def process_llm(request: LLMRequest):
         return response_data
     except Exception as e:
         return {"error": str(e)}
+
+@app.on_event("startup")
+async def maybe_preload():
+    # Optional preload for STT to reduce first-request latency; controlled via env.
+    if os.getenv("PRELOAD_STT", "false").lower() in {"1", "true", "yes"}:
+        try:
+            await ensure_stt_loaded()
+            logging.info("STT model preloaded at startup")
+        except Exception as e:
+            logging.warning(f"Failed to preload STT model: {e}")

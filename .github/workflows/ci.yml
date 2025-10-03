@@ -1,0 +1,53 @@
+name: CI - Build & Scan
+
+on:
+  push:
+    branches: [main, feature/*]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build api-py image
+        run: |
+          docker build -t nargis-api-py:ci ./apps/api-py
+
+      - name: Build api-go image
+        run: |
+          docker build -t nargis-api-go:ci ./apps/api-go
+
+      - name: Install Trivy
+        uses: aquasecurity/trivy-action
+
+      - name: Scan api-py image with Trivy (fail on HIGH/CRITICAL)
+        run: trivy image --severity HIGH,CRITICAL nargis-api-py:ci
+
+      - name: Scan api-go image with Trivy (fail on HIGH/CRITICAL)
+        run: trivy image --severity HIGH,CRITICAL nargis-api-go:ci
+
+      - name: Run go vet
+        run: |
+          cd apps/api-go
+          go vet ./...
+
+      - name: Install pip-audit
+        run: python -m pip install pip-audit
+
+      - name: Run pip-audit on api-py requirements
+        run: pip-audit -r apps/api-py/requirements.txt
+
+      - name: Smoke test readiness endpoint
+        run: |
+          docker run -d --name api-py-test -p 8000:8000 nargis-api-py:ci
+          sleep 5
+          curl -f http://127.0.0.1:8000/ready | tee ready.json
+          grep '"status"' ready.json
+          docker logs api-py-test | tail -n 50
+          docker rm -f api-py-test

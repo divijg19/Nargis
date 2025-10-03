@@ -1,0 +1,18 @@
+app = "nargis-api-py"
+
+[build]
+  image = ""
+
+[env]
+  # Set via fly secrets or CI
+  OPENAI_API_KEY = ""
+  ELEVENLABS_API_KEY = ""
+
+[[services]]
+  internal_port = 8000
+  protocol = "tcp"
+  [[services.ports]]
+    port = 443
+    handlers = ["http"]
+  [[services.ports]]
+    port = 80
