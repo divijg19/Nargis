@@ -43,10 +43,18 @@ cd Nargis
 # 2. Install dependencies
 bun install
 
-# 3. Start development servers
+# 3. Configure environment files
+Copy the example env for the frontend and adjust values if needed:
+
+```bash
+cp apps/web/.env.example apps/web/.env.local
+# edit apps/web/.env.local to change API/WS endpoints
+```
+
+# 4. Start development servers
 bun run dev
 
-# The following services will start:
+# The following services will start (unless you change envs):
 # - Web: http://localhost:3000
 # - Python API: http://localhost:8000
 # - Go WebSocket: ws://localhost:8080
