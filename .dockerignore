@@ -1,0 +1,60 @@
+# General VCS & editor noise
+.git
+.gitignore
+.github
+*.swp
+*.log
+*.tmp
+.DS_Store
+.idea/
+.vscode/
+
+# Python build / cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+.env
+.env.*
+
+# Node / frontend
+node_modules/
+apps/web/.next/
+apps/web/dist/
+apps/web/build/
+apps/web/.turbo/
+apps/web/coverage/
+
+# Local audio / large artifacts
+*.wav
+*.webm
+
+# Coverage & reports
+coverage/
+*.coverage
+htmlcov/
+
+# Docker intermediate files
+*.tar
+
+# Cache / model downloads (adjust if you want baked-in models)
+.cache/
+.huggingface/
+
+# Legacy folder not needed in container
+legacy/
+
+# Ignore infra docs for runtime
+infra/fly/README.md
+infra/security/
+
+# Lock & logs duplicates
+**/npm-debug.log
+**/yarn-error.log
+
+# Avoid copying tests if not required
+tests/

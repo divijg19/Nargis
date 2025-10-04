@@ -1,3 +1,4 @@
+.dockerignore
 .github/workflows/ci.yml
 .github/workflows/deploy.yml
 .gitignore

@@ -12,6 +12,7 @@ WORKDIR /app
 # Create isolated venv in builder for later copy into runtime
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
+ENV PYTHONDONTWRITEBYTECODE=1
 
 # Copy dependency manifest and upgrade packaging tools
 COPY pyproject.toml /app/
@@ -19,18 +20,27 @@ COPY requirements.txt /app/
 COPY requirements.lock /app/
 RUN pip install --upgrade pip setuptools wheel
 
-# Prefer installing with the fast 'uv' installer; fall back to pip if unavailable
-RUN pip install --no-cache-dir uv || true
-RUN if command -v uv >/dev/null 2>&1; then \
-    echo "Using uv to install dependencies from pyproject.toml" && \
-    uv install --no-dev --no-cache || true; \
-    else \
-    echo "uv not available; installing pinned runtime deps with hashes" && \
-    pip install --upgrade pip && \
+# Install dependencies strictly inside the venv.
+# Try uv only if present; if uv fails, fall back deterministically to hashed lock with pip.
+RUN set -eux; \
+    # Install uv inside the venv (lightweight fast resolver) then try pyproject install.
+    pip install --no-cache-dir uv || true; \
+    if command -v uv >/dev/null 2>&1; then \
+    echo 'Using uv to resolve + install (no dev)'; \
+    if ! uv install --no-dev --no-cache; then \
+    echo 'uv install failed; falling back to hashed lock with pip'; \
+    . /opt/venv/bin/activate; \
     pip install --no-cache-dir --require-hashes -r requirements.lock; \
-    fi
+    fi; \
+    else \
+    echo 'uv not available; falling back to hashed lock with pip'; \
+    . /opt/venv/bin/activate; \
+    pip install --no-cache-dir --require-hashes -r requirements.lock; \
+    fi; \
+    # Ensure uvicorn exists for runtime
+    test -x /opt/venv/bin/uvicorn || (echo 'uvicorn missing after dependency install' && exit 1)
 
-# Copy application source into builder
+# Copy application source into builder (still as root; ownership fixed in runtime stage copies)
 COPY . /app
 
 ### Runtime image
@@ -41,20 +51,18 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     ffmpeg libsndfile1 ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user to reduce attack surface
-RUN useradd --create-home --shell /bin/false nargis && mkdir -p /app && chown nargis:nargis /app
+RUN useradd --create-home --shell /bin/false nargis && mkdir -p /app
 
 # Copy venv and application from builder
-COPY --from=builder /opt/venv /opt/venv
-COPY --from=builder /app /app
+COPY --chown=nargis:nargis --from=builder /opt/venv /opt/venv
+COPY --chown=nargis:nargis --from=builder /app /app
 
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1 \
     PRELOAD_STT=false \
-    LOG_LEVEL=INFO
+    LOG_LEVEL=INFO \
+    PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
-
-# Ensure permissions are correct for non-root user
-RUN chown -R nargis:nargis /opt/venv /app
 
 USER nargis
 
