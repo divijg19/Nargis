@@ -1,70 +1,48 @@
-### Multi-stage Python build (builder + slim runtime)
-FROM python:3.13-slim AS builder
+# syntax=docker/dockerfile:1.7
 
-# Install build-time deps needed for some wheel builds and audio tooling
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    build-essential git ffmpeg libsndfile1 && \
-    rm -rf /var/lib/apt/lists/*
+ARG PYTHON_VERSION=3.12
+ARG BUILD_ML=0
+FROM python:${PYTHON_VERSION}-slim AS builder
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    VENV_PATH=/opt/venv
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    build-essential git ffmpeg libsndfile1 ca-certificates && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+RUN python -m venv "$VENV_PATH"
+ENV PATH="$VENV_PATH/bin:$PATH"
 
-# Create isolated venv in builder for later copy into runtime
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-ENV PYTHONDONTWRITEBYTECODE=1
+COPY requirements.base.txt ./
+COPY requirements.ml.txt ./
+RUN --mount=type=cache,target=/root/.cache/pip set -eux; \
+    pip install --upgrade pip setuptools wheel; \
+    pip install --no-cache-dir -r requirements.base.txt; \
+    if [ "$BUILD_ML" = "1" ]; then pip install --no-cache-dir -r requirements.ml.txt; fi; \
+    test -x "$VENV_PATH/bin/uvicorn"
 
-# Copy dependency manifest and upgrade packaging tools
-COPY pyproject.toml /app/
-COPY requirements.txt /app/
-COPY requirements.lock /app/
-RUN pip install --upgrade pip setuptools wheel
-
-# Install dependencies strictly inside the venv.
-# Try uv only if present; if uv fails, fall back deterministically to hashed lock with pip.
-RUN set -eux; \
-    # Install uv inside the venv (lightweight fast resolver) then try pyproject install.
-    pip install --no-cache-dir uv || true; \
-    if command -v uv >/dev/null 2>&1; then \
-    echo 'Using uv to resolve + install (no dev)'; \
-    if ! uv install --no-dev --no-cache; then \
-    echo 'uv install failed; falling back to hashed lock with pip'; \
-    . /opt/venv/bin/activate; \
-    pip install --no-cache-dir --require-hashes -r requirements.lock; \
-    fi; \
-    else \
-    echo 'uv not available; falling back to hashed lock with pip'; \
-    . /opt/venv/bin/activate; \
-    pip install --no-cache-dir --require-hashes -r requirements.lock; \
-    fi; \
-    # Ensure uvicorn exists for runtime
-    test -x /opt/venv/bin/uvicorn || (echo 'uvicorn missing after dependency install' && exit 1)
-
-# Copy application source into builder (still as root; ownership fixed in runtime stage copies)
+# Now copy the rest of the source
 COPY . /app
 
-### Runtime image
-FROM python:3.13-slim AS runtime
+FROM python:${PYTHON_VERSION}-slim AS runtime
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH="/opt/venv/bin:$PATH" \
+    PRELOAD_STT=false LOG_LEVEL=INFO
 
-# Runtime system deps (only minimal required libs). Keep packages to a minimum
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ffmpeg libsndfile1 ca-certificates && rm -rf /var/lib/apt/lists/*
+    ffmpeg libsndfile1 ca-certificates && rm -rf /var/lib/apt/lists/* && \
+    useradd --create-home --shell /usr/sbin/nologin nargis
 
-# Create a non-root user to reduce attack surface
-RUN useradd --create-home --shell /bin/false nargis && mkdir -p /app
-
-# Copy venv and application from builder
-COPY --chown=nargis:nargis --from=builder /opt/venv /opt/venv
-COPY --chown=nargis:nargis --from=builder /app /app
-
-ENV PATH="/opt/venv/bin:$PATH"
-ENV PYTHONUNBUFFERED=1 \
-    PRELOAD_STT=false \
-    LOG_LEVEL=INFO \
-    PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
+COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder --chown=nargis:nargis /app /app
+
+# Healthcheck (simple) hitting readiness
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD python -c "import http.client,sys; import os; h=os.environ.get('HOST','localhost'); conn=http.client.HTTPConnection('localhost',8000,timeout=2); conn.request('GET','/ready'); r=conn.getresponse(); sys.exit(0 if r.status==200 else 1)" || exit 1
 
 USER nargis
-
 EXPOSE 8000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+ENTRYPOINT ["uvicorn"]
+CMD ["main:app","--host","0.0.0.0","--port","8000","--proxy-headers","--log-level","info"]

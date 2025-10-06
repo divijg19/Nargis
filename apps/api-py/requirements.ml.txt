@@ -1,0 +1,6 @@
+# Heavy ML deps (optional) installed only when BUILD_ML=1
+# Keep torch CPU-only; exclude CUDA modular wheels by using --index-url for CPU if needed later.
+# Whisper via transformers (heavier) OR prefer faster-whisper in base for CPU.
+transformers==4.46.2
+torch==2.4.1 --extra-index-url https://download.pytorch.org/whl/cpu
+huggingface-hub==0.35.3

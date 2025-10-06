@@ -1,22 +1,21 @@
 FROM golang:1.25 AS builder
 WORKDIR /src
 
-# Cache modules
+# Cache modules separately for better layer reuse
 COPY go.mod go.sum ./
-RUN go env -w GOFLAGS=-mod=mod
 RUN go mod download
 
-# Copy source
+# Copy source after deps
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o /app/main ./...
+
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+ENV CGO_ENABLED=0
+RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags "-s -w -buildid=" -o /out/server ./...
 
 FROM gcr.io/distroless/static:nonroot
-COPY --from=builder /app/main /app/main
-
-# The distroless nonroot image expects an unprivileged user; the binary must be
-# owned by a non-root user which the image exposes. Ensure the binary is
-# readable by non-root; the build produces a statically linked binary so we
-# simply set permissions.
+COPY --from=builder /out/server /app/server
 USER 65532:65532
 EXPOSE 8080
-ENTRYPOINT ["/app/main"]
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 CMD ["/app/server","--healthcheck"]
+ENTRYPOINT ["/app/server"]

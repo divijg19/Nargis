@@ -40,6 +40,7 @@ AGENTS.md
 CONTRIBUTING.md
 Codebase.txt
 README.md
+apps/api-go/.dockerignore
 apps/api-go/Dockerfile
 apps/api-go/README.md
 apps/api-go/fly.toml
@@ -53,8 +54,9 @@ apps/api-py/__init__.py
 apps/api-py/fly.toml
 apps/api-py/main.py
 apps/api-py/pyproject.toml
+apps/api-py/requirements.base.txt
 apps/api-py/requirements.hashed.txt
-apps/api-py/requirements.lock
+apps/api-py/requirements.ml.txt
 apps/api-py/requirements.txt
 apps/api-py/routers/__init__.py
 apps/api-py/routers/habits.py

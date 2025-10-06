@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -158,12 +159,36 @@ func transcribeAndProcess(audioData []byte, ws *websocket.Conn) {
 	}
 }
 
+func healthHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	_, _ = w.Write([]byte(`{"status":"ok"}`))
+}
+
+func readyHandler(w http.ResponseWriter, _ *http.Request) {
+	// Lightweight readiness: just echo env config; deeper checks could ping Python service.
+	stt := os.Getenv("STT_URL")
+	llm := os.Getenv("LLM_URL")
+	w.Header().Set("Content-Type", "application/json")
+	payload := map[string]string{"status": "ready", "sttUrl": stt, "llmUrl": llm, "time": time.Now().UTC().Format(time.RFC3339)}
+	b, _ := json.Marshal(payload)
+	_, _ = w.Write(b)
+}
+
 func main() {
+	for _, arg := range os.Args[1:] {
+		if arg == "--healthcheck" {
+			// Lightweight success path for container healthcheck
+			fmt.Println("ok")
+			return
+		}
+	}
 	sysLog := log.New(os.Stdout, "[SYSTEM] ", log.LstdFlags)
-	http.HandleFunc("/ws", handleConnections)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ws", handleConnections)
+	mux.HandleFunc("/health", healthHandler)
+	mux.HandleFunc("/ready", readyHandler)
 	sysLog.Println("Go WebSocket server starting on :8080")
-	err := http.ListenAndServe(":8080", nil)
-	if err != nil {
+	if err := http.ListenAndServe(":8080", mux); err != nil {
 		sysLog.Fatalf("ListenAndServe: %v", err)
 	}
 }

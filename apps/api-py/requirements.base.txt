@@ -1,0 +1,11 @@
+# Base runtime deps (slim) for Nargis API (no heavy GPU / torch stack)
+# Pin critical framework versions; leave faster-whisper unpinned for now (can lock later).
+fastapi==0.118.0
+uvicorn[standard]==0.32.0
+anyio==4.11.0
+httpx==0.28.1
+pydantic==2.9.2
+python-multipart==0.0.9
+soundfile==0.12.1
+openai==1.52.2
+faster-whisper  # (optional CPU STT); consider pin & hash later

@@ -1,0 +1,23 @@
+# Go build context optimization
+.git
+.gitignore
+.vscode/
+.idea/
+*.log
+.DS_Store
+
+# Go build cache / artifacts
+bin/
+*.test
+coverage/
+
+# Node / frontend noise (monorepo)
+node_modules/
+apps/web/
+legacy/
+
+# Python services not needed
+apps/api-py/
+
+# Misc
+*.tmp
