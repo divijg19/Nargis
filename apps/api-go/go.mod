@@ -1,5 +1,5 @@
-module github.com/divijg19/Nargis/backend-go
+module github.com/divijg19/Nargis/api-go
 
-go 1.25.1
+go 1.25.2
 
 require github.com/gorilla/websocket v1.5.3

@@ -1,0 +1,70 @@
+version: "3.8"
+services:
+  api-py:
+    build:
+      context: ../../apps/api-py
+      args:
+        BUILD_ML: "0"
+    image: nargis-api-py:local
+    ports:
+      - "8000:8000"
+    environment:
+      - LOG_LEVEL=DEBUG
+      - ALLOWED_ORIGINS=http://localhost:3000
+      - PRELOAD_STT=false
+    depends_on:
+      - redis
+      - db
+
+  api-go:
+    build:
+      context: ../../apps/api-go
+    image: nargis-api-go:local
+    ports:
+      - "8080:8080"
+    environment:
+      - STT_URL=http://api-py:8000
+      - LLM_URL=http://api-py:8000
+    depends_on:
+      - api-py
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=nargis
+      - POSTGRES_PASSWORD=nargis
+      - POSTGRES_DB=nargis
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  # Optional: run the web dev server locally if you want to test end-to-end
+  web:
+    build:
+      context: ../../apps/web
+    image: nargis-web:local
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_PY_URL=http://localhost:8000
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8080/ws
+
+  # Optional ML worker (self-hosted) — only enable locally if you have sufficient disk/GPU
+  ml-worker:
+    build:
+      context: ../../apps/ml-worker
+    image: nargis-ml-worker:local
+    ports:
+      - "8001:8001"
+    environment:
+      - LOG_LEVEL=DEBUG
+    depends_on:
+      - api-py
+
+networks:
+  default:
+    driver: bridge

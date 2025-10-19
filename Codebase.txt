@@ -1,4 +1,6 @@
 .dockerignore
+.github/workflows/ci-and-deploy.yml
+.github/workflows/ci-and-publish.yml
 .github/workflows/ci.yml
 .github/workflows/deploy.yml
 .gitignore
@@ -36,10 +38,10 @@
 .turbo/daemon/27d391d570c8249d-turbo.log.2025-09-23
 .turbo/daemon/27d391d570c8249d-turbo.log.2025-10-01
 .vscode/settings.json
-AGENTS.md
 CONTRIBUTING.md
 Codebase.txt
 README.md
+apps/api-go/.dockerignore
 apps/api-go/Dockerfile
 apps/api-go/README.md
 apps/api-go/fly.toml
@@ -53,8 +55,9 @@ apps/api-py/__init__.py
 apps/api-py/fly.toml
 apps/api-py/main.py
 apps/api-py/pyproject.toml
-apps/api-py/requirements.hashed.txt
-apps/api-py/requirements.lock
+apps/api-py/requirements.base.txt
+apps/api-py/requirements.light.txt
+apps/api-py/requirements.ml.txt
 apps/api-py/requirements.txt
 apps/api-py/routers/__init__.py
 apps/api-py/routers/habits.py
@@ -63,6 +66,12 @@ apps/api-py/routers/tasks.py
 apps/api-py/storage/__init__.py
 apps/api-py/storage/memory.py
 apps/api-py/uv.lock
+apps/ml-worker/.python-version
+apps/ml-worker/Dockerfile
+apps/ml-worker/README.md
+apps/ml-worker/main.py
+apps/ml-worker/pyproject.toml
+apps/ml-worker/uv.lock
 apps/web/.env.example
 apps/web/README.md
 apps/web/global.d.ts
@@ -114,6 +123,8 @@ bun.lock
 docs/PLANNING.md
 docs/SPRINTS.md
 docs/TECHSTACK.md
+infra/README.md
+infra/docker-compose.yml
 infra/fly/.env.example
 infra/fly/README.md
 infra/fly/deploy.ps1
