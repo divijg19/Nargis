@@ -2,9 +2,7 @@
   "extends": "../../packages/tsconfig/nextjs.json",
   "compilerOptions": {
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     }
   },
   "include": [
@@ -14,7 +12,5 @@
     "**/*.d.ts",
     ".next/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

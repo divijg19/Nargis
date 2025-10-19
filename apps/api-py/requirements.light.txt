@@ -1,0 +1,10 @@
+fastapi>=0.119.0
+uvicorn>=0.37.0
+httpx>=0.28.1
+python-dotenv>=1.1.1
+python-multipart>=0.0.20
+soundfile>=0.13.1
+openai>=2.4.0
+
+# Lightweight requirements only — no torch/transformers here. Use BUILD_ML=1 to install
+# ML extras from requirements.ml.txt when needed.

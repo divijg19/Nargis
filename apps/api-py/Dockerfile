@@ -1,8 +1,5 @@
-# syntax=docker/dockerfile:1.7
-
-ARG PYTHON_VERSION=3.12
 ARG BUILD_ML=0
-FROM python:${PYTHON_VERSION}-slim AS builder
+FROM python:3.13.8-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -15,11 +12,14 @@ WORKDIR /app
 RUN python -m venv "$VENV_PATH"
 ENV PATH="$VENV_PATH/bin:$PATH"
 
-COPY requirements.base.txt ./
+## Use a lightweight set of requirements by default to avoid pulling heavy ML wheels.
+COPY requirements.light.txt ./
 COPY requirements.ml.txt ./
+# Note: do NOT copy `requirements.txt` or `pyproject.toml` into the builder stage —
+# those files were kept for developer reference but may include heavy pinned ML deps.
 RUN --mount=type=cache,target=/root/.cache/pip set -eux; \
     pip install --upgrade pip setuptools wheel; \
-    pip install --no-cache-dir -r requirements.base.txt; \
+    pip install --no-cache-dir -r requirements.light.txt; \
     if [ "$BUILD_ML" = "1" ]; then pip install --no-cache-dir -r requirements.ml.txt; fi; \
     test -x "$VENV_PATH/bin/uvicorn"
 

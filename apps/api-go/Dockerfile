@@ -1,4 +1,4 @@
-FROM golang:1.25 AS builder
+FROM golang:1.25.3 AS builder
 WORKDIR /src
 
 # Cache modules separately for better layer reuse

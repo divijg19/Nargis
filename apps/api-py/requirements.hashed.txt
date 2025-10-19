@@ -1,3 +1,0 @@
-# Generated via `uv export --format=requirements-txt --no-dev --frozen`
-# (Reference copy for review; Docker build uses requirements.lock directly.)
-# See requirements.lock for enforced hashes.

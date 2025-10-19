@@ -106,7 +106,7 @@ Nargis/
 
 ### Prerequisites
 - **Bun** >= 1.2 (JavaScript runtime & package manager)
-- **Python** >= 3.12 with **uv** (fast Python package manager)
+- **Python** >= 3.13 with **uv** (fast Python package manager)
 - **Go** >= 1.25 (for WebSocket server)
 
 ### Quick Start

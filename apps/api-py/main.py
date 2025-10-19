@@ -11,6 +11,7 @@ from contextvars import ContextVar
 from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import httpx
 from openai import OpenAI
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
@@ -36,12 +37,23 @@ logging.basicConfig(
 logging.getLogger().addFilter(RequestIdFilter())
 
 # --- AI Model & API Client Setup ---
+# Local Ollama client (optional). We will prefer external managed providers when configured via env.
 try:
     ollama_client = OpenAI(base_url='http://localhost:11434/v1', api_key='ollama')
     logging.info("Local Ollama client initialized successfully.")
 except Exception as e:
     logging.warning(f"Failed to initialize Ollama client. Is Ollama running? Error: {e}")
     ollama_client = None
+
+# External provider endpoints (preferred). If set, requests will be proxied to these URLs.
+STT_URL = os.getenv("STT_URL", "")  # e.g. Deepgram or Whisper API
+LLM_URL = os.getenv("LLM_URL", "")  # e.g. OpenAI/Groq-compatible endpoint
+TTS_URL = os.getenv("TTS_URL", "")  # e.g. Play.ht or ElevenLabs
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+
+# HTTP client defaults
+HTTP_TIMEOUT = int(os.getenv("HTTP_TIMEOUT_SECONDS", "30"))
+
 
 device = "cpu"
 stt_processor = None  # lazy init later
@@ -174,10 +186,17 @@ async def ready():
     # Do NOT force heavy model load unless explicitly requested to avoid cold start penalty.
     stt_loaded = stt_model is not None
     ollama_ok = ollama_client is not None
+    # external provider availability (best-effort; do not block)
+    stt_external = bool(STT_URL)
+    llm_external = bool(LLM_URL)
+    tts_external = bool(TTS_URL)
     return {
-        "status": "ready" if (ollama_ok) else "degraded",
+        "status": "ready" if (ollama_ok or llm_external) else "degraded",
         "sttLoaded": stt_loaded,
         "ollamaClient": ollama_ok,
+        "sttExternalConfigured": stt_external,
+        "llmExternalConfigured": llm_external,
+        "ttsExternalConfigured": tts_external,
     }
 
 @app.post("/stt")
@@ -185,6 +204,18 @@ async def speech_to_text(audio_file: UploadFile = File(...)):
     audio_bytes = await audio_file.read()
     loop = asyncio.get_running_loop()
     try:
+        # Prefer external STT provider when configured
+        if STT_URL:
+            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+                files = {"file": ("audio.wav", audio_bytes)}
+                headers = {}
+                if OPENAI_API_KEY:
+                    headers["Authorization"] = f"Bearer {OPENAI_API_KEY}"
+                resp = await client.post(STT_URL, headers=headers, files=files)
+                resp.raise_for_status()
+                return resp.json()
+
+        # Fallback to local model
         await ensure_stt_loaded()
         wav_audio_bytes = await loop.run_in_executor(None, convert_audio_to_wav_sync, audio_bytes)
         transcribed_text = await loop.run_in_executor(None, run_stt_inference_sync, wav_audio_bytes)
@@ -195,11 +226,27 @@ async def speech_to_text(audio_file: UploadFile = File(...)):
 
 @app.post("/llm")
 async def process_llm(request: LLMRequest):
-    loop = asyncio.get_running_loop()
+    # Prefer external LLM endpoint when configured (supports OpenAI-compatible semantics)
     try:
+        if LLM_URL:
+            payload = {"messages": [{"role": "user", "content": request.text}]}
+            headers = {"Content-Type": "application/json"}
+            if OPENAI_API_KEY:
+                headers["Authorization"] = f"Bearer {OPENAI_API_KEY}"
+            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+                resp = await client.post(LLM_URL, json=payload, headers=headers)
+                resp.raise_for_status()
+                return resp.json()
+
+        # If no external LLM, run local Ollama-backed LLM synchronously
+        loop = asyncio.get_running_loop()
         response_data = await loop.run_in_executor(None, run_llm_sync, request.text)
         return response_data
+    except httpx.HTTPStatusError as e:
+        logging.error(f"LLM external provider HTTP error: {e}")
+        return {"error": str(e)}
     except Exception as e:
+        logging.exception("LLM processing failed")
         return {"error": str(e)}
 
 @app.on_event("startup")
@@ -211,3 +258,29 @@ async def maybe_preload():
             logging.info("STT model preloaded at startup")
         except Exception as e:
             logging.warning(f"Failed to preload STT model: {e}")
+
+
+class TTSRequest(BaseModel):
+    text: str
+
+
+@app.post("/tts")
+async def text_to_speech(req: TTSRequest):
+    # If external TTS provider configured, proxy to it and return raw audio bytes
+    try:
+        if TTS_URL:
+            headers = {}
+            if OPENAI_API_KEY:
+                headers["Authorization"] = f"Bearer {OPENAI_API_KEY}"
+            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+                resp = await client.post(TTS_URL, json={"text": req.text}, headers=headers)
+                resp.raise_for_status()
+                # Forward binary content (assumes provider returns audio/*)
+                content_type = resp.headers.get("content-type", "audio/mpeg")
+                return Response(content=resp.content, media_type=content_type)
+
+        # No external TTS configured; local TTS is not implemented here by default.
+        return Response(content=b"", media_type="audio/mpeg", status_code=501)
+    except Exception as e:
+        logging.exception("TTS proxy failed")
+        return {"error": str(e)}

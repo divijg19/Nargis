@@ -48,6 +48,9 @@ htmlcov/
 # Legacy folder not needed in container
 legacy/
 
+# Turbo build/cache
+.turbo/
+
 # Ignore infra docs for runtime
 infra/fly/README.md
 infra/security/

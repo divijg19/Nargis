@@ -24,6 +24,9 @@ logs/
 .eslintcache
 .cache/
 
+# Turbo build/cache
+.turbo/
+
 # Backups
 *.old.*
 *.backup
