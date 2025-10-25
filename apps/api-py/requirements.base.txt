@@ -1,8 +1,0 @@
-fastapi>=0.119.0
-uvicorn>=0.37.0
-httpx>=0.28.1
-python-dotenv>=1.1.1
-python-multipart>=0.0.20
-soundfile>=0.13.1
-openai>=2.4.0
-# Keep transformers/torch in separate ML file to avoid heavy builds by default

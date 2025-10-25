@@ -26,16 +26,16 @@ export default function HabitsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-orange-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-orange-950/20 transition-all duration-500">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-orange-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-orange-950/20 transition-all duration-500">
       {/* Premium ambient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/5 to-transparent dark:via-orange-400/10 pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-r from-transparent via-orange-500/5 to-transparent dark:via-orange-400/10 pointer-events-none" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 py-4">
         {/* Premium Header */}
         <div className="animate-fade-in">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-8">
             <div>
               <h1 className="text-5xl md:text-6xl font-bold mb-3">
-                <span className="bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 bg-clip-text text-transparent">
+                <span className="bg-linear-to-r from-orange-600 via-red-600 to-pink-600 bg-clip-text text-transparent">
                   Habits
                 </span>
                 <span className="text-slate-900 dark:text-white"> 🔥</span>
@@ -53,7 +53,7 @@ export default function HabitsPage() {
           </div>
 
           {/* Premium Streak Badge */}
-          <div className="inline-flex items-center px-6 py-3 rounded-2xl glass bg-gradient-to-br from-orange-50/90 to-red-50/90 dark:from-orange-900/20 dark:to-red-900/20 backdrop-blur-xl border border-orange-200/60 dark:border-orange-800/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in">
+          <div className="inline-flex items-center px-6 py-3 rounded-2xl glass bg-linear-to-br from-orange-50/90 to-red-50/90 dark:from-orange-900/20 dark:to-red-900/20 backdrop-blur-xl border border-orange-200/60 dark:border-orange-800/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 animate-scale-in">
             <span className="text-3xl mr-3" aria-hidden="true">
               🔥
             </span>

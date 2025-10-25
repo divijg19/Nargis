@@ -22,8 +22,7 @@ const listeners = new Set<Listener>();
 
 export function emitDomainEvent(evt: DomainEvent) {
   // Structured log – could later route to backend queue
-  // eslint-disable-next-line no-console
-  console.info("[event]", evt.type, evt);
+  console.debug("[event]", evt.type, evt);
   for (const l of listeners) {
     try {
       l(evt);

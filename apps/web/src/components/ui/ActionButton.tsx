@@ -25,7 +25,7 @@ export function ActionButton({
     secondary:
       "glass bg-secondary/90 backdrop-blur-xl text-secondary-foreground hover:bg-secondary/70 focus:ring-ring border border-border",
     danger:
-      "bg-gradient-to-r from-destructive to-red-600 text-destructive-foreground hover:opacity-90 focus:ring-destructive shadow-lg shadow-destructive/30 hover:shadow-destructive/40",
+      "bg-linear-to-r from-destructive to-red-600 text-destructive-foreground hover:opacity-90 focus:ring-destructive shadow-lg shadow-destructive/30 hover:shadow-destructive/40",
   };
 
   const sizeClasses = {

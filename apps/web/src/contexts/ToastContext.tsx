@@ -52,6 +52,15 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(toastReducer, { toasts: [] });
+  const lastToastRef = React.useRef<{
+    id: string;
+    message: string;
+    ts: number;
+  } | null>(null);
+  const [ariaMessage, setAriaMessage] = React.useState<string>("");
+  const [ariaPoliteness, setAriaPoliteness] = React.useState<
+    "polite" | "assertive"
+  >("polite");
 
   // Garbage collect expired toasts periodically
   React.useEffect(() => {
@@ -61,16 +70,37 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const push: ToastContextValue["push"] = useCallback((input) => {
     const id = input.id || crypto.randomUUID();
+    // Dedupe recent identical messages (2s window)
+    const now = Date.now();
+    const msg = input.message;
+    if (
+      lastToastRef.current &&
+      lastToastRef.current.message === msg &&
+      now - lastToastRef.current.ts < 2000
+    ) {
+      // return existing toast id when deduping
+      return lastToastRef.current.id;
+    }
+    const variant = input.variant || "info";
     dispatch({
       type: "PUSH",
       toast: {
         id,
         createdAt: Date.now(),
         ttlMs: 6000,
-        variant: "info",
+        variant,
         ...input,
       },
     });
+    // Update aria-live region and lastToast ref
+    lastToastRef.current = { id, message: msg, ts: now };
+    setAriaMessage(msg);
+    // map variant -> politeness: errors/warnings are assertive
+    if (variant === "error" || variant === "warning") {
+      setAriaPoliteness("assertive");
+    } else {
+      setAriaPoliteness("polite");
+    }
     return id;
   }, []);
 
@@ -81,6 +111,20 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ToastContext.Provider value={{ toasts: state.toasts, push, dismiss }}>
+      {/* aria-live region for screen readers - polite/assertive based on toast severity */}
+      <div
+        aria-live={ariaPoliteness}
+        aria-atomic="true"
+        style={{
+          position: "absolute",
+          left: -9999,
+          width: 1,
+          height: 1,
+          overflow: "hidden",
+        }}
+      >
+        {ariaMessage}
+      </div>
       {children}
     </ToastContext.Provider>
   );

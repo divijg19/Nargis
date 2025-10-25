@@ -1,199 +1,46 @@
-# 🌸 Nargis – AI-Powered Productivity Platform
+# 🌸 Nargis – An Agentic, Voice-First AI Productivity Companion
 
-**Nargis** is a modern **AI productivity companion** that unifies **task management, habit tracking, Pomodoro timer, and voice-powered insights** into one cohesive platform.
+**Nargis** is a modern **AI productivity agent** that unifies task management, habit tracking, and journaling into a single, intelligent platform. It's designed to be a proactive partner that helps you achieve your goals, not just a passive tool.
 
-Built as a **full-stack TypeScript + Python + Go** showcase demonstrating real-time architecture, domain-driven design, and AI/ML integration patterns.
+This project is a **full-stack showcase** demonstrating a real-time, polyglot architecture (TypeScript + Python + Go), advanced AI integration patterns, and modern development practices.
 
 ---
 
 ## 🚀 Core Philosophy
-- **Modern web-first**: Built with Next.js 15, React 19, and Tailwind CSS v4
-- **Real-time by design**: WebSocket-powered live updates and event-driven architecture
-- **AI-enhanced**: Voice transcription (Whisper), intelligent chat (Ollama), and contextual insights
-- **Developer-friendly**: Type-safe, well-documented, and production-ready patterns
+
+-   **Agentic by Design:** Moves beyond simple commands to a conversational, goal-oriented workflow where the AI can understand intent, ask clarifying questions, and autonomously execute multi-step plans.
+-   **Voice-First Interaction:** A low-latency, real-time voice pipeline forms the core of the user experience, making interaction natural and frictionless.
+-   **API-First Performance:** Prioritizes speed and responsiveness by leveraging best-in-class external AI services, with a robust local-only fallback mode.
+-   **Developer-Friendly:** A clean, type-safe, and well-documented monorepo built with modern tooling for a superior development experience.
 
 ---
 
-## 🛠️ Current Tech Stack
+## ✨ Key Features
 
-### Frontend
-- **Framework**: Next.js 15 (App Router) + React 19
-- **Language**: TypeScript 5.9
-- **Styling**: Tailwind CSS v4 + CSS custom properties
-- **State**: React Context API with optimistic updates
-- **Real-time**: WebSocket connections with auto-reconnect
-- **Icons**: Heroicons v2
-
-### Backend
-- **Python API**: FastAPI + uvicorn (async ASGI)
-  - Speech-to-Text: OpenAI Whisper (lazy-loaded)
-  - LLM Integration: Ollama (local) / OpenAI-compatible
-  - REST endpoints: Tasks, Habits, Pomodoro CRUD
-- **Go WebSocket**: Real-time streaming bridge (port 8080)
-- **Storage**: In-memory repositories (PostgreSQL ready)
-
-### Infrastructure
-- **Monorepo**: Turborepo + Bun workspaces
-- **Linting**: Biome (unified JS/TS/JSON formatter)
-- **Type Safety**: Shared TypeScript configs across apps
-- **Dev Tools**: Concurrent dev servers, hot reload
+-   **Real-Time Voice-to-Response Pipeline:** Speak a thought, and Nargis transcribes, understands, and responds in a seamless conversational flow.
+-   **Dual-Mode AI Backend:**
+    -   **Primary (API) Mode:** High-speed, production-grade performance using external APIs (Groq, Deepgram).
+    -   **Fallback (Local) Mode:** A fully offline-capable mode using local models (Ollama, Transformers/Whisper) for privacy and zero-cost operation.
+-   **Polyglot Real-Time Architecture:** Uses the best language for the job to ensure low latency and maintainability (Go for WebSockets, Python for AI).
+-   **Distributed Tracing:** All requests are tagged with a unique `RequestID` from the gateway through the AI service, enabling robust logging and debugging.
+-   **Unified Productivity Suite:** Seamlessly integrates tasks, habits, and a Pomodoro timer.
 
 ---
 
-## ✨ Implemented Features
+## 🛠️ Technology Stack
 
-### ✅ Core Productivity Suite
-- **Task Management**: Full CRUD with priority, status, tags, due dates
-- **Habit Tracking**: Daily/weekly habits with streak counting and progress visualization
-- **Pomodoro Timer**: Configurable work/break cycles with session history and crash recovery
-- **Dashboard**: Real-time overview with stats cards and activity previews
+| Layer                 | Technology                                                               | Purpose                                                           |
+| --------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| **Monorepo & Tooling**  | **Bun, Turborepo, Biome**                                                | Workspace management, task running, and code quality.             |
+| **Frontend**            | **Next.js 16 (Turbopack), React, TypeScript**                            | Modern, fast, and type-safe user interface.                       |
+| **Real-Time Gateway**   | **Go, Gorilla WebSocket, `air`**                                         | Handles high-concurrency WebSocket connections with hot-reloading. |
+| **AI Orchestrator**     | **Python 3.12, FastAPI, `uv`**                                           | Serves business logic, the dual-mode AI system, and agent execution. |
+| **Primary AI APIs**     | **Groq (`llama-3.1-8b-instant`), Deepgram**                              | For high-speed, production-grade LLM and STT services.            |
+| **Local AI Fallback**   | **Ollama (`phi-3-mini`), Transformers (`whisper-base`)**                 | For offline, private, or zero-cost operation.                     |
+| **Database & Cache**    | **PostgreSQL, Redis**                                                    | For long-term memory (user profiles, tasks) and session/cache management. |
+| **Infrastructure**      | **Docker, Docker Compose**                                               | For containerizing services and providing a consistent environment. |
+| **Deployment**          | **Vercel** (Frontend), **Fly.io** (Backend)                              | Modern platforms with generous free tiers for hosting.            |
 
-### ✅ Real-Time & Events
-- **Toast Notifications**: Context-aware success/error/info feedback system
-- **Domain Events**: Event dispatcher for cross-context communication
-- **WebSocket Connection**: Auto-reconnecting realtime bridge (feature-flagged)
-- **Optimistic Updates**: Instant UI feedback with backend sync
-
-### ✅ AI Integration
-- **Voice Transcription**: Whisper-based STT with lazy model loading
-- **AI Chat**: Local Ollama integration with OpenAI-compatible interface
-- **Context Awareness**: Feature flag system for progressive AI enhancement
-
-### ✅ Developer Experience
-- **Type Safety**: End-to-end TypeScript with shared type definitions
-- **Accessibility**: ARIA roles, keyboard navigation, skip links, focus management
-- **Theme Support**: Light/dark mode with system preference detection
-- **Error Handling**: Comprehensive error boundaries and fallback UI
-
----
-
-## 🏗️ Project Structure
-
-```
-Nargis/
-├── apps/
-│   ├── web/                 # Next.js 15 frontend
-│   │   ├── src/
-│   │   │   ├── app/        # App Router pages
-│   │   │   ├── components/ # React components
-│   │   │   ├── contexts/   # State management
-│   │   │   ├── services/   # API clients
-│   │   │   ├── types/      # TypeScript definitions
-│   │   │   ├── utils/      # Helpers
-│   │   │   ├── events/     # Domain events
-│   │   │   ├── flags/      # Feature flags
-│   │   │   └── realtime/   # WebSocket client
-│   │   └── global.d.ts     # Ambient declarations
-│   ├── api-py/             # FastAPI backend
-│   │   ├── main.py         # Server entry point
-│   │   ├── routers/        # REST endpoints
-│   │   ├── storage/        # Data repositories
-│   │   └── pyproject.toml  # Python dependencies
-│   └── api-go/             # Go WebSocket server
-│       ├── main.go         # WebSocket handler
-│       └── go.mod          # Go dependencies
-├── packages/
-│   └── tsconfig/           # Shared TypeScript configs
-│       ├── base.json       # Base TS settings
-│       └── nextjs.json     # Next.js preset
-├── docs/                   # Documentation
-└── package.json            # Workspace root
-```
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- **Bun** >= 1.2 (JavaScript runtime & package manager)
-- **Python** >= 3.13 with **uv** (fast Python package manager)
-- **Go** >= 1.25 (for WebSocket server)
-
-### Quick Start
-
-```bash
-## Clone the repository
-git clone https://github.com/divijg19/Nargis.git
-cd Nargis
-
-## Install dependencies
-bun install
-
-## Local development environment
-Copy the frontend example env and adjust if needed:
-
-```bash
-cp apps/web/.env.example apps/web/.env.local
-# edit apps/web/.env.local if you need to change ports or hostnames
-```
-
-Start all services concurrently:
-
-```bash
-bun run dev
-```
-
-Or start individually (services read configuration from environment variables):
-
-```bash
-# Frontend
-bun run dev:web      # Next.js on http://localhost:3000
-
-# Python API (reads env vars, default localhost:8000)
-bun run dev:api-py   # FastAPI on http://localhost:8000
-
-# Go WebSocket (reads STT_URL/LLM_URL env vars; default ws://localhost:8080)
-bun run dev:api-go   # Go WebSocket on ws://localhost:8080
-```
-```
-
-### Available Commands
-
-```bash
-bun run dev          # Start all services
-bun run build        # Build all apps
-bun run typecheck    # Type-check TypeScript
-bun run lint         # Lint with Biome
-bun run format       # Format code with Biome
-bun run clean        # Clean build artifacts
-```
-
----
-
-## 🚧 Roadmap
-
-### Phase 1: Foundation (✅ Complete)
-- [x] Monorepo setup with Turborepo
-- [x] Next.js frontend with App Router
-- [x] FastAPI backend with async endpoints
-- [x] Go WebSocket server
-- [x] Context-based state management
-- [x] Toast notification system
-- [x] Domain event dispatcher
-- [x] Accessibility improvements
-
-### Phase 2: Enhanced AI (🔨 In Progress)
-- [x] Whisper STT integration
-- [x] Ollama LLM integration
-- [ ] Streaming chat responses
-- [ ] Voice-to-task natural language processing
-- [ ] AI-powered habit insights and coaching
-- [ ] Smart task prioritization
-
-### Phase 3: Persistence & Sync
-- [ ] PostgreSQL integration with Prisma/SQLAlchemy
-- [ ] Redis for caching and sessions
-- [ ] Real-time collaboration features
-- [ ] Offline-first with service workers
-- [ ] Cross-device sync
-
-### Phase 4: Integrations
-- [ ] Google Calendar sync
-- [ ] Notion export/import
-- [ ] Slack notifications
-- [ ] Mobile PWA enhancements
-
----
 
 ## 🎯 Design Principles
 
@@ -211,70 +58,162 @@ bun run clean        # Clean build artifacts
 
 ---
 
+## 🏗️ Project Structure
+
+```
+Nargis/
+├── apps/
+│   ├── web/                 # Next.js 16 Frontend
+│   ├── api-py/              # FastAPI AI Orchestrator
+│   └── gateway/             # Go WebSocket Gateway
+├── packages/
+│   └── tsconfig/            # Shared TypeScript configs
+├── infra/
+│   ├── docker-compose.yml   # Docker Compose for Hybrid Dev
+│   └── .env.example         # Environment variables for Docker
+└── package.json             # Root scripts and dependencies
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+-   **Bun** (v1.2.0+)
+-   **Go** (v1.25+) with `air` installed (`go install github.com/air-verse/air@latest`)
+-   **Python** (~3.12) with `uv` (`pip install uv`)
+-   **Docker Desktop** (for the Hybrid Workflow)
+-   **(Optional)** [Ollama](https://ollama.com/) for the local AI fallback.
+
+### 1. Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/divijg19/Nargis.git
+cd Nargis
+
+# Install all dependencies across the monorepo
+bun install
+```
+
+### 2. Configuration
+
+Nargis uses a powerful dual-mode AI backend. You control it via `.env` files.
+
+1.  **Create Local `.env` File:** For the fully local workflow.
+    `cp apps/api-py/.env.example apps/api-py/.env`
+
+2.  **Create Docker `.env` File:** For the hybrid workflow.
+    `cp infra/.env.example infra/.env`
+
+3.  **Edit the `.env` files:**
+    -   To use the **high-speed APIs (Recommended)**, fill in your `DEEPGRAM_API_KEY` and `GROQ_API_KEY`.
+    -   To use the **local AI models**, leave the API key values blank.
+
+### 3. Running the Application
+
+You have two powerful workflows to choose from, both run from the project root.
+
+#### Workflow A: Hybrid Development (Recommended for Frontend)
+
+Runs the backend in Docker for stability and the frontend locally for fast UI development.
+
+```bash
+# Start the backend services in Docker and the frontend locally
+bun run dev:hybrid
+```
+
+#### Workflow B: Fully Local Development (Recommended for Backend)
+
+Runs all services locally with hot-reloading. **Ensure Docker is not running first** (`bun run dev:docker:down`).
+
+```bash
+# Start all services locally
+bun run dev
+```
+
+### Available Scripts
+
+| Command                   | Description                                                                 |
+| ------------------------- | --------------------------------------------------------------------------- |
+| `bun run dev`             | Starts all services locally with hot-reloading (for backend work).          |
+| `bun run dev:hybrid`      | Starts the Docker backend and local frontend (for frontend work).           |
+| `bun run dev:docker:up`   | Starts the Docker Compose services only.                                    |
+| `bun run dev:docker:down` | Stops the Docker Compose services.                                          |
+| `bun run build`           | Builds all applications in the monorepo.                                    |
+| `bun run lint`            | Lints the entire monorepo with Biome.                                       |
+| `bun run typecheck`       | Type-checks all TypeScript packages.                                        |
+
+---
+
+## 🚧 Roadmap
+
+### Phase 1: Foundation (✅ Complete)
+
+-   [x] Monorepo setup with modern tooling (Bun, Turborepo, Biome).
+-   [x] Fully functional, polyglot backend (Go, Python).
+-   [x] **Dual-Mode AI Pipeline** implemented and working.
+-   [x] End-to-end, real-time voice-to-response functionality.
+-   [x] Flexible hybrid and fully-local development workflows configured.
+
+### Phase 2: Building the Agent (🔨 In Progress)
+
+-   [ ] Implement short-term conversational memory.
+-   [ ] Integrate a PostgreSQL database for long-term memory (user profiles, goals).
+-   [ ] Define and implement "Tools" for the AI (e.g., `create_task`, `start_pomodoro`).
+-   [ ] Integrate an agent framework (e.g., LangChain) to enable autonomous planning and tool use.
+
+### Phase 3: Proactive Coaching & Insights
+
+-   [ ] Implement semantic search over journal entries (RAG).
+-   [ ] Create scheduled, proactive agent triggers (e.g., "morning briefing").
+-   [ ] Develop AI-powered insights and progress reports.
+
+---
+
 ## 📚 Documentation
 
 - [Planning & Vision](./docs/PLANNING.md)
-- [Sprint Roadmap](./docs/SPRINTS.md)
-- [Tech Stack Details](./docs/TECHSTACK.md)
-- [AI Agent Guidelines](./AGENTS.md)
+- [Contributing](./docs/CONTRIBUTING.md)
+
+## 🤝 Contributing
+
+This is currently a personal project, but suggestions and feedback are welcome! Please feel free to open an issue or a pull request.
 
 ---
 
 ## 📋 Recent Updates
 
-### Phase 1: Critical UX Improvements (2025-01-XX)
-- **✅ Fixed Toast Positioning**: Moved toasts from bottom to top to prevent footer overlap
-- **✅ Modal System**: Created accessible `Modal`, `TaskModal`, and `HabitModal` components with:
-  - Full keyboard navigation (Escape to close)
-  - ARIA roles and labels for screen readers
-  - Form validation with error messages
-  - Backdrop click-to-close
-- **✅ Action Buttons Wired**: All placeholder console.logs replaced with real functionality:
-  - Dashboard quick actions now create tasks/habits and navigate to Pomodoro
-  - Task and Habit pages have working creation modals
-  - Habit increment buttons fully functional
-- **✅ Code Cleanup**: Removed all console.log statements and debug code
-- **✅ Documentation**: Cleaned up temporary audit files, keeping only essential docs
+### Architectural Refactor & Backend Polish (October 2025)
 
----
+This series of updates represents a complete overhaul of the backend architecture to create a robust, production-ready, and high-performance system.
 
-## 🤝 Contributing
+-   **✅ Refactored to a Single-Hop Pipeline**: The entire AI workflow was consolidated. The Go gateway now makes a single, efficient call to the Python API, which orchestrates the full STT -> LLM chain. This dramatically reduces latency and complexity.
+-   **✅ Implemented Dual-Mode AI Backend**: The Python API now intelligently switches between high-speed external APIs (Deepgram, Groq) and a local-only fallback (Whisper, Ollama) based on environment variables, providing maximum flexibility for development and deployment.
+-   **✅ Modernized Python Dependencies**: Migrated from multiple `requirements.txt` files and build arguments to a single, modern `pyproject.toml` with `uv` for dependency management and `requirements.lock` for reproducible builds.
+-   **✅ Implemented Distributed Tracing**: The Go gateway now generates a unique `RequestID` for every voice request and forwards it to the Python API, enabling end-to-end traceability in the logs.
+-   **✅ Stabilized Development Workflows**: Created and debugged two distinct, reliable development modes (`dev:hybrid` and `dev`) with hot-reloading for all services (Go, Python, Next.js) and cross-platform compatibility.
+-   **✅ Production-Hardened Services**: Fixed numerous bugs related to timeouts, configuration loading (`.env`), and logging. Implemented graceful shutdown in the Go gateway for robust operation.
 
-This is currently a personal portfolio project, but suggestions and feedback are welcome!
+### Previous Frontend UX Improvements
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
+-   **✅ Fixed Toast Positioning**: Moved toasts from bottom to top to prevent footer overlap.
+-   **✅ Modal System**: Created accessible `Modal`, `TaskModal`, and `HabitModal` components with full keyboard navigation, ARIA roles, form validation, and backdrop-click-to-close.
+-   **✅ Action Buttons Wired**: All placeholder actions were replaced with real functionality for creating tasks/habits and navigating to the Pomodoro timer.
+-   **✅ Code Cleanup**: Removed all `console.log` statements and debug code from the frontend.
 ---
 
 ## 📄 License
 
-MIT License - feel free to use this project for learning and inspiration.
-
----
+This project is licensed under the MIT License.
 
 ## 👤 Author
 
-**Divij Ganjoo**  
-Aspiring Solutions Architect & Backend + AI/ML Engineer
+**Divij Ganjoo**
 
-- Portfolio: [Lys](https://divijganjoo.me)
-- LinkedIn: [divij-ganjoo](https://linkedin.com/in/divij-ganjoo)
-- GitHub: [@divijg19](https://github.com/divijg19)
-
----
-
-## 🌟 Acknowledgments
-
-- **Next.js Team** for the incredible React framework
-- **FastAPI** for elegant Python async APIs
-- **Tailwind CSS** for utility-first styling
-- **OpenAI** for Whisper and inspiration
-- **Vercel** for Next.js and deployment platform
-
----
+-   Portfolio: [divijganjoo.me](https://divijganjoo.me)
+-   LinkedIn: [in/divij-ganjoo](https://linkedin.com/in/divij-ganjoo)
+-   GitHub: [@divijg19](https://github.com/divijg19)
 
 *Built with ❤️ and ☕ as a demonstration of modern full-stack development with AI/ML integration.*

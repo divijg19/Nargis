@@ -1,0 +1,47 @@
+Metadata-Version: 2.4
+Name: api-py
+Version: 0.1.0
+Summary: The Python AI orchestrator for the Nargis productivity platform.
+Requires-Python: ~=3.12.12
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi>=0.119.0
+Requires-Dist: uvicorn>=0.38.0
+Requires-Dist: httpx>=0.28.1
+Requires-Dist: python-dotenv>=1.1.1
+Requires-Dist: python-multipart>=0.0.20
+Requires-Dist: soundfile>=0.13.1
+Requires-Dist: openai>=2.5.0
+Provides-Extra: ml
+Requires-Dist: torch>=2.9.0; extra == "ml"
+Requires-Dist: transformers>=4.57.1; extra == "ml"
+Requires-Dist: accelerate; extra == "ml"
+Requires-Dist: bitsandbytes; extra == "ml"
+Requires-Dist: hf-xet>=1.1.10; extra == "ml"
+Requires-Dist: whisperx; extra == "ml"
+Requires-Dist: openai-whisper; extra == "ml"
+
+(# api-py — Nargis Python API)
+
+This service provides STT/LLM/TTS endpoints for Nargis. Important notes for local development and deployment:
+
+- The default container image is lightweight and does NOT include heavy ML libraries (torch/transformers).
+- To build the default (recommended) image locally:
+
+```pwsh
+docker build -t nargis-api-py:local --build-arg BUILD_ML=0 ./apps/api-py
+```
+
+- To build an ML-enabled image (requires large disk space and is slow; prefer remote builders or a dedicated GPU host):
+
+```pwsh
+docker build -t nargis-api-py:ml --build-arg BUILD_ML=1 ./apps/api-py
+```
+
+- If your local Docker daemon is limited or unavailable, use Fly remote build or CI to build images:
+
+```pwsh
+flyctl deploy --remote-only -a <app-name>
+```
+
+- For self-hosted ML, consider running `apps/ml-worker` which isolates heavy model dependencies from the lightweight API.
+

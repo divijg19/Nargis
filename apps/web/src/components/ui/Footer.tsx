@@ -1,6 +1,69 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ConnectionStatusIndicator } from "@/components/ui/ConnectionStatusIndicator";
+import { useRealtime } from "@/contexts/RealtimeContext";
+
+function CompactVoiceControl() {
+  const { isListening, startListening, stopListening, connectionStatus } =
+    useRealtime();
+  // Do not completely disable the footer control while connecting; allow
+  // clicks so users can initiate a connection from the footer as well.
+  const disabled = false;
+
+  return (
+    <div className="hidden sm:block">
+      <button
+        type="button"
+        aria-pressed={isListening}
+        disabled={disabled}
+        onClick={() => {
+          if (isListening) stopListening();
+          else startListening();
+        }}
+        className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-primary/10 ${isListening ? "bg-destructive text-white border-2 border-white/20 shadow-md" : "bg-primary text-white border border-transparent hover:border-primary/30"} disabled:opacity-50 disabled:cursor-not-allowed leading-none`}
+        title={
+          connectionStatus === "connecting"
+            ? "Connecting..."
+            : isListening
+              ? "Stop listening"
+              : "Start listening"
+        }
+      >
+        <span className="sr-only">Voice</span>
+        {isListening ? (
+          <svg
+            className="w-6 h-6 block mx-auto leading-none"
+            style={{ transform: "translateY(2px)" }}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <title>Stop recording</title>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12" />
+          </svg>
+        ) : (
+          <svg
+            className="w-6 h-6 block mx-auto leading-none"
+            style={{ transform: "translateY(5px)" }}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <title>Start recording</title>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 1v11m0 0a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3z"
+            />
+          </svg>
+        )}
+      </button>
+    </div>
+  );
+}
 
 export function Footer() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -42,15 +105,14 @@ export function Footer() {
         ${isVisible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"}
       `}
     >
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-2xl mx-auto">
         <div
           className={`
           backdrop-blur-xl rounded-2xl border transition-all duration-300
-          ${
-            isScrolled
+          ${isScrolled
               ? "bg-background/95 border-border/50 shadow-lg shadow-primary/5"
               : "bg-background/80 border-border/30 shadow-sm"
-          }
+            }
         `}
         >
           <div className="px-4 sm:px-6">
@@ -71,6 +133,13 @@ export function Footer() {
                 </div>
               </div>
 
+              <div className="flex items-center space-x-3">
+                <div className="hidden sm:block">
+                  <ConnectionStatusIndicator />
+                </div>
+                <CompactVoiceControl />
+              </div>
+
               <div className="flex items-center space-x-3 text-muted-foreground">
                 <div className="hidden md:flex items-center space-x-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary/60" />
@@ -80,7 +149,7 @@ export function Footer() {
                 </div>
                 <div className="w-px h-3 bg-border/50" />
                 <span className="text-xs font-semibold text-foreground">
-                  v0.1
+                  v0.5
                 </span>
               </div>
             </div>

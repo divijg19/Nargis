@@ -8,15 +8,18 @@ import os
 import uuid
 from typing import Optional, List
 from contextvars import ContextVar
-from fastapi import FastAPI, UploadFile, File, Request
+from fastapi import FastAPI, UploadFile, File, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
-from openai import OpenAI
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
+from dotenv import load_dotenv
 
-# Force all output streams to use UTF-8 encoding to prevent 'charmap' errors on Windows.
+# Explicitly load the .env file to ensure configuration is always read.
+load_dotenv()
+
+# Force all output streams to use UTF-8 encoding.
 if sys.stdout.encoding != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 if sys.stderr.encoding != 'utf-8':
@@ -24,9 +27,11 @@ if sys.stderr.encoding != 'utf-8':
 
 request_id_ctx: ContextVar[str] = ContextVar("request_id", default="-")
 
+# THIS IS THE LOGGING FIX: It safely handles logs from external libraries.
 class RequestIdFilter(logging.Filter):
-    def filter(self, record: logging.LogRecord) -> bool:  # type: ignore
-        record.request_id = request_id_ctx.get("-")  # type: ignore
+    def filter(self, record: logging.LogRecord) -> bool:
+        if not hasattr(record, 'request_id'):
+            record.request_id = request_id_ctx.get("-")
         return True
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -36,52 +41,40 @@ logging.basicConfig(
 )
 logging.getLogger().addFilter(RequestIdFilter())
 
-# --- AI Model & API Client Setup ---
-# Local Ollama client (optional). We will prefer external managed providers when configured via env.
-try:
-    ollama_client = OpenAI(base_url='http://localhost:11434/v1', api_key='ollama')
-    logging.info("Local Ollama client initialized successfully.")
-except Exception as e:
-    logging.warning(f"Failed to initialize Ollama client. Is Ollama running? Error: {e}")
-    ollama_client = None
+# Ensure every LogRecord has a request_id attribute even if some handlers or
+# libraries bypass filters — wrap the LogRecord factory to inject a default.
+_orig_record_factory = logging.getLogRecordFactory()
+def _record_factory(*args, **kwargs):
+    record = _orig_record_factory(*args, **kwargs)
+    if not hasattr(record, 'request_id'):
+        try:
+            record.request_id = request_id_ctx.get("-")
+        except Exception:
+            record.request_id = "-"
+    return record
+logging.setLogRecordFactory(_record_factory)
 
-# External provider endpoints (preferred). If set, requests will be proxied to these URLs.
-STT_URL = os.getenv("STT_URL", "")  # e.g. Deepgram or Whisper API
-LLM_URL = os.getenv("LLM_URL", "")  # e.g. OpenAI/Groq-compatible endpoint
-TTS_URL = os.getenv("TTS_URL", "")  # e.g. Play.ht or ElevenLabs
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+from services.ai_clients import (
+    ensure_stt_loaded,
+    _get_transcription,
+    _get_llm_response,
+    ollama_client,
+    stt_model,
+    STT_URL,
+    LLM_URL,
+    GROQ_API_KEY,
+    DEEPGRAM_API_KEY,
+    HTTP_TIMEOUT,
+)
 
-# HTTP client defaults
-HTTP_TIMEOUT = int(os.getenv("HTTP_TIMEOUT_SECONDS", "30"))
-
-
-device = "cpu"
-stt_processor = None  # lazy init later
-stt_model = None      # lazy init later
-_stt_lock = asyncio.Lock()
-
-async def ensure_stt_loaded():
-    global stt_processor, stt_model
-    if stt_model is not None:
-        return
-    async with _stt_lock:
-        if stt_model is not None:
-            return
-        logging.info("Lazy loading Whisper STT model...")
-        from transformers import AutoProcessor, AutoModelForSpeechSeq2Seq  # type: ignore
-        local_proc = AutoProcessor.from_pretrained("openai/whisper-base")
-        local_model = AutoModelForSpeechSeq2Seq.from_pretrained("openai/whisper-base")
-        local_model.to(device)
-        stt_processor = local_proc
-        stt_model = local_model
-        logging.info("STT model ready.")
-
-# --- FastAPI App & Data Models ---
 app = FastAPI(title="Nargis AI Service")
 
+# TTS configuration used by the /tts endpoint (kept in main for routing concerns)
+TTS_URL = os.getenv("TTS_URL", "")
+TTS_API_KEY = os.getenv("TTS_API_KEY", "")
+
 class CorrelationIdMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):  # type: ignore
-        # Propagate X-Request-ID or create one
+    async def dispatch(self, request: Request, call_next):
         rid = request.headers.get("X-Request-ID", str(uuid.uuid4()))
         request_id_ctx.set(rid)
         response: Response = await call_next(request)
@@ -90,23 +83,15 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(CorrelationIdMiddleware)
 
-# --- Routers (REST CRUD Phase P2) ---
-from routers import tasks as tasks_router  # type: ignore
-from routers import habits as habits_router  # type: ignore
-from routers import pomodoro as pomodoro_router  # type: ignore
+from routers import tasks as tasks_router, habits as habits_router, pomodoro as pomodoro_router
 
 app.include_router(tasks_router.router)
 app.include_router(habits_router.router)
 app.include_router(pomodoro_router.router)
-class LLMRequest(BaseModel):
-    text: str
 
-# --- Middleware (CORS) ---
 def parse_origins(value: Optional[str]) -> List[str]:
-    if not value:
-        return ["http://localhost:3000"]
-    parts = [p.strip() for p in value.split(",") if p.strip()]
-    return parts or ["http://localhost:3000"]
+    if not value: return ["http://localhost:3000"]
+    return [p.strip() for p in value.split(",") if p.strip()] or ["http://localhost:3000"]
 
 allowed_origins = parse_origins(os.getenv("ALLOWED_ORIGINS"))
 logging.info(f"CORS allow_origins={allowed_origins}")
@@ -118,169 +103,59 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- CPU-Bound Helper Functions ---
-def convert_audio_to_wav_sync(audio_bytes: bytes) -> bytes:
-    logging.info("Converting audio with FFmpeg...")
+# AI client implementations live in apps/api-py/services/ai_clients.py
+
+@app.post("/api/v1/process-audio")
+async def process_audio_pipeline(audio_file: UploadFile = File(...)):
     try:
-        command = [ 'ffmpeg', '-i', 'pipe:0', '-f', 'wav', '-ar', '16000', '-ac', '1', 'pipe:1' ]
-        process = subprocess.run(command, input=audio_bytes, capture_output=True, check=True)
-        logging.info("FFmpeg conversion successful.")
-        return process.stdout
-    except subprocess.CalledProcessError as e:
-        logging.error(f"FFmpeg error: {e.stderr.decode('utf-8')}")
-        raise
+        audio_bytes = await audio_file.read()
+        transcribed_text = await _get_transcription(audio_bytes)
+        
+        if not transcribed_text or not transcribed_text.strip():
+            return {"choices": [{"message": {"content": "I'm sorry, I didn't catch that. Could you please repeat?"}}]}
+
+        # Call the LLM and return both the transcript and the model response so
+        # the frontend can show the user's transcript immediately and then the AI response.
+        llm_result = await _get_llm_response(transcribed_text)
+        return {"transcript": transcribed_text, "llm": llm_result}
+
+    except httpx.HTTPStatusError as e:
+        logging.exception(f"HTTP error: {e.response.text}")
+        raise HTTPException(status_code=e.response.status_code, detail=f"Error from external AI service: {e.response.text}")
     except Exception as e:
-        logging.error(f"An unexpected error occurred during FFmpeg conversion: {e}")
-        raise
+        logging.exception("Error during audio processing.")
+        raise HTTPException(status_code=500, detail=str(e))
 
-def run_stt_inference_sync(wav_audio_bytes: bytes) -> str:
-    logging.info("Running STT inference with model.generate()...")
-    assert stt_processor is not None and stt_model is not None, "STT model not loaded"
-    waveform, sample_rate = sf.read(io.BytesIO(wav_audio_bytes))
-    inputs = stt_processor(
-        waveform,
-        sampling_rate=sample_rate,
-        return_tensors="pt"
-    )
-    input_features = inputs.input_features.to(device)
-    attention_mask = inputs.get("attention_mask")
-    if attention_mask is not None:
-        attention_mask = attention_mask.to(device)
-    forced_decoder_ids = stt_processor.get_decoder_prompt_ids(language="english", task="transcribe")
-    predicted_ids = stt_model.generate(
-        input_features,
-        attention_mask=attention_mask,
-        forced_decoder_ids=forced_decoder_ids
-    )
-    transcription = stt_processor.batch_decode(predicted_ids, skip_special_tokens=True)[0]
-    logging.info(f"Transcription complete: '{transcription}'")
-    return transcription
-
-def run_llm_sync(text: str) -> dict:
-    if not ollama_client:
-        return {"error": "Ollama client is not initialized."}
-    logging.info(f"Received for Local LLM: '{text}'")
-    try:
-        chat_completion = ollama_client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": "You are Nargis, a friendly and concise AI productivity assistant."},
-                {"role": "user", "content": text},
-            ],
-            # Use the correct, non-hyphenated model name for Ollama.
-            model="phi4-mini",
-        )
-        response_text = chat_completion.choices[0].message.content
-        logging.info(f"Local LLM Response: '{response_text}'")
-        return {"text": response_text}
-    except Exception as e:
-        logging.error(f"An error occurred with the Ollama API: {e}")
-        return {"error": str(e)}
-
-# --- API Endpoints ---
 @app.get("/health")
-async def health():
-    return {"status": "ok"}
+async def health(): return {"status": "ok"}
 
 @app.get("/ready")
 async def ready():
-    # Do NOT force heavy model load unless explicitly requested to avoid cold start penalty.
-    stt_loaded = stt_model is not None
-    ollama_ok = ollama_client is not None
-    # external provider availability (best-effort; do not block)
-    stt_external = bool(STT_URL)
-    llm_external = bool(LLM_URL)
-    tts_external = bool(TTS_URL)
     return {
-        "status": "ready" if (ollama_ok or llm_external) else "degraded",
-        "sttLoaded": stt_loaded,
-        "ollamaClient": ollama_ok,
-        "sttExternalConfigured": stt_external,
-        "llmExternalConfigured": llm_external,
-        "ttsExternalConfigured": tts_external,
+        "status": "ready" if (ollama_client or (LLM_URL and GROQ_API_KEY)) else "degraded",
+        "sttLoaded": stt_model is not None,
+        "ollamaClient": ollama_client is not None,
+        "sttExternalConfigured": bool(STT_URL and DEEPGRAM_API_KEY),
+        "llmExternalConfigured": bool(LLM_URL and GROQ_API_KEY),
     }
-
-@app.post("/stt")
-async def speech_to_text(audio_file: UploadFile = File(...)):
-    audio_bytes = await audio_file.read()
-    loop = asyncio.get_running_loop()
-    try:
-        # Prefer external STT provider when configured
-        if STT_URL:
-            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-                files = {"file": ("audio.wav", audio_bytes)}
-                headers = {}
-                if OPENAI_API_KEY:
-                    headers["Authorization"] = f"Bearer {OPENAI_API_KEY}"
-                resp = await client.post(STT_URL, headers=headers, files=files)
-                resp.raise_for_status()
-                return resp.json()
-
-        # Fallback to local model
-        await ensure_stt_loaded()
-        wav_audio_bytes = await loop.run_in_executor(None, convert_audio_to_wav_sync, audio_bytes)
-        transcribed_text = await loop.run_in_executor(None, run_stt_inference_sync, wav_audio_bytes)
-        return {"text": transcribed_text}
-    except Exception as e:
-        logging.exception("STT processing failed")
-        return {"error": str(e)}
-
-@app.post("/llm")
-async def process_llm(request: LLMRequest):
-    # Prefer external LLM endpoint when configured (supports OpenAI-compatible semantics)
-    try:
-        if LLM_URL:
-            payload = {"messages": [{"role": "user", "content": request.text}]}
-            headers = {"Content-Type": "application/json"}
-            if OPENAI_API_KEY:
-                headers["Authorization"] = f"Bearer {OPENAI_API_KEY}"
-            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-                resp = await client.post(LLM_URL, json=payload, headers=headers)
-                resp.raise_for_status()
-                return resp.json()
-
-        # If no external LLM, run local Ollama-backed LLM synchronously
-        loop = asyncio.get_running_loop()
-        response_data = await loop.run_in_executor(None, run_llm_sync, request.text)
-        return response_data
-    except httpx.HTTPStatusError as e:
-        logging.error(f"LLM external provider HTTP error: {e}")
-        return {"error": str(e)}
-    except Exception as e:
-        logging.exception("LLM processing failed")
-        return {"error": str(e)}
 
 @app.on_event("startup")
 async def maybe_preload():
-    # Optional preload for STT to reduce first-request latency; controlled via env.
-    if os.getenv("PRELOAD_STT", "false").lower() in {"1", "true", "yes"}:
-        try:
-            await ensure_stt_loaded()
-            logging.info("STT model preloaded at startup")
-        except Exception as e:
-            logging.warning(f"Failed to preload STT model: {e}")
-
+    if os.getenv("PRELOAD_STT", "false").lower() == "true":
+        await ensure_stt_loaded()
 
 class TTSRequest(BaseModel):
     text: str
 
-
 @app.post("/tts")
 async def text_to_speech(req: TTSRequest):
-    # If external TTS provider configured, proxy to it and return raw audio bytes
+    if not TTS_URL or not TTS_API_KEY: raise HTTPException(status_code=501, detail="TTS not configured")
     try:
-        if TTS_URL:
-            headers = {}
-            if OPENAI_API_KEY:
-                headers["Authorization"] = f"Bearer {OPENAI_API_KEY}"
-            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-                resp = await client.post(TTS_URL, json={"text": req.text}, headers=headers)
-                resp.raise_for_status()
-                # Forward binary content (assumes provider returns audio/*)
-                content_type = resp.headers.get("content-type", "audio/mpeg")
-                return Response(content=resp.content, media_type=content_type)
-
-        # No external TTS configured; local TTS is not implemented here by default.
-        return Response(content=b"", media_type="audio/mpeg", status_code=501)
+        headers = {"Authorization": f"Bearer {TTS_API_KEY}"}
+        async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+            resp = await client.post(TTS_URL, json={"text": req.text}, headers=headers)
+            resp.raise_for_status()
+            return Response(content=resp.content, media_type=resp.headers.get("content-type", "audio/mpeg"))
     except Exception as e:
         logging.exception("TTS proxy failed")
-        return {"error": str(e)}
+        raise HTTPException(status_code=502, detail=f"TTS service error: {e}")

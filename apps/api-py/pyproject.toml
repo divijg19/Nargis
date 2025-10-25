@@ -1,7 +1,37 @@
 [project]
 name = "api-py"
 version = "0.1.0"
-description = "Add your description here"
+description = "The Python AI orchestrator for the Nargis productivity platform."
 readme = "README.md"
-requires-python = ">=3.14"
-dependencies = []
+requires-python = "~=3.12.12"
+
+dependencies = [
+    "fastapi>=0.119.0",
+    "uvicorn>=0.38.0",
+    "httpx>=0.28.1",
+    "python-dotenv>=1.1.1",
+    "python-multipart>=0.0.20",
+    "soundfile>=0.13.1",
+    "openai>=2.5.0", 
+]
+
+[project.optional-dependencies]
+# install them with `uv pip install '.[ml]'`.
+# This group contains all the heavy ML dependencies
+ml = [
+    "torch>=2.9.0",
+    "transformers>=4.57.1",
+    "accelerate",
+    "bitsandbytes",
+    "hf-xet>=1.1.10",
+    # Optional local-only helpers
+    "whisperx",
+    "openai-whisper",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["routers", "storage", "services"]

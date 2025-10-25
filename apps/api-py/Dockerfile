@@ -1,48 +1,63 @@
-ARG BUILD_ML=0
-FROM python:3.13.8-slim AS builder
+# File Path: apps/api-py/Dockerfile
+
+# --- Stage 1: Build the application and its dependencies ---
+FROM python:3.12-slim AS builder
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+RUN pip install --no-cache-dir --upgrade pip uv
+
+# Install system-level dependencies.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    ffmpeg \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy the generated lock file to install dependencies.
+COPY requirements.lock .
+
+# Install dependencies from the lock file.
+RUN uv pip sync --no-cache-dir --system requirements.lock
+
+# Copy the rest of the application source code.
+COPY . .
+
+# --- Stage 2: Create the final, lean runtime image ---
+FROM python:3.12-slim AS runtime
+
+# Install only the RUNTIME system dependencies.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ffmpeg \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user for security.
+RUN useradd --create-home --shell /bin/bash nargis
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    VENV_PATH=/opt/venv
+    PATH="/home/nargis/.local/bin:${PATH}"
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    build-essential git ffmpeg libsndfile1 ca-certificates && rm -rf /var/lib/apt/lists/*
+# Copy installed Python packages from the builder stage.
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 
+# Copy the executables (like uvicorn) from the builder stage as well.
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy the application code from the builder stage.
 WORKDIR /app
-RUN python -m venv "$VENV_PATH"
-ENV PATH="$VENV_PATH/bin:$PATH"
-
-## Use a lightweight set of requirements by default to avoid pulling heavy ML wheels.
-COPY requirements.light.txt ./
-COPY requirements.ml.txt ./
-# Note: do NOT copy `requirements.txt` or `pyproject.toml` into the builder stage —
-# those files were kept for developer reference but may include heavy pinned ML deps.
-RUN --mount=type=cache,target=/root/.cache/pip set -eux; \
-    pip install --upgrade pip setuptools wheel; \
-    pip install --no-cache-dir -r requirements.light.txt; \
-    if [ "$BUILD_ML" = "1" ]; then pip install --no-cache-dir -r requirements.ml.txt; fi; \
-    test -x "$VENV_PATH/bin/uvicorn"
-
-# Now copy the rest of the source
-COPY . /app
-
-FROM python:${PYTHON_VERSION}-slim AS runtime
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH="/opt/venv/bin:$PATH" \
-    PRELOAD_STT=false LOG_LEVEL=INFO
-
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ffmpeg libsndfile1 ca-certificates && rm -rf /var/lib/apt/lists/* && \
-    useradd --create-home --shell /usr/sbin/nologin nargis
-
-WORKDIR /app
-COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder --chown=nargis:nargis /app /app
 
-# Healthcheck (simple) hitting readiness
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD python -c "import http.client,sys; import os; h=os.environ.get('HOST','localhost'); conn=http.client.HTTPConnection('localhost',8000,timeout=2); conn.request('GET','/ready'); r=conn.getresponse(); sys.exit(0 if r.status==200 else 1)" || exit 1
-
 USER nargis
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD python -c "import http.client,sys; conn=http.client.HTTPConnection('localhost',8000,timeout=2); conn.request('GET','/ready'); r=conn.getresponse(); sys.exit(0 if r.status==200 else 1)"
+
 EXPOSE 8000
-ENTRYPOINT ["uvicorn"]
-CMD ["main:app","--host","0.0.0.0","--port","8000","--proxy-headers","--log-level","info"]
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

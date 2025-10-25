@@ -1,9 +1,0 @@
-# Heavy ML dependencies (only install when BUILD_ML=1)
-torch>=2.9.0
-transformers>=4.57.1
-accelerate
-bitsandbytes
-hf-xet>=1.1.10
-# Optional local-only helpers
-whisperx
-openai-whisper

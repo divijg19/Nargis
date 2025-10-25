@@ -57,16 +57,16 @@ function DashboardContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/20 transition-all duration-500">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/20 transition-all duration-500">
       {/* Premium ambient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent dark:via-primary/10 pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-r from-transparent via-primary/5 to-transparent dark:via-primary/10 pointer-events-none" />
 
       {/* Premium Hero Header */}
       <header className="relative mb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-8">
             <h1 className="text-5xl md:text-6xl font-bold mb-4 animate-fade-in">
-              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600 bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-indigo-600 via-purple-600 to-violet-600 bg-clip-text text-transparent">
                 {getGreeting()}!
               </span>
               <span className="text-slate-900 dark:text-white"> 👋</span>

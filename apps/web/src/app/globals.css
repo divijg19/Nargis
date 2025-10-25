@@ -3,14 +3,15 @@
 /* Refined color palette for seamless light/dark themes */
 @theme {
   /* Light theme - Premium, warm, inviting */
-  --color-primary: #4f46e5;
+  /* Light-theme primary aligned with the warmed Nargis palette */
+  --color-primary: #7b2cbf;
   --color-primary-foreground: #ffffff;
   --color-secondary: #6b7280;
   --color-secondary-foreground: #111827;
-  --color-accent: #7c3aed;
+  --color-accent: #ff7aab;
   --color-accent-foreground: #ffffff;
   --color-muted: #f8fafc;
-  --color-muted-foreground: #64748b;
+  --color-muted-foreground: #8b3e3e;
   --color-card: #ffffff;
   --color-card-foreground: #0f172a;
   --color-border: #e2e8f0;
@@ -36,23 +37,25 @@
   --color-active: #e2e8f0;
 
   /* Gradients */
-  --gradient-brand: linear-gradient(135deg, #3730a3 0%, #6b21a8 100%);
-  --gradient-surface: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  --gradient-brand: linear-gradient(135deg, #7b2cbf 0%, #ff6b4a 60%, #ffb86b 100%);
+  /* Nargis highlight gradient (light) - warmed with red/orange pinch */
+  --gradient-nargis: linear-gradient(90deg, #ff6b4a 0%, #ff7aab 40%, #ffb86b 100%);
+  --gradient-surface: linear-gradient(135deg, #ffffff 0%, #fff9f6 100%);
   --gradient-ambient: linear-gradient(
     135deg,
-    #fafbfc 0%,
-    #f1f5f9 50%,
-    #e0e7ff 100%
+    #fffaf8 0%,
+    #fff4e6 50%,
+    #ffe9d6 100%
   );
 }
 
 /* Dark theme - Sophisticated, premium, eye-friendly */
 .dark {
-  --color-primary: #6366f1;
+  --color-primary: #4f46e5;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #9ca3af;
-  --color-secondary-foreground: #f9fafb;
-  --color-accent: #8b5cf6;
+  --color-secondary: #6b7280;
+  --color-secondary-foreground: #111827;
+  --color-accent: #7c3aed;
   --color-accent-foreground: #ffffff;
   --color-muted: #1e293b;
   --color-muted-foreground: #94a3b8;
@@ -81,7 +84,9 @@
   --color-active: #334155;
 
   /* Gradients */
-  --gradient-brand: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --gradient-brand: linear-gradient(135deg, #493fd4 0%, #852ccd 100%);
+  /* Nargis highlight gradient (dark) */
+  --gradient-nargis: linear-gradient(90deg, #2dd4bf 0%, #7c3aed 100%);
   --gradient-surface: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   --gradient-ambient: linear-gradient(
     135deg,
@@ -341,6 +346,14 @@ body {
   color: transparent;
 }
 
+/* Special gradient for 'Nargis' to stand out in both themes */
+.gradient-nargis {
+  background: var(--gradient-nargis);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 /* Theme-aware states */
 .pulse-success {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -385,19 +398,94 @@ body {
 
 /* Interactive states */
 .btn-primary {
-  background: var(--gradient-brand);
+  /* Premium primary button: minimal, softened gradient/solid hybrid */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  /* Use a solid brand color with a very subtle gradient overlay for depth */
+  background-color: var(--color-primary);
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0));
   color: var(--color-primary-foreground);
-  border: 1px solid var(--color-primary);
-  transition: all 0.2s ease;
+  border: 1px solid rgba(15,23,42,0.04);
+  padding: 0.65rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.07);
 }
 
 .dark .btn-primary:hover {
-  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.45);
+}
+
+/* Dark-mode primary: use richer gradient/brand and stronger emphasis */
+.dark .btn-primary {
+  /* Use the theme's gradient-brand for depth in dark mode */
+  background: var(--gradient-brand);
+  color: var(--color-primary-foreground);
+  border-color: rgba(255,255,255,0.06);
+  box-shadow: 0 10px 28px rgba(2,6,23,0.6);
+}
+
+/* Make sure the light-mode primary stays minimal and distinct from dark */
+.btn-primary {
+  /* ensure background-color only applies in non-dark contexts */
+  background-color: var(--color-primary);
+}
+
+/* Secondary CTA that follows theme tokens: subtle in light, legible in dark */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: transparent;
+  /* Use theme foreground so text isn't locked to primary color */
+  color: var(--color-foreground);
+  border: 1px solid var(--color-border);
+  padding: 0.6rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+.btn-secondary:hover {
+  /* Very subtle surface tint on hover for affordance */
+  background: rgba(15,23,42,0.02);
+  transform: translateY(-1px);
+}
+.dark .btn-secondary {
+  color: var(--color-foreground);
+  border-color: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
+}
+.dark .btn-secondary:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+/* Subtle accessibility tweak: increase contrast slightly in dark for the secondary */
+.dark .btn-secondary {
+  /* keep subtle fill but ensure readable border */
+  background: rgba(255,255,255,0.03);
+  border-color: rgba(255,255,255,0.08);
+}
+
+/* Base btn utility for consistent sizing/keyboard focus */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:focus-visible {
+  outline: 2px solid rgba(124,58,237,0.18);
+  outline-offset: 3px;
+  border-radius: 0.75rem;
 }
 
 /* Screen reader only */

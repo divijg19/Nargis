@@ -1,0 +1,16 @@
+fastapi>=0.119.0
+uvicorn>=0.38.0
+httpx>=0.28.1
+python-dotenv>=1.1.1
+python-multipart>=0.0.20
+soundfile>=0.13.1
+openai>=2.5.0
+
+[ml]
+torch>=2.9.0
+transformers>=4.57.1
+accelerate
+bitsandbytes
+hf-xet>=1.1.10
+whisperx
+openai-whisper

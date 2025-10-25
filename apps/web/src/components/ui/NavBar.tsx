@@ -4,6 +4,35 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
+import { VoiceInputButton } from "./VoiceInputButton";
+import { useRealtime } from "@/contexts/RealtimeContext";
+
+function InlineVoice() {
+  const { isListening, connectionStatus } = useRealtime();
+
+  const statusMap: Record<string, { dot: string; label: string }> = {
+    open: { dot: "bg-success", label: "Connected" },
+    connecting: { dot: "bg-amber-400", label: "Connecting" },
+    retrying: { dot: "bg-amber-400", label: "Reconnecting" },
+    closed: { dot: "bg-destructive", label: "Disconnected" },
+    error: { dot: "bg-destructive", label: "Connection Error" },
+    idle: { dot: "bg-muted-foreground", label: "Idle" },
+  };
+
+  const status = statusMap[connectionStatus] ?? statusMap.idle;
+
+  return (
+    <div className="flex items-center gap-3">
+      <div className="-mt-1">
+        <VoiceInputButton size="sm" showStatus={false} />
+      </div>
+      <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+        <span className={`inline-flex items-center w-2 h-2 rounded-full ${status.dot}`} />
+        <span className="font-medium">{isListening ? "Listening" : status.label}</span>
+      </div>
+    </div>
+  );
+}
 
 const navigationItems = [
   { href: "/dashboard", label: "Dashboard", icon: "📊" },
@@ -50,7 +79,7 @@ export function NavBar() {
     <>
       <a
         href="#main"
-        className="sr-only focus:not-sr-only fixed top-4 left-1/2 -translate-x-1/2 z-[60] bg-primary text-primary-foreground px-4 py-2 rounded-xl font-medium shadow-lg transition-all hover:scale-105"
+        className="sr-only focus:not-sr-only fixed top-4 left-1/2 -translate-x-1/2 z-60 bg-primary text-primary-foreground px-4 py-2 rounded-xl font-medium shadow-lg transition-all hover:scale-105"
       >
         Skip to content
       </a>
@@ -61,50 +90,43 @@ export function NavBar() {
           ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}
         `}
       >
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <div
             className={`
             backdrop-blur-xl rounded-2xl border transition-all duration-300
-            ${
-              isScrolled
+            ${isScrolled
                 ? "bg-background/95 border-border/50 shadow-lg shadow-primary/5"
                 : "bg-background/80 border-border/30 shadow-sm"
-            }
+              }
           `}
           >
             <div className="px-4 sm:px-6">
-              <div className="flex items-center justify-between h-14">
+              <div className="flex items-center justify-between h-12">
                 {/* Logo */}
                 <Link
                   href="/"
                   className="flex items-center space-x-3 hover:scale-105 transition-all duration-200 group"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
+                  <div className="w-7 h-7 rounded-lg bg-linear-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
                     <span className="text-sm font-bold text-primary-foreground">
                       N
                     </span>
                   </div>
-                  <span className="text-lg font-semibold text-foreground tracking-tight">
+                  <span className="text-sm font-medium text-foreground tracking-tight hidden sm:inline-block">
                     Nargis
                   </span>
                 </Link>
 
                 {/* Desktop Navigation */}
-                <div className="hidden md:flex items-center space-x-1">
+                <div className="hidden md:flex items-center space-x-2">
                   {navigationItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`
-                          relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 group
-                          ${
-                            isActive
-                              ? "text-primary bg-primary/10 shadow-sm"
-                              : "text-muted-foreground hover:text-foreground hover:bg-hover/50"
-                          }
-                        `}
+                        className={`relative px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 group
+                          ${isActive ? "text-primary bg-primary/10 shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-hover/50"}`}
                       >
                         <span className="mr-2 transition-transform group-hover:scale-110">
                           {item.icon}
@@ -119,7 +141,10 @@ export function NavBar() {
                 </div>
 
                 {/* Theme Toggle & Mobile Menu */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
+                  {/* Voice button (compact) with inline status */}
+                  <InlineVoice />
+
                   <ThemeToggle />
 
                   {/* Mobile menu button */}
@@ -175,10 +200,9 @@ export function NavBar() {
                           onClick={() => setMobileMenuOpen(false)}
                           className={`
                             block px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
-                            ${
-                              isActive
-                                ? "bg-primary/10 text-primary border border-primary/20"
-                                : "text-muted-foreground hover:text-foreground hover:bg-hover/50"
+                            ${isActive
+                              ? "bg-primary/10 text-primary border border-primary/20"
+                              : "text-muted-foreground hover:text-foreground hover:bg-hover/50"
                             }
                           `}
                         >

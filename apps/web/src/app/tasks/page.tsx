@@ -26,16 +26,16 @@ export default function TasksPage() {
     tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950/20 transition-all duration-500">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950/20 transition-all duration-500">
       {/* Premium ambient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent dark:via-blue-400/10 pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-r from-transparent via-blue-500/5 to-transparent dark:via-blue-400/10 pointer-events-none" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 py-4">
         {/* Premium Header */}
         <div className="animate-fade-in">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-8">
             <div>
               <h1 className="text-5xl md:text-6xl font-bold mb-3">
-                <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                <span className="bg-linear-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
                   Tasks
                 </span>
                 <span className="text-slate-900 dark:text-white"> ✓</span>
@@ -62,7 +62,7 @@ export default function TasksPage() {
                 Total Tasks
               </div>
             </div>
-            <div className="glass bg-gradient-to-br from-blue-50/90 to-indigo-50/90 dark:from-blue-900/20 dark:to-indigo-900/20 backdrop-blur-xl rounded-2xl p-6 border border-blue-200/60 dark:border-blue-800/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div className="glass bg-linear-to-br from-blue-50/90 to-indigo-50/90 dark:from-blue-900/20 dark:to-indigo-900/20 backdrop-blur-xl rounded-2xl p-6 border border-blue-200/60 dark:border-blue-800/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
               <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
                 {todayTasks.length}
               </div>
@@ -70,7 +70,7 @@ export default function TasksPage() {
                 Due Today
               </div>
             </div>
-            <div className="glass bg-gradient-to-br from-green-50/90 to-emerald-50/90 dark:from-green-900/20 dark:to-emerald-900/20 backdrop-blur-xl rounded-2xl p-6 border border-green-200/60 dark:border-green-800/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div className="glass bg-linear-to-br from-green-50/90 to-emerald-50/90 dark:from-green-900/20 dark:to-emerald-900/20 backdrop-blur-xl rounded-2xl p-6 border border-green-200/60 dark:border-green-800/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
               <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
                 {completedCount}
               </div>
@@ -78,7 +78,7 @@ export default function TasksPage() {
                 Completed
               </div>
             </div>
-            <div className="glass bg-gradient-to-br from-purple-50/90 to-violet-50/90 dark:from-purple-900/20 dark:to-violet-900/20 backdrop-blur-xl rounded-2xl p-6 border border-purple-200/60 dark:border-purple-800/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div className="glass bg-linear-to-br from-purple-50/90 to-violet-50/90 dark:from-purple-900/20 dark:to-violet-900/20 backdrop-blur-xl rounded-2xl p-6 border border-purple-200/60 dark:border-purple-800/60 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
               <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
                 {completionRate}%
               </div>

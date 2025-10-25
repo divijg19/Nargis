@@ -19,7 +19,7 @@ export function DashboardCard({
       )}
     >
       {/* Premium gradient overlay on hover */}
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 via-accent/5 to-primary/3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      <div className="absolute inset-0 rounded-2xl bg-linear-to-br from-primary/5 via-accent/5 to-primary/3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-6">

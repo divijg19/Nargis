@@ -58,14 +58,14 @@ export default function PomodoroPage() {
   const sessionInfo = getSessionInfo();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950/20 transition-all duration-500">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-emerald-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950/20 transition-all duration-500">
       {/* Premium ambient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/5 to-transparent dark:via-emerald-400/10 pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-r from-transparent via-emerald-500/5 to-transparent dark:via-emerald-400/10 pointer-events-none" />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 py-4">
         {/* Premium Header */}
         <div className="text-center animate-fade-in">
           <h1 className="text-5xl md:text-6xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-emerald-600 via-green-600 to-teal-600 bg-clip-text text-transparent">
               Pomodoro
             </span>
             <span className="text-slate-900 dark:text-white"> 🍅</span>

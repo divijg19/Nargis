@@ -40,7 +40,7 @@ export function PomodoroPreview({
   const progressPercentage = Math.round(progress);
 
   return (
-    <div className="bg-gradient-to-br from-red-500 to-orange-500 rounded-lg p-6 text-white">
+    <div className="bg-linear-to-br from-red-500 to-orange-500 rounded-lg p-6 text-white">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <div

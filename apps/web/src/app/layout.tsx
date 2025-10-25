@@ -4,6 +4,8 @@ import Script from "next/script";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { AppProviders } from "@/components/layout/AppProviders";
+import AIResponseModalLoader from "@/components/ui/AIResponseModalLoader";
+
 import { Footer } from "@/components/ui/Footer";
 import { NavBar } from "@/components/ui/NavBar";
 import { ToastViewport } from "@/components/ui/Toasts";
@@ -95,6 +97,7 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
+          <AIResponseModalLoader />
           <ToastViewport />
           <div
             id="voice-announcements"
