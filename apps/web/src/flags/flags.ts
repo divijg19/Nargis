@@ -1,47 +1,47 @@
 export type FeatureFlag =
-  | "realtime"
-  | "taskIntelligence"
-  | "habitRisk"
-  | "focusScoring"
-  | "voiceInput";
+	| "realtime"
+	| "taskIntelligence"
+	| "habitRisk"
+	| "focusScoring"
+	| "voiceInput";
 
 interface FlagState {
-  [k: string]: boolean;
+	[k: string]: boolean;
 }
 
 const defaults: FlagState = {
-  realtime: false,
-  taskIntelligence: false,
-  habitRisk: false,
-  focusScoring: false,
-  voiceInput: true,
+	realtime: false,
+	taskIntelligence: false,
+	habitRisk: false,
+	focusScoring: false,
+	voiceInput: true,
 };
 
 let overrides: FlagState = {};
 
 export function setFlag(flag: FeatureFlag, value: boolean) {
-  overrides[flag] = value;
+	overrides[flag] = value;
 }
 
 export function isFlagEnabled(flag: FeatureFlag): boolean {
-  if (flag in overrides) return !!overrides[flag];
-  return !!defaults[flag];
+	if (flag in overrides) return !!overrides[flag];
+	return !!defaults[flag];
 }
 
 export function loadFlagOverridesFromEnv() {
-  if (typeof window === "undefined") return;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const raw = (
-      window as unknown as { __NARGIS_FLAGS__?: Record<string, boolean> }
-    ).__NARGIS_FLAGS__;
-    if (raw) overrides = { ...overrides, ...raw };
-  } catch {
-    /* noop */
-  }
+	if (typeof window === "undefined") return;
+	try {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const raw = (
+			window as unknown as { __NARGIS_FLAGS__?: Record<string, boolean> }
+		).__NARGIS_FLAGS__;
+		if (raw) overrides = { ...overrides, ...raw };
+	} catch {
+		/* noop */
+	}
 }
 
 export function listFlags() {
-  const merged: FlagState = { ...defaults, ...overrides };
-  return Object.entries(merged).map(([key, enabled]) => ({ key, enabled }));
+	const merged: FlagState = { ...defaults, ...overrides };
+	return Object.entries(merged).map(([key, enabled]) => ({ key, enabled }));
 }

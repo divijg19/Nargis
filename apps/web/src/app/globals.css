@@ -1,462 +1,1272 @@
 @import "tailwindcss";
 
 /* Refined color palette for seamless light/dark themes */
-@theme {
-  /* Light theme - Premium, warm, inviting */
-  --color-primary: #4f46e5;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #6b7280;
-  --color-secondary-foreground: #111827;
-  --color-accent: #7c3aed;
-  --color-accent-foreground: #ffffff;
-  --color-muted: #f8fafc;
-  --color-muted-foreground: #64748b;
-  --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
-  --color-border: #e2e8f0;
-  --color-background: #fefefe;
-  --color-foreground: #0f172a;
+:root {
+	/* Light theme - Premium, warm, inviting */
+	/* Light-theme primary aligned with the warmed Nargis palette */
+	--color-primary: #7b2cbf;
+	--color-primary-foreground: #ffffff;
+	/* RGB helper for shadows/glows */
+	--color-primary-rgb: 123, 44, 191;
+	--color-secondary: #6b7280;
+	--color-secondary-foreground: #111827;
+	--color-accent: #ff7aab;
+	--color-accent-foreground: #ffffff;
+	--color-muted: #f8fafc;
+	/* Neutral muted foreground for labels and secondary text */
+	/* Muted foreground adjusted for better contrast on light backgrounds */
+	--color-muted-foreground: #334155; /* slightly darker for improved contrast on light surfaces */
+	--color-card: #ffffff;
+	--color-card-foreground: #0f172a;
+	--color-border: #d6dde6; /* slightly deeper for accessible separation */
+	--color-background: #fefefe;
+	--color-foreground: #0f172a;
+	--color-focus: rgba(123, 44, 191, 0.22);
 
-  /* Semantic colors - refined */
-  --color-success: #059669;
-  --color-success-foreground: #ffffff;
-  --color-warning: #d97706;
-  --color-warning-foreground: #ffffff;
-  --color-destructive: #dc2626;
-  --color-destructive-foreground: #ffffff;
+	/* Radius & shadow tokens for consistent premium geometry */
+	--radius-sm: 6px;
+	--radius-md: 12px;
+	--radius-lg: 18px;
+	--shadow-1: 0 6px 18px rgba(2, 6, 23, 0.06);
+	--shadow-2: 0 18px 40px rgba(2, 6, 23, 0.1);
 
-  /* Surface variations for depth */
-  --color-surface-50: #fafbfc;
-  --color-surface-100: #f4f6f8;
-  --color-surface-200: #e8ebef;
-  --color-surface-300: #d1d7dd;
+	/* Semantic colors - refined */
+	--color-success: #059669;
+	--color-success-foreground: #ffffff;
+	--color-warning: #d97706;
+	--color-warning-foreground: #ffffff;
+	--color-destructive: #dc2626;
+	--color-destructive-foreground: #ffffff;
 
-  /* Interactive states */
-  --color-hover: #f1f5f9;
-  --color-active: #e2e8f0;
+	/* Surface variations for depth */
+	--color-surface-50: #fafbfc;
+	--color-surface-100: #f4f6f8;
+	--color-surface-200: #e8ebef;
+	--color-surface-300: #d1d7dd;
 
-  /* Gradients */
-  --gradient-brand: linear-gradient(135deg, #3730a3 0%, #6b21a8 100%);
-  --gradient-surface: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  --gradient-ambient: linear-gradient(
-    135deg,
-    #fafbfc 0%,
-    #f1f5f9 50%,
-    #e0e7ff 100%
-  );
+	/* ensure semantic emphasis has clear RGB helpers */
+	--color-success-rgb: 5, 150, 105;
+	--color-warning-rgb: 217, 119, 6;
+	--color-destructive-rgb: 220, 38, 38;
+
+	/* Interactive states */
+	--color-hover: #f1f5f9;
+	--color-active: #e2e8f0;
+
+	/* Gradients */
+	--gradient-brand: linear-gradient(
+		135deg,
+		#7b2cbf 0%,
+		#ff6b4a 60%,
+		#ffb86b 100%
+	);
+	/* Nargis highlight gradient (light) - warmed with red/orange pinch */
+	--gradient-nargis: linear-gradient(
+		90deg,
+		#ff6b4a 0%,
+		#ff7aab 40%,
+		#ffb86b 100%
+	);
+	--gradient-surface: linear-gradient(135deg, #ffffff 0%, #fff9f6 100%);
+	--gradient-ambient: linear-gradient(
+		135deg,
+		#fffaf8 0%,
+		#fff4e6 50%,
+		#ffe9d6 100%
+	);
 }
 
 /* Dark theme - Sophisticated, premium, eye-friendly */
 .dark {
-  --color-primary: #6366f1;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #9ca3af;
-  --color-secondary-foreground: #f9fafb;
-  --color-accent: #8b5cf6;
-  --color-accent-foreground: #ffffff;
-  --color-muted: #1e293b;
-  --color-muted-foreground: #94a3b8;
-  --color-card: #0f172a;
-  --color-card-foreground: #f8fafc;
-  --color-border: #334155;
-  --color-background: #0a0f1c;
-  --color-foreground: #f8fafc;
+	--color-primary: #4f46e5;
+	--color-primary-foreground: #ffffff;
+	--color-primary-rgb: 79, 70, 229;
+	--color-secondary: #6b7280;
+	--color-secondary-foreground: #111827;
+	--color-accent: #7c3aed;
+	--color-accent-foreground: #ffffff;
+	--color-muted: #1e293b;
+	--color-muted-foreground: #cbd6e6; /* increase contrast in dark: lighter muted text */
+	--color-card: #0f172a;
+	--color-card-foreground: #f8fafc;
+	--color-border: #334155;
+	--color-background: #0a0f1c;
+	--color-foreground: #f8fafc;
+	--color-focus: rgba(79, 70, 229, 0.18);
 
-  /* Semantic colors - dark optimized */
-  --color-success: #22c55e;
-  --color-success-foreground: #ffffff;
-  --color-warning: #fbbf24;
-  --color-warning-foreground: #111827;
-  --color-destructive: #f87171;
-  --color-destructive-foreground: #ffffff;
+	/* Semantic colors - dark optimized */
+	--color-success: #22c55e;
+	--color-success-foreground: #ffffff;
+	--color-warning: #fbbf24;
+	--color-warning-foreground: #111827;
+	--color-destructive: #f87171;
+	--color-destructive-foreground: #ffffff;
 
-  /* Surface variations for depth */
-  --color-surface-50: #1e293b;
-  --color-surface-100: #334155;
-  --color-surface-200: #475569;
-  --color-surface-300: #64748b;
+	/* Surface variations for depth */
+	--color-surface-50: #1e293b;
+	--color-surface-100: #334155;
+	--color-surface-200: #475569;
+	--color-surface-300: #64748b;
 
-  /* Interactive states */
-  --color-hover: #1e293b;
-  --color-active: #334155;
+	/* Interactive states */
+	--color-hover: #1e293b;
+	--color-active: #334155;
 
-  /* Gradients */
-  --gradient-brand: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  --gradient-surface: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  --gradient-ambient: linear-gradient(
-    135deg,
-    #020617 0%,
-    #0f172a 50%,
-    #1e1b4b 100%
-  );
+	/* Gradients */
+	--gradient-brand: linear-gradient(135deg, #493fd4 0%, #852ccd 100%);
+	/* Nargis highlight gradient (dark) */
+	--gradient-nargis: linear-gradient(90deg, #2dd4bf 0%, #7c3aed 100%);
+	--gradient-surface: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+	--gradient-ambient: linear-gradient(
+		135deg,
+		#020617 0%,
+		#0f172a 50%,
+		#1e1b4b 100%
+	);
 }
 
 /* Enhanced animations with theme awareness */
 @keyframes voice-wave {
-  0%,
-  100% {
-    height: 0.5rem;
-    opacity: 0.7;
-  }
-  50% {
-    height: 1.5rem;
-    opacity: 1;
-  }
+	0%,
+	100% {
+		height: 0.5rem;
+		opacity: 0.7;
+	}
+	50% {
+		height: 1.5rem;
+		opacity: 1;
+	}
 }
 
 @keyframes voice-ripple {
-  0% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(2);
-    opacity: 0;
-  }
+	0% {
+		transform: scale(1);
+		opacity: 0.8;
+	}
+	100% {
+		transform: scale(2);
+		opacity: 0;
+	}
 }
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 @keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+	from {
+		opacity: 0;
+		transform: scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
 }
 
 @keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 @keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  33% {
-    transform: translateY(-10px) rotate(1deg);
-  }
-  66% {
-    transform: translateY(5px) rotate(-1deg);
-  }
+	0%,
+	100% {
+		transform: translateY(0px) rotate(0deg);
+	}
+	33% {
+		transform: translateY(-10px) rotate(1deg);
+	}
+	66% {
+		transform: translateY(5px) rotate(-1deg);
+	}
 }
 
 @keyframes glow-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 20px var(--color-primary-20);
-  }
-  50% {
-    box-shadow:
-      0 0 40px var(--color-primary-30),
-      0 0 60px var(--color-primary-20);
-  }
+	0%,
+	100% {
+		box-shadow: 0 0 20px var(--color-primary-20);
+	}
+	50% {
+		box-shadow:
+			0 0 40px var(--color-primary-30),
+			0 0 60px var(--color-primary-20);
+	}
 }
 
 /* Animation classes */
 .voice-wave {
-  animation: voice-wave 1s ease-in-out infinite;
+	animation: voice-wave 1s ease-in-out infinite;
 }
 
 .voice-ripple {
-  animation: voice-ripple 1.5s ease-out infinite;
+	animation: voice-ripple 1.5s ease-out infinite;
 }
 
 .animate-fade-in {
-  animation: fade-in 0.6s ease-out forwards;
+	animation: fade-in 0.6s ease-out forwards;
 }
 
 .animate-scale-in {
-  animation: scale-in 0.4s ease-out forwards;
+	animation: scale-in 0.4s ease-out forwards;
 }
 
 .animate-slide-up {
-  animation: slide-up 0.3s ease-out forwards;
+	animation: slide-up 0.3s ease-out forwards;
 }
 
 .animate-float {
-  animation: float 6s ease-in-out infinite;
+	animation: float 6s ease-in-out infinite;
 }
 
 .animate-glow-pulse {
-  animation: glow-pulse 2s ease-in-out infinite;
+	animation: glow-pulse 2s ease-in-out infinite;
 }
 
 /* Enhanced glass and surface effects */
 .glass {
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	/* slightly stronger background and border for improved contrast */
+	background: color-mix(in srgb, var(--color-card) 90%, transparent);
+	border: 1px solid var(--color-border);
 }
 
 .dark .glass {
-  background: rgba(15, 23, 42, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+	background: rgba(15, 23, 42, 0.2);
+	border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .glass-strong {
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.15);
+	backdrop-filter: blur(24px);
+	-webkit-backdrop-filter: blur(24px);
+	/* keep a clear elevated surface for high-contrast needs */
+	background: color-mix(in srgb, var(--color-card) 96%, transparent);
+	border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
 }
 
 .dark .glass-strong {
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+	background: rgba(15, 23, 42, 0.8);
+	border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Surface treatments */
 .surface-elevated {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow:
-    0 1px 3px 0 rgba(0, 0, 0, 0.1),
-    0 1px 2px 0 rgba(0, 0, 0, 0.06);
+	/* Use tokens for surface for consistent contrast across components */
+	background: var(--color-card);
+	color: var(--color-card-foreground);
+	border: 1px solid var(--color-border);
+	box-shadow:
+		0 4px 18px rgba(var(--color-primary-rgb), 0.03),
+		0 1px 2px rgba(2, 6, 23, 0.04);
 }
 
 .dark .surface-elevated {
-  background: rgba(30, 41, 59, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow:
-    0 1px 3px 0 rgba(0, 0, 0, 0.3),
-    0 1px 2px 0 rgba(0, 0, 0, 0.2);
+	background: var(--color-card);
+	color: var(--color-card-foreground);
+	border: 1px solid var(--color-border);
+	box-shadow:
+		0 6px 28px rgba(2, 6, 23, 0.35),
+		0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .surface-floating {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+	background: var(--color-card);
+	color: var(--color-card-foreground);
+	border: 1px solid var(--color-border);
+	box-shadow:
+		0 18px 40px rgba(var(--color-primary-rgb), 0.04),
+		0 6px 18px rgba(2, 6, 23, 0.05);
 }
 
 .dark .surface-floating {
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.3),
-    0 4px 6px -2px rgba(0, 0, 0, 0.2);
+	background: var(--color-card);
+	color: var(--color-card-foreground);
+	border: 1px solid var(--color-border);
+	box-shadow:
+		0 20px 60px rgba(2, 6, 23, 0.38),
+		0 8px 28px rgba(0, 0, 0, 0.3);
 }
 
 /* Enhanced global base styles */
 * {
-  box-sizing: border-box;
+	box-sizing: border-box;
 }
 
 html {
-  scroll-behavior: smooth;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+	scroll-behavior: smooth;
+	font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
 body {
-  background: var(--gradient-ambient);
-  color: var(--color-foreground);
-  font-family: var(--font-inter), system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  min-height: 100vh;
-  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
-  text-rendering: optimizeLegibility;
+	background: var(--gradient-ambient);
+	color: var(--color-foreground);
+	font-family: var(--font-inter), system-ui, sans-serif;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	min-height: 100vh;
+	transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+	text-rendering: optimizeLegibility;
 }
 
 /* Enhanced smooth transitions with performance */
 *,
 *::before,
 *::after {
-  transition-property:
-    background-color, border-color, color, opacity, box-shadow, transform,
-    backdrop-filter;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 200ms;
+	transition-property:
+		background-color, border-color, color, opacity, box-shadow, transform,
+		backdrop-filter;
+	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+	transition-duration: 200ms;
 }
 
 /* High-performance transforms */
 .hover-lift {
-  will-change: transform;
-  transition: transform 0.2s ease-out;
+	will-change: transform;
+	transition: transform 0.2s ease-out;
 }
 
 .hover-lift:hover {
-  transform: translateY(-2px);
+	transform: translateY(-2px);
 }
 
 /* Enhanced focus styles */
 .focus-visible,
 *:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-  border-radius: 4px;
+	/* stronger, larger outline to meet contrast and visibility */
+	outline: 3px solid var(--color-focus, var(--color-primary));
+	outline-offset: 3px;
+	border-radius: 6px;
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+	width: 6px;
+	height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-surface-100);
+	background: color-mix(
+		in srgb,
+		var(--color-card) 85%,
+		var(--color-background)
+	);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-surface-300);
-  border-radius: 3px;
+	background: var(--color-primary);
+	border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-primary);
+	background: var(--color-primary);
 }
 
 /* Utility classes */
 .text-balance {
-  text-wrap: balance;
+	text-wrap: balance;
+}
+
+/* Icon / avatar surface used across the UI for consistent subtle fills */
+.icon-surface {
+	background: color-mix(
+		in srgb,
+		var(--color-card) 92%,
+		var(--color-primary) 6%
+	);
+	color: var(--color-primary);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 10px;
+}
+
+/* Subtle primary background utility */
+.bg-primary-subtle {
+	background: color-mix(in srgb, var(--color-primary) 8%, var(--color-card));
+	color: var(--color-primary-foreground);
+}
+
+/* A soft elevate interaction used across cards/buttons (transform + shadow) */
+.hover-elevate {
+	transition:
+		transform 200ms ease,
+		box-shadow 200ms ease;
+}
+.hover-elevate:hover {
+	transform: translateY(-3px);
+	box-shadow: var(--shadow-2);
 }
 
 .gradient-text {
-  background: var(--gradient-brand);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+	background: var(--gradient-brand);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+}
+
+/* Special gradient for 'Nargis' to stand out in both themes */
+.gradient-nargis {
+	background: var(--gradient-nargis);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+}
+
+/* Brand background utility so components can use `bg-gradient-brand` */
+.bg-gradient-brand {
+	background: var(--gradient-brand);
+	background-size: 200% 200%;
+	background-position: 50% 50%;
+	-webkit-background-clip: border-box;
+	background-clip: border-box;
+	color: var(--color-primary-foreground);
+}
+
+/* App background utility: a subtle, neutral light gradient with a dark-mode counterpart.
+   Use by applying `bg-app-light` to page/root containers. Keeps transitions consistent. */
+.bg-app-light {
+	background-image: linear-gradient(
+		180deg,
+		var(--color-bg-from, #ffffff),
+		var(--color-bg-via, #f8fafc),
+		rgba(241, 245, 249, 0.1)
+	);
+}
+.dark .bg-app-light {
+	/* centralized dark background gradient used across pages */
+	background-image: linear-gradient(
+		180deg,
+		var(--color-bg-dark-from, #0f172a),
+		var(--color-bg-dark-via, #111827),
+		rgba(15, 23, 42, 0.18)
+	);
+}
+
+/* App layout helpers: header/footer offsets and available viewport helper
+   Use `app-viewport-available` on main containers to size to available viewport
+   and center content without scroll. Adjust --app-header-offset / --app-footer-offset
+   if your nav/footer heights change. */
+:root {
+	--app-header-offset: 96px; /* default header safe area */
+	--app-footer-offset: 88px; /* default footer safe area */
+}
+
+.app-viewport-available {
+	min-height: calc(100vh - var(--app-header-offset) - var(--app-footer-offset));
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.app-viewport-available > * {
+	/* keep children from overflowing the safe area; allow internal scroll if needed */
+	max-height: calc(100vh - var(--app-header-offset) - var(--app-footer-offset));
+}
+
+/* Ensure large SVG timers scale down on small viewports to avoid forcing scroll */
+.app-viewport-available svg {
+	max-height: calc(
+		100vh -
+		var(--app-header-offset) -
+		var(--app-footer-offset) -
+		10rem
+	);
+	height: auto;
+}
+
+/* Safe padding helpers: ensure content is offset from fixed header/footer */
+.safe-padding {
+	padding-top: calc(var(--app-header-offset) + 1rem);
+	padding-bottom: calc(var(--app-footer-offset) + 1rem);
+}
+
+/* Sticky aside helper - enabled on large screens */
+@media (min-width: 1024px) {
+	.aside-sticky {
+		position: sticky;
+		top: calc(var(--app-header-offset) + 1rem);
+		align-self: start;
+	}
+}
+
+/* Voice / record button: premium, theme-aware styles */
+.voice-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition:
+		transform 180ms ease,
+		box-shadow 180ms ease,
+		border-color 180ms ease;
+	will-change: transform, box-shadow;
+}
+
+/* Idle / default: brand gradient with subtle border and glow */
+.voice-btn--idle {
+	background: var(--gradient-brand);
+	color: var(--color-primary-foreground);
+	border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+	box-shadow:
+		0 14px 38px rgba(var(--color-primary-rgb), 0.06),
+		0 6px 18px rgba(2, 6, 23, 0.04);
+}
+.dark .voice-btn--idle {
+	background: var(--gradient-brand);
+	border-color: rgba(255, 255, 255, 0.06);
+	box-shadow:
+		0 20px 60px rgba(2, 6, 23, 0.5),
+		0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Listening: warm red/pink gradient with higher emphasis */
+.voice-btn--listening {
+	background: linear-gradient(
+		90deg,
+		rgba(239, 68, 68, 1) 0%,
+		rgba(236, 72, 153, 0.95) 100%
+	);
+	color: #fff;
+	border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
+	box-shadow:
+		0 22px 68px rgba(239, 68, 68, 0.12),
+		0 10px 30px rgba(0, 0, 0, 0.14);
+}
+.dark .voice-btn--listening {
+	box-shadow:
+		0 24px 80px rgba(239, 68, 68, 0.12),
+		0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Connecting: amber gradient */
+.voice-btn--connecting {
+	background: linear-gradient(
+		90deg,
+		rgba(250, 204, 21, 1) 0%,
+		rgba(245, 158, 11, 1) 100%
+	);
+	color: #111827;
+	border: 1px solid rgba(15, 23, 42, 0.06);
+	box-shadow: 0 12px 30px rgba(245, 158, 11, 0.08);
+}
+
+/* Inline (navbar) variant: transparent, subtle border and hover */
+.voice-btn--inline {
+	background: transparent;
+	color: var(--color-foreground);
+	border: 1px solid rgba(15, 23, 42, 0.06);
+	box-shadow: none;
+}
+.dark .voice-btn--inline {
+	border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Ensure svg icons inherit the button color */
+.voice-btn svg {
+	color: inherit;
 }
 
 /* Theme-aware states */
 .pulse-success {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  background-color: var(--color-success);
+	animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+	background-color: var(--color-success);
 }
 
 .pulse-warning {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  background-color: var(--color-warning);
+	animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+	background-color: var(--color-warning);
 }
 
 .pulse-error {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  background-color: var(--color-destructive);
+	animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+	background-color: var(--color-destructive);
 }
 
 /* Enhanced color utilities for better contrast */
 .text-success {
-  color: var(--color-success);
+	color: var(--color-success);
 }
 
 .text-warning {
-  color: var(--color-warning);
+	color: var(--color-warning);
 }
 
 .text-destructive {
-  color: var(--color-destructive);
+	color: var(--color-destructive);
+}
+
+/* Background utilities for semantic colors (used by status indicators) */
+.bg-success {
+	background-color: var(--color-success);
+}
+
+.bg-warning {
+	background-color: var(--color-warning);
+}
+
+.bg-destructive {
+	background-color: var(--color-destructive);
+}
+
+.bg-muted {
+	background-color: var(--color-muted);
 }
 
 /* Improved text contrast classes */
 .text-muted-foreground {
-  color: var(--color-muted-foreground);
+	color: var(--color-muted-foreground);
 }
 
 .text-foreground {
-  color: var(--color-foreground);
+	color: var(--color-foreground);
 }
 
 .text-primary {
-  color: var(--color-primary);
+	color: var(--color-primary);
 }
 
 /* Interactive states */
 .btn-primary {
-  background: var(--gradient-brand);
-  color: var(--color-primary-foreground);
-  border: 1px solid var(--color-primary);
-  transition: all 0.2s ease;
+	/* Premium primary button: minimal, softened gradient/solid hybrid */
+	display: inline-flex;
+	align-items: center;
+	gap: 0.75rem;
+	/* Use a solid brand color with a very subtle gradient overlay for depth */
+	background-color: var(--color-primary);
+	background-image: linear-gradient(
+		180deg,
+		rgba(255, 255, 255, 0.02),
+		rgba(0, 0, 0, 0)
+	);
+	color: var(--color-primary-foreground);
+	border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+	padding: 0.65rem 1.5rem;
+	border-radius: 0.75rem;
+	font-weight: 600;
+	box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+	transition:
+		transform 160ms ease,
+		box-shadow 160ms ease,
+		background-color 160ms ease;
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+	transform: translateY(-1px);
+	box-shadow: 0 10px 22px rgba(15, 23, 42, 0.07);
 }
 
 .dark .btn-primary:hover {
-  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.4);
+	box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+
+/* Dark-mode primary: use richer gradient/brand and stronger emphasis */
+.dark .btn-primary {
+	/* Use the theme's gradient-brand for depth in dark mode */
+	background: var(--gradient-brand);
+	color: var(--color-primary-foreground);
+	border-color: color-mix(in srgb, var(--color-border) 40%, transparent);
+	box-shadow: 0 14px 40px rgba(2, 6, 23, 0.6);
+}
+
+/* Make sure the light-mode primary stays minimal and distinct from dark */
+.btn-primary {
+	/* ensure background-color only applies in non-dark contexts */
+	background-color: var(--color-primary);
+}
+
+/* Secondary CTA that follows theme tokens: subtle in light, legible in dark */
+.btn-secondary {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.6rem;
+	background: transparent;
+	/* Use theme foreground so text isn't locked to primary color */
+	color: var(--color-foreground);
+	border: 1px solid var(--color-border);
+	padding: 0.6rem 1.5rem;
+	border-radius: 0.75rem;
+	font-weight: 600;
+	transition:
+		transform 140ms ease,
+		background 140ms ease,
+		border-color 140ms ease;
+}
+.btn-secondary:hover {
+	background: color-mix(
+		in srgb,
+		var(--color-card) 92%,
+		var(--color-primary) 4%
+	);
+	transform: translateY(-1px);
+}
+.dark .btn-secondary {
+	color: var(--color-foreground);
+	border-color: rgba(255, 255, 255, 0.06);
+	background: rgba(255, 255, 255, 0.02);
+}
+.dark .btn-secondary:hover {
+	background: rgba(255, 255, 255, 0.03);
+}
+
+/* Subtle accessibility tweak: increase contrast slightly in dark for the secondary */
+.dark .btn-secondary {
+	/* keep subtle fill but ensure readable border */
+	background: rgba(255, 255, 255, 0.03);
+	border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Hover glass utility for modernized subtle backdrop blur on hover */
+.hover-glass {
+	transition:
+		backdrop-filter 180ms ease,
+		-webkit-backdrop-filter 180ms ease,
+		background-color 180ms ease,
+		box-shadow 180ms ease;
+}
+.hover-glass:hover {
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+	/* slightly lift background tint to increase legibility on hover */
+	background-color: color-mix(
+		in srgb,
+		var(--color-card) 88%,
+		var(--color-background) 12%
+	);
+	box-shadow: 0 8px 30px rgba(2, 6, 23, 0.06);
+}
+
+/* Stronger hover glass for small icon controls that need clearer affordance */
+.hover-glass-strong {
+	transition:
+		backdrop-filter 180ms ease,
+		-webkit-backdrop-filter 180ms ease,
+		background-color 180ms ease,
+		box-shadow 180ms ease;
+}
+.hover-glass-strong:hover {
+	backdrop-filter: blur(14px) saturate(120%);
+	-webkit-backdrop-filter: blur(14px) saturate(120%);
+	background-color: color-mix(
+		in srgb,
+		var(--color-card) 85%,
+		var(--color-background) 15%
+	);
+	box-shadow: 0 10px 34px rgba(2, 6, 23, 0.08);
+}
+
+/* Base btn utility for consistent sizing/keyboard focus */
+.btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.75rem;
+	cursor: pointer;
+	user-select: none;
+	-webkit-tap-highlight-color: transparent;
+}
+.btn:focus-visible {
+	outline: 3px solid var(--color-focus, var(--color-primary));
+	outline-offset: 3px;
+	border-radius: 0.75rem;
+}
+
+/* Small square primary icon button used in footers / navbars for compact actions */
+.btn-icon-primary {
+	display: inline-grid;
+	place-items: center;
+	background: var(--color-card);
+	color: var(--color-foreground);
+	border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
+	padding: 0;
+	border-radius: 10px;
+	box-shadow: 0 8px 22px rgba(2, 6, 23, 0.06);
+	transition:
+		transform 180ms ease,
+		box-shadow 180ms ease,
+		background-color 160ms ease;
+	font-size: 0; /* hide any accidental text */
+	line-height: 0;
+}
+.btn-icon-lg {
+	width: 40px;
+	height: 40px;
+}
+.btn-icon-sm {
+	width: 32px;
+	height: 32px;
+}
+.btn-icon-primary:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 18px 40px rgba(2, 6, 23, 0.08);
+	background: color-mix(in srgb, var(--color-primary) 6%, var(--color-card));
+}
+.dark .btn-icon-primary:hover {
+	box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+}
+
+/* Ensure icons inside scale and remain crisp */
+.btn-icon-primary svg {
+	/* let the component-level Tailwind width/height classes control icon size */
+	color: inherit;
+	transition: transform 140ms ease;
+	display: block;
+}
+.btn-icon-primary:active svg {
+	transform: scale(0.98);
+}
+
+/* Ensure voice state variants override compact icon button base styling */
+.btn-icon-primary.voice-btn--listening {
+	background: linear-gradient(
+		90deg,
+		rgba(239, 68, 68, 1) 0%,
+		rgba(236, 72, 153, 0.95) 100%
+	);
+	color: #fff;
+}
+.dark .btn-icon-primary.voice-btn--listening {
+	/* preserve stronger shadow on dark if present via variant */
+	color: #fff;
 }
 
 /* Screen reader only */
 .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
 }
 
 /* Enhanced animations for floating components */
 @keyframes slide-in-from-top {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+	from {
+		opacity: 0;
+		transform: translateY(-8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 @keyframes float-up {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+	from {
+		opacity: 0;
+		transform: translateY(10px) scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
 }
 
 .animate-in {
-  animation: float-up 0.2s ease-out;
+	animation: float-up 0.2s ease-out;
 }
 
 .slide-in-from-top-2 {
-  animation: slide-in-from-top 0.2s ease-out;
+	animation: slide-in-from-top 0.2s ease-out;
 }
 
 /* Enhanced hover effects for premium feel */
 .hover-scale {
-  transition: transform 0.2s ease-out;
+	transition: transform 0.2s ease-out;
 }
 
 .hover-scale:hover {
-  transform: scale(1.02);
+	transform: scale(1.02);
 }
 
 .hover-glow {
-  transition: all 0.3s ease;
+	transition: all 0.3s ease;
 }
 
 .hover-glow:hover {
-  box-shadow: 0 0 20px rgba(var(--color-primary-rgb), 0.3);
+	box-shadow: 0 0 20px rgba(var(--color-primary-rgb), 0.3);
+}
+
+/* Premium hairline token border for minimalist controls */
+.border-hairline-token {
+	/* Crisp 1px inset hairline using the design token */
+	box-shadow: inset 0 0 0 1px
+		color-mix(in srgb, var(--color-border) 60%, transparent);
+	background-clip: padding-box;
+}
+.dark .border-hairline-token {
+	box-shadow: inset 0 0 0 1px
+		color-mix(in srgb, var(--color-border) 80%, transparent);
+}
+.border-hairline-token:hover {
+	box-shadow: inset 0 0 0 1px
+		color-mix(in srgb, var(--color-border) 75%, transparent);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+	.animate-fade-in,
+	.animate-scale-in,
+	.animate-slide-up,
+	.animate-float,
+	.animate-glow-pulse,
+	.voice-wave,
+	.voice-ripple {
+		animation: none;
+		transition: none;
+	}
+}
+
+/* Accessible link styles */
+.link {
+	color: var(--color-primary);
+	text-decoration: underline;
+	text-decoration-thickness: 1.5px;
+	text-underline-offset: 3px;
+}
+.link:focus,
+.link:focus-visible {
+	outline: 3px solid var(--color-focus, var(--color-primary));
+	outline-offset: 3px;
+}
+
+/* Disabled buttons */
+.btn[disabled],
+.btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+	pointer-events: none;
+}
+
+/* Forced-colors / high-contrast mode fallback */
+@media (forced-colors: active) {
+	:root,
+	.dark {
+		--color-card: Window;
+		--color-card-foreground: WindowText;
+		--color-border: WindowText;
+		--color-foreground: WindowText;
+	}
+	*:focus {
+		outline: 3px solid Highlight;
+	}
+}
+
+/* Toast / notification styles: theme-aware and status-specific borders */
+.toast {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.75rem;
+	padding: 0.75rem 0.9rem;
+	border-radius: 0.75rem;
+	background: var(--color-card);
+	color: var(--color-foreground);
+	border: 1px solid var(--color-border);
+	/* Make toasts flat and avoid transitions/animations */
+	box-shadow: none;
+	transition: none;
+	/* Ensure long messages wrap inside a fixed width toast */
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+
+.toast-title {
+	font-weight: 600;
+	margin-bottom: 0.125rem;
+	color: var(--color-foreground);
+}
+
+.toast-dismiss {
+	background: transparent;
+	border: none;
+	color: var(--color-muted-foreground);
+	padding: 0.25rem;
+	border-radius: 0.5rem;
+	cursor: pointer;
+}
+.toast-dismiss:hover {
+	color: var(--color-foreground);
+}
+
+/* Variant helpers use the semantic color tokens; adds a pronounced colored edge */
+.toast--success {
+	/* Green */
+	border-left: 8px solid var(--color-success);
+	background: color-mix(in srgb, var(--color-success) 10%, var(--color-card));
+}
+.dark .toast--success {
+	background: color-mix(in srgb, var(--color-success) 12%, var(--color-card));
+}
+
+.toast--error {
+	/* Red */
+	border-left: 8px solid var(--color-destructive);
+	background: color-mix(
+		in srgb,
+		var(--color-destructive) 10%,
+		var(--color-card)
+	);
+}
+.dark .toast--error {
+	background: color-mix(
+		in srgb,
+		var(--color-destructive) 12%,
+		var(--color-card)
+	);
+}
+
+.toast--warning {
+	/* Yellow/amber */
+	border-left: 8px solid var(--color-warning);
+	background: color-mix(in srgb, var(--color-warning) 10%, var(--color-card));
+}
+.dark .toast--warning {
+	background: color-mix(in srgb, var(--color-warning) 12%, var(--color-card));
+}
+
+.toast--info {
+	/* Blue */
+	border-left: 8px solid #2563eb; /* keep blue */
+	background: color-mix(in srgb, #2563eb 8%, var(--color-card));
+}
+.dark .toast--info {
+	background: color-mix(in srgb, #2563eb 10%, var(--color-card));
+}
+
+/* Toast icon slot */
+.toast-icon {
+	width: 2rem;
+	height: 2rem;
+	min-width: 2rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 0.5rem;
+	font-size: 1rem;
+	transition: none; /* ensure no transition on icon */
+}
+
+.toast--success .toast-icon {
+	color: #16a34a;
+	background: rgba(22, 163, 74, 0.1);
+}
+.dark .toast--success .toast-icon {
+	background: rgba(22, 163, 74, 0.12);
+}
+
+.toast--error .toast-icon {
+	color: #ef4444;
+	background: rgba(239, 68, 68, 0.1);
+}
+.dark .toast--error .toast-icon {
+	background: rgba(239, 68, 68, 0.12);
+}
+
+.toast--warning .toast-icon {
+	color: #f59e0b;
+	background: rgba(245, 158, 11, 0.1);
+}
+.dark .toast--warning .toast-icon {
+	background: rgba(245, 158, 11, 0.12);
+}
+
+.toast--info .toast-icon {
+	color: #2563eb;
+	background: rgba(37, 99, 235, 0.1);
+}
+.dark .toast--info .toast-icon {
+	background: rgba(37, 99, 235, 0.12);
+}
+
+/* Toast / notification styling: theme-aware using color tokens */
+.toast {
+	background: var(--color-card);
+	color: var(--color-card-foreground);
+	border: 1px solid var(--color-border);
+	padding: 0.75rem 1rem;
+	border-radius: 0.5rem;
+	box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
+}
+
+/* Priority badge utilities - token-driven for consistent contrast */
+.priority-low {
+	color: var(--color-success);
+	background: color-mix(in srgb, var(--color-success) 10%, var(--color-card));
+	border: 1px solid
+		color-mix(in srgb, var(--color-success) 18%, var(--color-border));
+	padding: 0.15rem 0.5rem;
+	border-radius: 999px;
+	font-weight: 600;
+	font-size: 0.75rem;
+}
+.priority-medium {
+	color: var(--color-warning);
+	background: color-mix(in srgb, var(--color-warning) 10%, var(--color-card));
+	border: 1px solid
+		color-mix(in srgb, var(--color-warning) 18%, var(--color-border));
+	padding: 0.15rem 0.5rem;
+	border-radius: 999px;
+	font-weight: 600;
+	font-size: 0.75rem;
+}
+.priority-high {
+	color: var(--color-destructive);
+	background: color-mix(
+		in srgb,
+		var(--color-destructive) 10%,
+		var(--color-card)
+	);
+	border: 1px solid
+		color-mix(in srgb, var(--color-destructive) 18%, var(--color-border));
+	padding: 0.15rem 0.5rem;
+	border-radius: 999px;
+	font-weight: 600;
+	font-size: 0.75rem;
+}
+.priority-default {
+	color: var(--color-muted-foreground);
+	background: color-mix(in srgb, var(--color-muted) 8%, var(--color-card));
+	border: 1px solid
+		color-mix(in srgb, var(--color-border) 40%, var(--color-card));
+	padding: 0.15rem 0.5rem;
+	border-radius: 999px;
+	font-weight: 600;
+	font-size: 0.75rem;
+}
+
+/* Status badges */
+.status-todo {
+	color: var(--color-foreground);
+	background: color-mix(in srgb, var(--color-border) 12%, var(--color-card));
+	border: 1px solid
+		color-mix(in srgb, var(--color-border) 40%, var(--color-card));
+	padding: 0.15rem 0.5rem;
+	border-radius: 0.5rem;
+	font-size: 0.8rem;
+}
+.status-inProgress {
+	color: var(--color-primary);
+	background: color-mix(in srgb, var(--color-primary) 8%, var(--color-card));
+	border: 1px solid
+		color-mix(in srgb, var(--color-primary) 14%, var(--color-border));
+	padding: 0.15rem 0.5rem;
+	border-radius: 0.5rem;
+	font-size: 0.8rem;
+}
+.status-done {
+	color: var(--color-success);
+	background: color-mix(in srgb, var(--color-success) 8%, var(--color-card));
+	border: 1px solid
+		color-mix(in srgb, var(--color-success) 14%, var(--color-border));
+	padding: 0.15rem 0.5rem;
+	border-radius: 0.5rem;
+	font-size: 0.8rem;
+}
+
+.toast--success {
+	border-color: rgba(34, 197, 94, 0.18); /* success tint */
+}
+.toast--error {
+	border-color: rgba(239, 68, 68, 0.18);
+}
+.toast--warning {
+	border-color: rgba(245, 158, 11, 0.18);
+}
+
+.toast .toast-title {
+	font-weight: 600;
+	margin-bottom: 0.125rem;
+}
+
+.toast .toast-dismiss {
+	background: transparent;
+	border: none;
+	color: inherit;
+	opacity: 0.7;
+	padding: 0.25rem;
+}
+.toast .toast-dismiss:hover {
+	opacity: 1;
+}
+
+/* Collapse/expand transition used by merged ChatPanel */
+.collapse-transition {
+	overflow: hidden;
+	transition:
+		max-height 220ms ease,
+		opacity 180ms ease;
+}
+.collapse-transition.expanded {
+	max-height: 1000px; /* large enough to show content */
+	opacity: 1;
+}
+.collapse-transition.collapsed {
+	max-height: 0;
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* Chat panel specific refinements for a premium, soft UI */
+.chat-panel {
+	border-radius: var(--radius-lg);
+	border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--color-card) 98%, transparent),
+		var(--color-card)
+	);
+	box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
+}
+.chat-panel .chat-body {
+	padding-top: 0.5rem;
+	border-top: 1px solid color-mix(in srgb, var(--color-border) 10%, transparent);
+}
+.chat-divider {
+	height: 1px;
+	background: color-mix(in srgb, var(--color-border) 18%, transparent);
+	margin: 0.5rem 0;
+	border-radius: 2px;
+}
+.chat-actions {
+	display: flex;
+	gap: 0.5rem;
+	justify-content: flex-end;
+	align-items: center;
+}
+
+.chat-panel .surface-elevated {
+	/* slightly less aggressive shadow inside the panel */
+	box-shadow: none;
+	border-radius: calc(var(--radius-md) - 2px);
+}
+
+/* Status tile refinements inside merged ChatPanel */
+.chat-panel .status-tile {
+	padding: 0.6rem;
+	border-radius: 10px;
+	background: color-mix(
+		in srgb,
+		var(--color-card) 96%,
+		var(--color-primary) 0%
+	);
+	border: 1px solid color-mix(in srgb, var(--color-border) 18%, transparent);
+	box-shadow: 0 2px 8px rgba(2, 6, 23, 0.03);
+}
+.chat-panel .status-tile .text-xs {
+	color: var(--color-muted-foreground);
 }

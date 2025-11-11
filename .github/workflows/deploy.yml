@@ -1,25 +1,31 @@
-name: CI Checks
+name: Continuous Deployment
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
 
 jobs:
-  validate:
+  deploy:
     runs-on: ubuntu-latest
+    # This ensures that both frontend and backend validation passed in the PR before this can run
+    # (assuming you set up branch protection rules in GitHub).
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+      - name: Install flyctl
+        run: curl -L https://fly.io/install.sh | sh
 
-      - name: Install dependencies
-        run: bun install
+      - name: Deploy Python Orchestrator to Fly.io
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          cd apps/api-py # Use the renamed folder
+          flyctl deploy --remote-only
 
-      - name: Run Linter
-        run: bun run lint
-
-      - name: Run Type Check
-        run: bun run typecheck
-
-      - name: Run Build
-        run: bun run build
+      - name: Deploy Go Gateway to Fly.io
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          cd apps/gateway # Use the renamed folder
+          flyctl deploy --remote-only

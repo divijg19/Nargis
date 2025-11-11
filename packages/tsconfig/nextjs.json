@@ -1,15 +1,15 @@
 {
-  "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "Next.js",
-  "extends": "./base.json",
-  "compilerOptions": {
-    "jsx": "preserve",
-    "allowJs": true,
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
-  }
+	"$schema": "https://json.schemastore.org/tsconfig",
+	"display": "Next.js",
+	"extends": "./base.json",
+	"compilerOptions": {
+		"jsx": "preserve",
+		"allowJs": true,
+		"incremental": true,
+		"plugins": [
+			{
+				"name": "next"
+			}
+		]
+	}
 }

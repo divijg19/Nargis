@@ -1,30 +1,40 @@
-version: "3.8"
 services:
+  # The Python service is mostly correct, but we will remove the obsolete build-arg.
   api-py:
     build:
-      context: ../../apps/api-py
-      args:
-        BUILD_ML: "0"
+      context: ../apps/api-py
+      # REMOVED: The BUILD_ML arg is no longer needed.
+      # The Dockerfile should now control which dependencies are installed.
     image: nargis-api-py:local
     ports:
       - "8000:8000"
     environment:
+      # These variables control the "dual-mode" AI logic in main.py
+      # For Path A (API-driven), you would set these in a .env file.
+      # For local-only, you would leave them blank.
+      - STT_URL=${STT_URL}
+      - LLM_URL=${LLM_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - LOG_LEVEL=DEBUG
       - ALLOWED_ORIGINS=http://localhost:3000
       - PRELOAD_STT=false
+    # The dependencies on Redis and DB are correct for future-proofing.
     depends_on:
       - redis
       - db
 
-  api-go:
+  # RENAMED: The Go service is now correctly named 'gateway'.
+  gateway:
     build:
-      context: ../../apps/api-go
-    image: nargis-api-go:local
+      # UPDATED: The context path is corrected to the new folder name.
+      context: ../apps/gateway
+    image: nargis-gateway:local # UPDATED: The image name is now consistent.
     ports:
       - "8080:8080"
     environment:
-      - STT_URL=http://api-py:8000
-      - LLM_URL=http://api-py:8000
+      # UPDATED: The gateway now only needs one variable to find the Python service.
+      # It points to the 'api-py' service name within Docker's network.
+      - ORCHESTRATOR_URL=http://api-py:8000
     depends_on:
       - api-py
 
@@ -42,21 +52,26 @@ services:
     ports:
       - "6379:6379"
 
-  # Optional: run the web dev server locally if you want to test end-to-end
-  web:
-    build:
-      context: ../../apps/web
-    image: nargis-web:local
-    ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_PY_URL=http://localhost:8000
-      - NEXT_PUBLIC_WS_URL=ws://localhost:8080/ws
+  # The web service configuration remains largely the same as hosted on vercel, but commented out for future use in isolated workflows.
+  #  web:
+  #    build:
+  #      context: ../apps/web
+  #    image: nargis-web:local
+  #    ports:
+  #      - "3000:3000"
+  #    environment:
+  #      # This URL is for REST calls (tasks, habits, etc.) and is correct.
+  #      - NEXT_PUBLIC_API_PY_URL=http://localhost:8000
+  #      # This URL is for the real-time connection and is correct.
+  #      - NEXT_PUBLIC_WS_URL=ws://localhost:8080/ws
+  #    # ADDED: Explicitly state that the web frontend depends on the gateway.
+  #    depends_on:
+  #      - gateway
 
-  # Optional ML worker (self-hosted) — only enable locally if you have sufficient disk/GPU
+  # The ml-worker is unchanged but we'll add a depends_on for clarity.
   ml-worker:
     build:
-      context: ../../apps/ml-worker
+      context: ../apps/ml-worker
     image: nargis-ml-worker:local
     ports:
       - "8001:8001"

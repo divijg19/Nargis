@@ -1,55 +1,65 @@
 """Simple in-memory repositories for early Phase P2 before real DB.
 
 Thread/process safety: Not guaranteed beyond single-process dev server.
-Concurrency: Protected with asyncio.Lock for basic async consistency.
+Concurrency: Protected with basic locks for consistency.
 Persistence: Ephemeral (resets on restart).
 """
 
 from __future__ import annotations
 
-import asyncio
 import uuid
 from typing import Dict, Optional, Any, List
 from datetime import datetime
+import threading
 
 
 class InMemoryRepo:
     def __init__(self):
         self._items: Dict[str, Dict[str, Any]] = {}
-        self._lock = asyncio.Lock()
+        self._lock = threading.Lock()
 
     async def list(self) -> List[Dict[str, Any]]:
-        async with self._lock:
+        """Async-compatible list method for router compatibility"""
+        with self._lock:
+            return list(self._items.values())
+
+    def list_all(self) -> List[Dict[str, Any]]:
+        """Sync list method (legacy)"""
+        with self._lock:
             return list(self._items.values())
 
     async def get(self, item_id: str) -> Optional[Dict[str, Any]]:
-        async with self._lock:
+        """Async-compatible get method"""
+        with self._lock:
             return self._items.get(item_id)
 
     async def create(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        async with self._lock:
+        """Async-compatible create method"""
+        with self._lock:
             now = datetime.utcnow().isoformat()
             item_id = data.get("id") or str(uuid.uuid4())
             record = {
                 **data,
                 "id": item_id,
-                "created_at": now,
-                "updated_at": now,
+                "createdAt": data.get("createdAt", now),
+                "updatedAt": data.get("updatedAt", now),
             }
             self._items[item_id] = record
             return record
 
     async def update(self, item_id: str, patch: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        async with self._lock:
+        """Async-compatible update method"""
+        with self._lock:
             if item_id not in self._items:
                 return None
             current = self._items[item_id]
             current.update({k: v for k, v in patch.items() if v is not None})
-            current["updated_at"] = datetime.utcnow().isoformat()
+            current["updatedAt"] = datetime.utcnow().isoformat()
             return current
 
     async def delete(self, item_id: str) -> bool:
-        async with self._lock:
+        """Async-compatible delete method"""
+        with self._lock:
             return self._items.pop(item_id, None) is not None
 
 
@@ -57,17 +67,26 @@ class InMemoryRepo:
 tasks_repo = InMemoryRepo()
 habits_repo = InMemoryRepo()
 pomodoro_repo = InMemoryRepo()
+goals_repo = InMemoryRepo()
+journal_repo = InMemoryRepo()
+users_repo = InMemoryRepo()  # User authentication
 
-# Simple idempotency cache (POST) – clears on restart
+
+# Idempotency support for POST requests
 _idempotency_cache: Dict[str, Dict[str, Any]] = {}
-_idempotency_lock = asyncio.Lock()
+_idempotency_lock = threading.Lock()
 
 
-async def idempotent_post(key: str, create_coro):
-    async with _idempotency_lock:
+async def idempotent_post(key: str, coro):
+    """Simple idempotency: if key exists, return cached result instead of executing coro."""
+    with _idempotency_lock:
         if key in _idempotency_cache:
-            return _idempotency_cache[key], True
-    created = await create_coro
-    async with _idempotency_lock:
-        _idempotency_cache[key] = created
-    return created, False
+            return _idempotency_cache[key], True  # (record, replay=True)
+    
+    # Execute the creation
+    record = await coro
+    
+    with _idempotency_lock:
+        _idempotency_cache[key] = record
+    
+    return record, False  # (record, replay=False)
