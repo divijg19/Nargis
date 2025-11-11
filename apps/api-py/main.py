@@ -83,11 +83,21 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(CorrelationIdMiddleware)
 
-from routers import tasks as tasks_router, habits as habits_router, pomodoro as pomodoro_router
+from routers import (
+    tasks as tasks_router,
+    habits as habits_router,
+    pomodoro as pomodoro_router,
+    goals as goals_router,
+    journal as journal_router,
+    auth as auth_router
+)
 
+app.include_router(auth_router.router)
 app.include_router(tasks_router.router)
 app.include_router(habits_router.router)
 app.include_router(pomodoro_router.router)
+app.include_router(goals_router.router)
+app.include_router(journal_router.router)
 
 def parse_origins(value: Optional[str]) -> List[str]:
     if not value: return ["http://localhost:3000"]

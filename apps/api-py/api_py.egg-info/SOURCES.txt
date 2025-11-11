@@ -6,7 +6,10 @@ api_py.egg-info/dependency_links.txt
 api_py.egg-info/requires.txt
 api_py.egg-info/top_level.txt
 routers/__init__.py
+routers/auth.py
+routers/goals.py
 routers/habits.py
+routers/journal.py
 routers/pomodoro.py
 routers/tasks.py
 services/ai_clients.py

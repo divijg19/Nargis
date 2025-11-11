@@ -6,9 +6,9 @@ import dynamic from "next/dynamic";
 // using `ssr: false` from Server Components (like app/layout). Moving the
 // dynamic import into a client wrapper fixes the Turbopack/Next error.
 const AIResponseModal = dynamic(() => import("./AIResponseModal"), {
-  ssr: false,
+	ssr: false,
 });
 
 export default function AIResponseModalLoader() {
-  return <AIResponseModal />;
+	return <AIResponseModal />;
 }
