@@ -7,6 +7,7 @@ api_py.egg-info/requires.txt
 api_py.egg-info/top_level.txt
 routers/__init__.py
 routers/auth.py
+routers/auth_db.py
 routers/goals.py
 routers/habits.py
 routers/journal.py
@@ -14,4 +15,6 @@ routers/pomodoro.py
 routers/tasks.py
 services/ai_clients.py
 storage/__init__.py
+storage/database.py
 storage/memory.py
+storage/models.py

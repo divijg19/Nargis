@@ -14,6 +14,9 @@ Requires-Dist: soundfile>=0.13.0
 Requires-Dist: bcrypt>=4.0.0
 Requires-Dist: pyjwt>=2.8.0
 Requires-Dist: email-validator>=2.0.0
+Requires-Dist: sqlalchemy>=2.0.0
+Requires-Dist: psycopg2-binary>=2.9.0
+Requires-Dist: alembic>=1.13.0
 Provides-Extra: ml
 Requires-Dist: torch>=2.9.0; extra == "ml"
 Requires-Dist: transformers>=4.57.1; extra == "ml"
