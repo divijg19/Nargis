@@ -1,9 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
+import React from "react";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { AppProviders } from "@/components/layout/AppProviders";
+import Sidebar from "@/components/layout/Sidebar";
+import MobileNavToggle from "@/components/layout/MobileNavToggle";
+import RootLayoutInner from "@/components/layout/RootLayoutInner";
 // AI modal is now rendered inline in the hero via ChatPanel
 
 import { Footer } from "@/components/ui/Footer";
@@ -92,20 +96,11 @@ export default function RootLayout({
 				className={`${inter.variable} ${jetbrains_mono.variable} font-sans antialiased min-h-screen transition-all duration-300`}
 			>
 				<AppProviders>
-					<NavBar />
-					<main id="main" className="relative min-h-screen">
-						{children}
-					</main>
-					<Footer />
-					<ToastViewport />
-					<div
-						id="voice-announcements"
-						aria-live="polite"
-						aria-atomic="true"
-						className="sr-only"
-					/>
+					{/* Client-managed layout (sidebar state lives in a client component) */}
+					<RootLayoutInner>{children}</RootLayoutInner>
 				</AppProviders>
 			</body>
 		</html>
 	);
 }
+

@@ -8,6 +8,9 @@ soundfile>=0.13.0
 bcrypt>=4.0.0
 pyjwt>=2.8.0
 email-validator>=2.0.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+alembic>=1.13.0
 
 [ml]
 torch>=2.9.0

@@ -34,7 +34,11 @@ const navigationItems = [
 	{ href: "/pomodoro", label: "Focus", icon: "🍅" },
 ];
 
-export function NavBar() {
+type NavBarProps = {
+	onMobileSidebarToggle?: () => void;
+};
+
+export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
 	const pathname = usePathname();
 	const { user, isAuthenticated, logout } = useAuth();
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -153,44 +157,13 @@ export function NavBar() {
 									{/* Voice button (compact) with inline status */}
 									<InlineVoice />
 
-									{/* Auth buttons or user menu */}
-									{isAuthenticated ? (
-										<div className="hidden sm:flex items-center gap-2">
-											<span className="text-xs text-muted-foreground">
-												{user?.name || user?.email}
-											</span>
-											<button
-												type="button"
-												onClick={logout}
-												className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-hover/40 rounded-lg transition-all duration-200"
-											>
-												Logout
-											</button>
-										</div>
-									) : (
-										<div className="hidden sm:flex items-center gap-2">
-											<button
-												type="button"
-												onClick={() => setLoginModalOpen(true)}
-												className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-hover/40 rounded-lg transition-all duration-200"
-											>
-												Sign In
-											</button>
-											<button
-												type="button"
-												onClick={() => setRegisterModalOpen(true)}
-												className="px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg transition-all duration-200 shadow-sm"
-											>
-												Sign Up
-											</button>
-										</div>
-									)}
+									{/* Auth buttons removed from navbar; floating control added separately */}
 
 									<div className="p-1 rounded-md border-border/40 bg-background/60">
 										<ThemeToggle />
 									</div>
 
-									{/* Mobile menu button */}
+									{/* Mobile menu button - toggles nav links */}
 									<button
 										type="button"
 										onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -227,6 +200,18 @@ export function NavBar() {
 											)}
 										</svg>
 									</button>
+
+									{/* Mobile sidebar toggle (hamburger) */}
+									<button
+										type="button"
+										onClick={() => onMobileSidebarToggle && onMobileSidebarToggle()}
+										className="md:hidden p-2 rounded-xl hover:bg-hover/50 transition-all duration-200 active:scale-95"
+										aria-label="Open sidebar"
+									>
+										<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+										</svg>
+									</button>
 								</div>
 							</div>
 
@@ -244,7 +229,7 @@ export function NavBar() {
 													aria-current={isActive ? "page" : undefined}
 													className={`block px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background
 							  ${isActive ? "bg-primary-subtle text-primary" : "text-muted-foreground hover:text-foreground hover:bg-hover/40"}
-                            `}
+							`}
 												>
 													<span className="mr-3" aria-hidden>
 														{item.icon}
@@ -260,6 +245,45 @@ export function NavBar() {
 					</div>
 				</div>
 			</nav>
+
+			{/* Floating auth control (separate from navbar) */}
+			<div className="fixed top-4 right-24 z-60">
+				{isAuthenticated ? (
+					<div className="inline-flex items-center h-12 rounded-2xl shadow-sm overflow-hidden bg-background">
+						<span className="px-4 text-sm font-medium h-full flex items-center text-foreground">{user?.name || user?.email}</span>
+						<div className="w-px bg-border/40 h-6" aria-hidden />
+						<button
+							type="button"
+							onClick={logout}
+							className="px-4 text-sm font-medium h-full flex items-center bg-primary text-primary-foreground hover:bg-primary/80 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+						>
+							Logout
+						</button>
+					</div>
+				) : (
+					<div className="inline-flex items-center h-12 rounded-2xl shadow-sm overflow-hidden bg-transparent px-2 gap-0 justify-center">
+						<button
+							type="button"
+							onClick={() => setLoginModalOpen(true)}
+							className="btn btn-primary px-4 py-1 text-sm font-medium h-9 flex items-center rounded-lg justify-center"
+							aria-label="Sign in"
+						>
+							Sign In
+						</button>
+
+						<div className="w-px bg-primary-foreground/30 h-6 mx-0.5" aria-hidden />
+
+						<button
+							type="button"
+							onClick={() => setRegisterModalOpen(true)}
+							className="btn btn-primary px-3 py-1 text-sm font-medium h-9 flex items-center rounded-lg justify-center"
+							aria-label="Sign up"
+						>
+							Sign Up
+						</button>
+					</div>
+				)}
+			</div>
 
 			{/* Auth Modals */}
 			<LoginModal

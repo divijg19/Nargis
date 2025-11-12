@@ -39,12 +39,12 @@ function isTranscriptLLM(
 // Define the shape of the data that the context will provide to the UI.
 interface RealtimeContextValue {
 	connectionStatus:
-		| "idle"
-		| "connecting"
-		| "open"
-		| "closed"
-		| "error"
-		| "retrying";
+	| "idle"
+	| "connecting"
+	| "open"
+	| "closed"
+	| "error"
+	| "retrying";
 	isListening: boolean;
 	startListening: () => void;
 	stopListening: () => void;
@@ -55,6 +55,8 @@ interface RealtimeContextValue {
 	// Conversation history exposed to UI
 	messages: Array<{ role: "user" | "assistant"; text: string; ts: number }>;
 	clearMessages: () => void;
+	/** Insert a user message into the conversation programmatically */
+	sendUserMessage: (text: string) => void;
 	openConversation: boolean;
 	setOpenConversation: (v: boolean) => void;
 	// dev helper to inject messages into the same handling logic (useful for testing)
@@ -333,6 +335,14 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 		}
 	}, [messages]);
 
+	// Allow programmatic insertion of a user message (e.g., from UI prompts)
+	const sendUserMessage = useCallback((text: string) => {
+		if (!text) return;
+		const clean = sanitizeText(text);
+		setMessages((cur) => [...cur, { role: "user", text: clean, ts: Date.now() }]);
+		setOpenConversation(true);
+	}, []);
+
 	const startListening = useCallback(async () => {
 		if (isRecording) return;
 		// If connection isn't ready, attempt to wait for it to open briefly so
@@ -356,7 +366,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 						settled = true;
 						try {
 							unsub();
-						} catch {}
+						} catch { }
 						resolve(true);
 					}
 				});
@@ -364,7 +374,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 					if (!settled) {
 						try {
 							unsub();
-						} catch {}
+						} catch { }
 						resolve(false);
 					}
 				}, 4000);
@@ -434,6 +444,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 			messages,
 			clearMessages,
 			openConversation,
+			sendUserMessage,
 			setOpenConversation,
 			// Dev/testing helper: allow consumers to inject messages through the
 			// same handling pipeline. Only useful in non-prod or debugging.
