@@ -31,10 +31,9 @@ export function isFlagEnabled(flag: FeatureFlag): boolean {
 export function loadFlagOverridesFromEnv() {
 	if (typeof window === "undefined") return;
 	try {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const raw = (
-			window as unknown as { __NARGIS_FLAGS__?: Record<string, boolean> }
-		).__NARGIS_FLAGS__;
+		const raw = (window as Window & {
+			__NARGIS_FLAGS__?: Record<string, boolean>;
+		}).__NARGIS_FLAGS__;
 		if (raw) overrides = { ...overrides, ...raw };
 	} catch {
 		/* noop */

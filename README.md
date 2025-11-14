@@ -1,126 +1,28 @@
-# 🌸 Nargis – An Agentic, Voice-First AI Productivity Companion
+# Nargis — Voice-first AI productivity companion
 
-**Nargis** is a modern **AI productivity agent** that unifies task management, habit tracking, and journaling into a single, intelligent platform. It's designed to be a proactive partner that helps you achieve your goals, not just a passive tool.
+Nargis is a full-stack demo of a voice-first AI productivity assistant (tasks, habits, journaling) with a real-time pipeline and a dual-mode AI backend (API + local fallback).
 
-This project is a **full-stack showcase** demonstrating a real-time, polyglot architecture (TypeScript + Python + Go), advanced AI integration patterns, and modern development practices.
+This README is purposely concise — detailed operational and design docs live under `docs/` and the package READMEs in `apps/`.
 
----
+## Quick start
 
-## 🚀 Core Philosophy
+Prereqs: Bun, Node-compatible shell, Go (for gateway), Python (for AI service), Docker (optional).
 
--   **Agentic by Design:** Moves beyond simple commands to a conversational, goal-oriented workflow where the AI can understand intent, ask clarifying questions, and autonomously execute multi-step plans.
--   **Voice-First Interaction:** A low-latency, real-time voice pipeline forms the core of the user experience, making interaction natural and frictionless.
--   **API-First Performance:** Prioritizes speed and responsiveness by leveraging best-in-class external AI services, with a robust local-only fallback mode.
--   **Developer-Friendly:** A clean, type-safe, and well-documented monorepo built with modern tooling for a superior development experience.
-
----
-
-## ✨ Key Features
-
--   **Real-Time Voice-to-Response Pipeline:** Speak a thought, and Nargis transcribes, understands, and responds in a seamless conversational flow.
--   **Dual-Mode AI Backend:**
-    -   **Primary (API) Mode:** High-speed, production-grade performance using external APIs (Groq, Deepgram).
-    -   **Fallback (Local) Mode:** A fully offline-capable mode using local models (Ollama, Transformers/Whisper) for privacy and zero-cost operation.
--   **Polyglot Real-Time Architecture:** Uses the best language for the job to ensure low latency and maintainability (Go for WebSockets, Python for AI).
--   **Distributed Tracing:** All requests are tagged with a unique `RequestID` from the gateway through the AI service, enabling robust logging and debugging.
--   **Unified Productivity Suite:** Seamlessly integrates tasks, habits, and a Pomodoro timer.
-
----
-
-## 🛠️ Technology Stack
-
-| Layer                 | Technology                                                               | Purpose                                                           |
-| --------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| **Monorepo & Tooling**  | **Bun, Turborepo, Biome**                                                | Workspace management, task running, and code quality.             |
-| **Frontend**            | **Next.js 16 (Turbopack), React, TypeScript**                            | Modern, fast, and type-safe user interface.                       |
-| **Real-Time Gateway**   | **Go, Gorilla WebSocket, `air`**                                         | Handles high-concurrency WebSocket connections with hot-reloading. |
-| **AI Orchestrator**     | **Python 3.12, FastAPI, `uv`**                                           | Serves business logic, the dual-mode AI system, and agent execution. |
-| **Primary AI APIs**     | **Groq (`llama-3.1-8b-instant`), Deepgram**                              | For high-speed, production-grade LLM and STT services.            |
-| **Local AI Fallback**   | **Ollama (`phi-3-mini`), Transformers (`whisper-base`)**                 | For offline, private, or zero-cost operation.                     |
-| **Database & Cache**    | **PostgreSQL, Redis**                                                    | For long-term memory (user profiles, tasks) and session/cache management. |
-| **Infrastructure**      | **Docker, Docker Compose**                                               | For containerizing services and providing a consistent environment. |
-| **Deployment**          | **Vercel** (Frontend), **Fly.io** (Backend)                              | Modern platforms with generous free tiers for hosting.            |
-
-
-## 🎯 Design Principles
-
-### Architecture
-- **Event-driven**: Domain events for loose coupling
-- **Optimistic UI**: Instant feedback, eventual consistency
-- **Feature flags**: Progressive enhancement and A/B testing
-- **Type-safe**: End-to-end TypeScript contracts
-
-### Code Quality
-- **Biome**: Fast, unified linting and formatting
-- **Strict TypeScript**: No implicit any, full type coverage
-- **Accessibility-first**: WCAG AA compliance target
-- **Modern patterns**: React 19 features, async/await, ES modules
-
----
-
-## 🏗️ Project Structure
-
-```
-Nargis/
-├── apps/
-│   ├── web/                 # Next.js 16 Frontend
-│   ├── api-py/              # FastAPI AI Orchestrator
-│   └── gateway/             # Go WebSocket Gateway
-├── packages/
-│   └── tsconfig/            # Shared TypeScript configs
-├── infra/
-│   ├── docker-compose.yml   # Docker Compose for Hybrid Dev
-│   └── .env.example         # Environment variables for Docker
-└── package.json             # Root scripts and dependencies
-```
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
--   **Bun** (v1.2.0+)
--   **Go** (v1.25+) with `air` installed (`go install github.com/air-verse/air@latest`)
--   **Python** (~3.12) with `uv` (`pip install uv`)
--   **Docker Desktop** (for the Hybrid Workflow)
--   **(Optional)** [Ollama](https://ollama.com/) for the local AI fallback.
-
-### 1. Installation
+Clone and install:
 
 ```bash
-# Clone the repository
 git clone https://github.com/divijg19/Nargis.git
 cd Nargis
-
-# Install all dependencies across the monorepo
 bun install
 ```
 
-### 2. Configuration
-
-Nargis uses a powerful dual-mode AI backend. You control it via `.env` files.
-
-1.  **Create Local `.env` File:** For the fully local workflow.
-    `cp apps/api-py/.env.example apps/api-py/.env`
-
-2.  **Create Docker `.env` File:** For the hybrid workflow.
-    `cp infra/.env.example infra/.env`
-
-3.  **Edit the `.env` files:**
-    -   To use the **high-speed APIs (Recommended)**, fill in your `DEEPGRAM_API_KEY` and `GROQ_API_KEY`.
-    -   To use the **local AI models**, leave the API key values blank.
-
-### 3. Running the Application
-
-You have two powerful workflows to choose from, both run from the project root.
-
-#### Workflow A: Hybrid Development (Recommended for Frontend)
-
-Runs the backend in Docker for stability and the frontend locally for fast UI development.
+Run the full local dev workflow:
 
 ```bash
-# Start the backend services in Docker and the frontend locally
+# Local (all services)
+bun run dev
+
+# Hybrid: Docker backend + local frontend
 bun run dev:hybrid
 ```
 
