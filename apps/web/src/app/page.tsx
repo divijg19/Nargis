@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useState, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const ChatPanel = dynamic(() => import("@/components/ui/ChatPanel"), {
 	ssr: false,
@@ -106,7 +106,6 @@ export default function Home() {
 			mql.addEventListener("change", onChange);
 		} else {
 			// Safari & older browsers
-			// @ts-ignore - older API
 			mql.addListener(onChange);
 		}
 
@@ -114,7 +113,6 @@ export default function Home() {
 			if (typeof mql.removeEventListener === "function") {
 				mql.removeEventListener("change", onChange);
 			} else {
-				// @ts-ignore - older API
 				mql.removeListener(onChange);
 			}
 			// Restore whatever overflow was set previously
@@ -129,10 +127,12 @@ export default function Home() {
 				<div className="relative z-10 max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 xl:px-16 h-full flex items-center">
 					<div className="w-full">
 						<div className="grid grid-cols-1 lg:grid-cols-12 gap-y-6 gap-x-6 lg:gap-x-8 h-full items-center">
-
 							{/* Center column: Hero mic + ChatPanel */}
 							<div className="order-2 lg:order-2 lg:col-span-7 h-full flex items-center justify-center">
-								<div ref={heroRef} className="relative p-6 surface-floating rounded-3xl border border-border/30 mb-6 w-full max-w-3xl max-h-[calc(100vh-6.5rem)] overflow-auto flex flex-col">
+								<div
+									ref={heroRef}
+									className="relative p-6 surface-floating rounded-3xl border border-border/30 mb-6 w-full max-w-3xl max-h-[calc(100vh-6.5rem)] overflow-auto flex flex-col"
+								>
 									<div className="text-center mb-6">
 										<div className="flex items-center justify-center">
 											<VoiceInputButton
@@ -145,7 +145,11 @@ export default function Home() {
 										</div>
 									</div>
 									<div className="mt-4">
-										<ChatPanel compact merged permissionDenied={permissionDenied} />
+										<ChatPanel
+											compact
+											merged
+											permissionDenied={permissionDenied}
+										/>
 									</div>
 								</div>
 							</div>
@@ -160,25 +164,49 @@ export default function Home() {
 										<span className="gradient-text">Productivity</span>
 									</h1>
 									<h2 className="text-lg font-semibold mt-2 text-foreground">
-										Meet <strong className="font-semibold gradient-nargis">Nargis</strong>
+										Meet{" "}
+										<strong className="font-semibold gradient-nargis">
+											Nargis
+										</strong>
 									</h2>
-									<p className="text-sm text-muted-foreground mt-1">Your productivity management agent.</p>
+									<p className="text-sm text-muted-foreground mt-1">
+										Your productivity management agent.
+									</p>
 								</div>
 								<div className="mb-4 text-left">
-									<h3 className="text-lg font-semibold gradient-nargis mb-2">Voice-First Productivity</h3>
-									<p className="text-sm text-muted-foreground">Every feature designed for seamless voice interaction and natural conversation.</p>
+									<h3 className="text-lg font-semibold gradient-nargis mb-2">
+										Voice-First Productivity
+									</h3>
+									<p className="text-sm text-muted-foreground">
+										Every feature designed for seamless voice interaction and
+										natural conversation.
+									</p>
 								</div>
 								{/* feature cards removed from right aside; reserved for left sidebar */}
 								<div className="mt-2" />
 
 								{/* Usage guidelines */}
 								<div className="mt-4 text-sm text-muted-foreground space-y-3">
-									<h4 className="font-semibold text-foreground">How to use Nargis</h4>
+									<h4 className="font-semibold text-foreground">
+										How to use Nargis
+									</h4>
 									<ol className="list-decimal list-inside space-y-1">
-										<li>Click the microphone or press "Try Voice Assistant" to start speaking.</li>
-										<li>Use short, conversational commands: e.g. "Create a task", "Start Pomodoro", or "Track habit".</li>
-										<li>Try the example prompts above as starters and customize them to your workflow.</li>
-										<li>Explore the dashboard for insights and manage sessions from the sidebar.</li>
+										<li>
+											Click the microphone or press "Try Voice Assistant" to
+											start speaking.
+										</li>
+										<li>
+											Use short, conversational commands: e.g. "Create a task",
+											"Start Pomodoro", or "Track habit".
+										</li>
+										<li>
+											Try the example prompts above as starters and customize
+											them to your workflow.
+										</li>
+										<li>
+											Explore the dashboard for insights and manage sessions
+											from the sidebar.
+										</li>
 									</ol>
 								</div>
 							</div>
@@ -186,8 +214,6 @@ export default function Home() {
 					</div>
 				</div>
 			</section>
-
-
 		</main>
 	);
 }
