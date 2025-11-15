@@ -115,7 +115,7 @@ export class RealtimeConnection {
 			}
 
 			// Fallback: deliver whatever was received
-			for (const h of this.handlers) h(data as unknown);
+			for (const h of this.handlers) h(data);
 		};
 	}
 

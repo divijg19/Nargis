@@ -204,11 +204,12 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
 									{/* Mobile sidebar toggle (hamburger) */}
 									<button
 										type="button"
-										onClick={() => onMobileSidebarToggle && onMobileSidebarToggle()}
+										onClick={() => onMobileSidebarToggle?.()}
 										className="md:hidden p-2 rounded-xl hover:bg-hover/50 transition-all duration-200 active:scale-95"
 										aria-label="Open sidebar"
 									>
 										<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+											<title>Open sidebar</title>
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
 										</svg>
 									</button>

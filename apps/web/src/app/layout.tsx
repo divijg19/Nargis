@@ -1,14 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
-import React from "react";
 import type { ReactNode } from "react";
+import React from "react";
 import "./globals.css";
 import { AppProviders } from "@/components/layout/AppProviders";
-import Sidebar from "@/components/layout/Sidebar";
 import MobileNavToggle from "@/components/layout/MobileNavToggle";
 import RootLayoutInner from "@/components/layout/RootLayoutInner";
-// AI modal is now rendered inline in the hero via ChatPanel
+import Sidebar from "@/components/layout/Sidebar";
 
 import { Footer } from "@/components/ui/Footer";
 import { NavBar } from "@/components/ui/NavBar";
@@ -103,4 +102,3 @@ export default function RootLayout({
 		</html>
 	);
 }
-

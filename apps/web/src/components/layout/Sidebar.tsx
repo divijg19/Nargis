@@ -13,6 +13,13 @@ type SidebarProps = {
     onMobileClose?: () => void;
 };
 
+type Prompt = {
+    title: string;
+    subtitle: string;
+    prompt: string;
+    icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+};
+
 export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose }) => {
     const { resolvedTheme } = useTheme();
     const [collapsed, setCollapsed] = useState(false);
@@ -26,7 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileCl
     const baseBg = resolvedTheme === "dark" ? "bg-gray-900" : "bg-gray-100";
     const baseBorder = resolvedTheme === "dark" ? "border-gray-800" : "border-gray-200";
 
-    const examplePrompts = [
+    const examplePrompts: Prompt[] = [
         { title: "Plan my day", subtitle: "then list my top 3 priorities", prompt: "Plan my day: list my top 3 priorities", icon: CalendarDaysIcon },
         { title: "Start a journal entry", subtitle: "about my progress this week", prompt: "Start a journal entry about my progress this week", icon: PencilSquareIcon },
         { title: "Track a new habit", subtitle: "like 'read for 15 minutes daily'", prompt: "Track a new habit: read for 15 minutes daily", icon: ChartBarIcon },
@@ -104,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileCl
                     {!collapsed && (
                         <div className="flex flex-col space-y-2">
                             {examplePrompts.map((p, idx) => {
-                                const Icon = (p as any).icon as React.ComponentType<any> | undefined;
+                                const Icon = p.icon;
                                 return (
                                     <div key={p.title} className="relative">
                                         <button
@@ -161,7 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileCl
                                 <PlusIcon className="w-5 h-5" />
                             </button>
                             {examplePrompts.map((p, idx) => {
-                                const Icon = (p as any).icon as React.ComponentType<any> | undefined;
+                                const Icon = p.icon;
                                 return (
                                     <button
                                         key={p.title}

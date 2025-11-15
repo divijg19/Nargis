@@ -108,3 +108,19 @@ venv/
 # Go
 # ----------------------------------------------------------------
 *.bin
+
+# Generated test/report artifacts
+apps/web/playwright-report/
+apps/web/playwright-report/index.html
+
+# Ignore egg-info produced by building/installing the Python package in api-py
+**/api_py.egg-info/
+
+# Ignore Playwright output directories anywhere in the repo
+**/**/**/playwright-report/
+**/**/playwright-report/
+**/playwright-report/
+apps\web\playwright-report
+
+# Ignore generic test result folders
+**/test-results/

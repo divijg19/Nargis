@@ -19,6 +19,7 @@ DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY", "")
 HTTP_TIMEOUT = int(os.getenv("HTTP_TIMEOUT_SECONDS", "60"))
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "phi-3-mini")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+ML_WORKER_URL = os.getenv("ML_WORKER_URL", "")
 
 # Local STT model state
 device = "cpu"
@@ -99,6 +100,22 @@ async def _get_transcription(audio_bytes: bytes) -> str:
             resp.raise_for_status()
             return resp.json()["results"]["channels"][0]["alternatives"][0]["transcript"]
 
+    # If an ML worker is available, prefer delegating to it (isolates heavy deps)
+    if ML_WORKER_URL:
+        logging.info(f"Delegating STT to ML worker at {ML_WORKER_URL}")
+        stt_url = ML_WORKER_URL.rstrip("/") + "/stt"
+        try:
+            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+                files = {"audio": ("audio.webm", audio_bytes, "audio/webm")}
+                resp = await client.post(stt_url, files=files)
+                resp.raise_for_status()
+                data = resp.json()
+                # ML worker expected to return {"text": "..."}
+                return data.get("text", "")
+        except Exception as e:
+            logging.exception(f"Error delegating STT to ML worker: {e}")
+
+    # Fallback to local STT model
     logging.info("Using local STT model.")
     await ensure_stt_loaded()
     loop = asyncio.get_running_loop()
@@ -125,6 +142,18 @@ async def _get_llm_response(text: str) -> dict:
             resp = await client.post(LLM_URL, json=payload, headers=headers)
             resp.raise_for_status()
             return resp.json()
+
+    # If ML worker is available, delegate LLM requests to it
+    if ML_WORKER_URL:
+        logging.info(f"Delegating LLM to ML worker at {ML_WORKER_URL}")
+        llm_url = ML_WORKER_URL.rstrip("/") + "/llm"
+        try:
+            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+                resp = await client.post(llm_url, json={"text": text})
+                resp.raise_for_status()
+                return resp.json()
+        except Exception as e:
+            logging.exception(f"Error delegating LLM to ML worker: {e}")
 
     logging.info("Using local LLM (Ollama).")
     if not ollama_client:

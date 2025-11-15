@@ -465,6 +465,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 			messages,
 			clearMessages,
 			openConversation,
+			sendUserMessage,
 			handleIncoming,
 		],
 	);

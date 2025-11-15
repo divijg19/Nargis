@@ -6,5 +6,5 @@
     "bun.lock": "jsonc"
   },
   // 👇 Disable built-in JSON/JSONC validation (Biome or Bun will handle consistency)
-  "json.validate.enable": false,
+  "json.validate.enable": false
 }
