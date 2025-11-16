@@ -2,7 +2,6 @@
 
 import type React from "react";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { GoalProvider } from "@/contexts/GoalContext";
 import { HabitProvider } from "@/contexts/HabitContext";
 import { JournalProvider } from "@/contexts/JournalContext";
 import { PomodoroProvider } from "@/contexts/PomodoroContext";
@@ -20,9 +19,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 						<TaskProvider>
 							<HabitProvider>
 								<JournalProvider>
-									<GoalProvider>
-										<PomodoroProvider>{children}</PomodoroProvider>
-									</GoalProvider>
+									<PomodoroProvider>{children}</PomodoroProvider>
 								</JournalProvider>
 							</HabitProvider>
 						</TaskProvider>

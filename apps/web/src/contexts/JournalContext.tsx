@@ -74,7 +74,7 @@ function journalReducer(state: JournalStore, action: JournalAction): JournalStor
 
 // Context type
 interface JournalContextType extends JournalStore {
-    addEntry: (data: CreateJournalEntryRequest) => Promise<void>;
+    addEntry: (data: CreateJournalEntryRequest) => Promise<import("@/types").JournalEntry>;
     updateEntry: (id: string, updates: Partial<JournalEntry>) => Promise<void>;
     deleteEntry: (id: string) => void;
     loadEntries: () => Promise<void>;
@@ -120,6 +120,7 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
                     message: "Your journal entry has been saved",
                     variant: "success",
                 });
+                return entry;
             } catch (error) {
                 console.error("Failed to create journal entry:", error);
                 push({
@@ -127,6 +128,7 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
                     message: "Failed to create entry",
                     variant: "error",
                 });
+                throw error;
             }
         },
         [push],

@@ -8,7 +8,7 @@ on:
   #   branches: [feature/**]
 
 jobs:
-  # Job 1: Validate the frontend (from your old deploy.yml)
+  # Job 1: Validate the frontend
   validate-frontend:
     runs-on: ubuntu-latest
     steps:

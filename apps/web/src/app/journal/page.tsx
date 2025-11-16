@@ -5,6 +5,7 @@ import { JournalEntryCard } from "@/components/ui/JournalEntryCard";
 import { JournalModal } from "@/components/ui/JournalModal";
 import { useJournalStore } from "@/contexts/JournalContext";
 import type { JournalEntry } from "@/types";
+import { dateKey } from "@/utils";
 
 type FilterType = "all" | "text" | "voice";
 type FilterMood = "all" | JournalEntry["mood"];
@@ -15,6 +16,14 @@ export default function JournalPage() {
     const [selectedEntry, setSelectedEntry] = useState<JournalEntry | undefined>(
         undefined,
     );
+    // View controls
+    const [viewMode, setViewMode] = useState<"list" | "calendar">("calendar");
+    const [rangeMode, setRangeMode] = useState<"day" | "week" | "month">("week");
+    const [selectedDate, setSelectedDate] = useState<Date>(() => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        return d;
+    });
     const [filterType, setFilterType] = useState<FilterType>("all");
     const [filterMood, setFilterMood] = useState<FilterMood>("all");
     const [searchQuery, setSearchQuery] = useState("");
@@ -104,6 +113,72 @@ export default function JournalPage() {
         );
     }
 
+    // helper: group entries by date (YYYY-MM-DD)
+    const entriesByDate = useMemo(() => {
+        const map: Record<string, JournalEntry[]> = {};
+        (entries || []).forEach((e) => {
+            const key = dateKey(e.createdAt);
+            map[key] = map[key] || [];
+            map[key].push(e);
+        });
+        return map;
+    }, [entries]);
+
+    // build week dates (Sunday..Saturday) around selectedDate
+    const weekDates = useMemo(() => {
+        const d = new Date(selectedDate);
+        const day = d.getDay();
+        const start = new Date(d);
+        start.setDate(d.getDate() - day);
+        start.setHours(0, 0, 0, 0);
+        const days: Date[] = [];
+        for (let i = 0; i < 7; i++) {
+            const dd = new Date(start);
+            dd.setDate(start.getDate() + i);
+            days.push(dd);
+        }
+        return days;
+    }, [selectedDate]);
+
+    // build month grid (6 rows x 7 cols) for selectedDate's month
+    const monthGrid = useMemo(() => {
+        const d = new Date(selectedDate);
+        const year = d.getFullYear();
+        const month = d.getMonth();
+        const first = new Date(year, month, 1);
+        const startDay = first.getDay();
+        const start = new Date(first);
+        start.setDate(first.getDate() - startDay);
+        start.setHours(0, 0, 0, 0);
+        const grid: Date[][] = [];
+        let cur = new Date(start);
+        for (let week = 0; week < 6; week++) {
+            const row: Date[] = [];
+            for (let i = 0; i < 7; i++) {
+                row.push(new Date(cur));
+                cur.setDate(cur.getDate() + 1);
+            }
+            grid.push(row);
+        }
+        return grid;
+    }, [selectedDate]);
+
+    const openNewForDate = (date: Date) => {
+        setSelectedEntry(undefined);
+        setSelectedDate(new Date(date));
+        setIsModalOpen(true);
+    };
+
+    const openEdit = (entry: JournalEntry) => {
+        setSelectedEntry(entry);
+        setIsModalOpen(true);
+    };
+
+    const changeRange = (mode: "day" | "week" | "month") => {
+        setRangeMode(mode);
+        // keep selectedDate the same
+    };
+
     return (
         <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
             <div className="max-w-7xl mx-auto">
@@ -117,8 +192,50 @@ export default function JournalPage() {
                     </p>
                 </div>
 
-                {/* Search and Filters */}
+                {/* View controls, Search and Filters */}
                 <div className="mb-6 space-y-4">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setViewMode("list")}
+                                className={`px-3 py-2 rounded-lg font-medium transition-colors ${viewMode === "list" ? "bg-blue-600 text-white" : "bg-gray-100 dark:bg-gray-700 text-foreground"}`}
+                            >
+                                List
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setViewMode("calendar")}
+                                className={`px-3 py-2 rounded-lg font-medium transition-colors ${viewMode === "calendar" ? "bg-blue-600 text-white" : "bg-gray-100 dark:bg-gray-700 text-foreground"}`}
+                            >
+                                Calendar
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => changeRange("day")}
+                                className={`px-2 py-1 rounded-lg text-sm ${rangeMode === "day" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                            >
+                                Day
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => changeRange("week")}
+                                className={`px-2 py-1 rounded-lg text-sm ${rangeMode === "week" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                            >
+                                Week
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => changeRange("month")}
+                                className={`px-2 py-1 rounded-lg text-sm ${rangeMode === "month" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                            >
+                                Month
+                            </button>
+                        </div>
+                    </div>
                     {/* Search bar */}
                     <div className="relative">
                         <input
@@ -250,61 +367,273 @@ export default function JournalPage() {
                 {/* Entry sections */}
                 {filteredEntries.length > 0 && (
                     <div className="space-y-8">
-                        {/* Today */}
-                        {todayFiltered.length > 0 && (
-                            <section>
-                                <h2 className="text-xl font-semibold text-foreground mb-4">
-                                    Today
-                                </h2>
-                                <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                                    {todayFiltered.map((entry) => (
-                                        <JournalEntryCard
-                                            key={entry.id}
-                                            entry={entry}
-                                            onEdit={handleEdit}
-                                            onDelete={deleteEntry}
-                                        />
-                                    ))}
-                                </div>
-                            </section>
-                        )}
+                        {viewMode === "list" ? (
+                            <div className="space-y-8">
+                                {/* Today */}
+                                {todayFiltered.length > 0 && (
+                                    <section>
+                                        <h2 className="text-xl font-semibold text-foreground mb-4">
+                                            Today
+                                        </h2>
+                                        <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                                            {todayFiltered.map((entry) => (
+                                                <JournalEntryCard
+                                                    key={entry.id}
+                                                    entry={entry}
+                                                    onEdit={handleEdit}
+                                                    onDelete={deleteEntry}
+                                                />
+                                            ))}
+                                        </div>
+                                    </section>
+                                )}
 
-                        {/* This Week */}
-                        {weekFiltered.length > 0 && (
-                            <section>
-                                <h2 className="text-xl font-semibold text-foreground mb-4">
-                                    This Week
-                                </h2>
-                                <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                                    {weekFiltered.map((entry) => (
-                                        <JournalEntryCard
-                                            key={entry.id}
-                                            entry={entry}
-                                            onEdit={handleEdit}
-                                            onDelete={deleteEntry}
-                                        />
-                                    ))}
-                                </div>
-                            </section>
-                        )}
+                                {/* This Week */}
+                                {weekFiltered.length > 0 && (
+                                    <section>
+                                        <h2 className="text-xl font-semibold text-foreground mb-4">
+                                            This Week
+                                        </h2>
+                                        <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                                            {weekFiltered.map((entry) => (
+                                                <JournalEntryCard
+                                                    key={entry.id}
+                                                    entry={entry}
+                                                    onEdit={handleEdit}
+                                                    onDelete={deleteEntry}
+                                                />
+                                            ))}
+                                        </div>
+                                    </section>
+                                )}
 
-                        {/* Earlier */}
-                        {earlierFiltered.length > 0 && (
-                            <section>
-                                <h2 className="text-xl font-semibold text-foreground mb-4">
-                                    Earlier
-                                </h2>
-                                <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                                    {earlierFiltered.map((entry) => (
-                                        <JournalEntryCard
-                                            key={entry.id}
-                                            entry={entry}
-                                            onEdit={handleEdit}
-                                            onDelete={deleteEntry}
-                                        />
-                                    ))}
+                                {/* Earlier */}
+                                {earlierFiltered.length > 0 && (
+                                    <section>
+                                        <h2 className="text-xl font-semibold text-foreground mb-4">
+                                            Earlier
+                                        </h2>
+                                        <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                                            {earlierFiltered.map((entry) => (
+                                                <JournalEntryCard
+                                                    key={entry.id}
+                                                    entry={entry}
+                                                    onEdit={handleEdit}
+                                                    onDelete={deleteEntry}
+                                                />
+                                            ))}
+                                        </div>
+                                    </section>
+                                )}
+                            </div>
+                        ) : (
+                            // Calendar view
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                // prev
+                                                if (rangeMode === "day") {
+                                                    const d = new Date(selectedDate);
+                                                    d.setDate(d.getDate() - 1);
+                                                    setSelectedDate(d);
+                                                } else if (rangeMode === "week") {
+                                                    const d = new Date(selectedDate);
+                                                    d.setDate(d.getDate() - 7);
+                                                    setSelectedDate(d);
+                                                } else {
+                                                    const d = new Date(selectedDate);
+                                                    d.setMonth(d.getMonth() - 1);
+                                                    setSelectedDate(d);
+                                                }
+                                            }}
+                                            className="px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700"
+                                        >
+                                            ←
+                                        </button>
+
+                                        <div className="text-lg font-semibold">
+                                            {rangeMode === "day" &&
+                                                selectedDate.toLocaleDateString()}
+                                            {rangeMode === "week" && (
+                                                <span>
+                                                    {weekDates[0].toLocaleDateString()} -{' '}
+                                                    {weekDates[6].toLocaleDateString()}
+                                                </span>
+                                            )}
+                                            {rangeMode === "month" && (
+                                                <span>
+                                                    {selectedDate.toLocaleString(undefined, {
+                                                        month: 'long',
+                                                        year: 'numeric',
+                                                    })}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                // next
+                                                if (rangeMode === "day") {
+                                                    const d = new Date(selectedDate);
+                                                    d.setDate(d.getDate() + 1);
+                                                    setSelectedDate(d);
+                                                } else if (rangeMode === "week") {
+                                                    const d = new Date(selectedDate);
+                                                    d.setDate(d.getDate() + 7);
+                                                    setSelectedDate(d);
+                                                } else {
+                                                    const d = new Date(selectedDate);
+                                                    d.setMonth(d.getMonth() + 1);
+                                                    setSelectedDate(d);
+                                                }
+                                            }}
+                                            className="px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700"
+                                        >
+                                            →
+                                        </button>
+                                    </div>
+
+                                    <div>
+                                        <button
+                                            type="button"
+                                            onClick={() => openNewForDate(selectedDate)}
+                                            className="px-3 py-2 bg-blue-600 text-white rounded-lg"
+                                        >
+                                            New on {selectedDate.toLocaleDateString()}
+                                        </button>
+                                    </div>
                                 </div>
-                            </section>
+
+                                {rangeMode === "day" && (
+                                    <div>
+                                        <h3 className="text-lg font-medium mb-3">{selectedDate.toLocaleDateString()}</h3>
+                                        <div className="space-y-3">
+                                            {(entriesByDate[dateKey(selectedDate)] || []).map(e => (
+                                                <JournalEntryCard key={e.id} entry={e} onEdit={openEdit} onDelete={deleteEntry} />
+                                            ))}
+                                            <button onClick={() => openNewForDate(selectedDate)} className="text-sm text-blue-600">+ Add entry</button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {rangeMode === "week" && (
+                                    <div
+                                        className="grid grid-cols-7 gap-2"
+                                        role="grid"
+                                        aria-label="Week calendar"
+                                        onKeyDown={(e) => {
+                                            // keyboard navigation: left/right/up/down moves selectedDate
+                                            const key = e.key;
+                                            if (key === "ArrowLeft") {
+                                                setSelectedDate((d) => {
+                                                    const nd = new Date(d);
+                                                    nd.setDate(nd.getDate() - 1);
+                                                    return nd;
+                                                });
+                                            } else if (key === "ArrowRight") {
+                                                setSelectedDate((d) => {
+                                                    const nd = new Date(d);
+                                                    nd.setDate(nd.getDate() + 1);
+                                                    return nd;
+                                                });
+                                            } else if (key === "ArrowUp") {
+                                                setSelectedDate((d) => {
+                                                    const nd = new Date(d);
+                                                    nd.setDate(nd.getDate() - 7);
+                                                    return nd;
+                                                });
+                                            } else if (key === "ArrowDown") {
+                                                setSelectedDate((d) => {
+                                                    const nd = new Date(d);
+                                                    nd.setDate(nd.getDate() + 7);
+                                                    return nd;
+                                                });
+                                            }
+                                        }}
+                                    >
+                                        {weekDates.map((d) => {
+                                            const key = dateKey(d);
+                                            const list = entriesByDate[key] || [];
+                                            return (
+                                                <div
+                                                    key={key}
+                                                    role="gridcell"
+                                                    tabIndex={0}
+                                                    className="border rounded-lg p-2 min-h-[120px] bg-surface focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    aria-label={`Entries for ${d.toDateString()}`}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") openNewForDate(d);
+                                                    }}
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <div className="text-sm font-medium">
+                                                            {d.toLocaleDateString(undefined, {
+                                                                weekday: "short",
+                                                                day: "numeric",
+                                                            })}
+                                                        </div>
+                                                        <button
+                                                            onClick={() => openNewForDate(d)}
+                                                            className="text-xs text-blue-600"
+                                                        >
+                                                            New
+                                                        </button>
+                                                    </div>
+                                                    <div className="space-y-2 overflow-hidden">
+                                                        {list.slice(0, 3).map((e) => (
+                                                            <JournalEntryCard
+                                                                key={e.id}
+                                                                entry={e}
+                                                                onEdit={openEdit}
+                                                                onDelete={deleteEntry}
+                                                                compact
+                                                            />
+                                                        ))}
+                                                        {list.length > 3 && (
+                                                            <div
+                                                                className="text-xs text-muted-foreground mt-1"
+                                                                title={`${list.length - 3} more entries`}
+                                                            >
+                                                                +{list.length - 3} more
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {rangeMode === "month" && (
+                                    <div className="grid grid-cols-7 gap-2">
+                                        {monthGrid.flat().map((d) => {
+                                            const key = dateKey(d);
+                                            const list = entriesByDate[key] || [];
+                                            const isCurrentMonth = d.getMonth() === selectedDate.getMonth();
+                                            return (
+                                                <div key={key} className={`border rounded-lg p-2 min-h-[120px] ${isCurrentMonth ? 'bg-surface' : 'bg-gray-50 dark:bg-gray-900 text-muted-foreground'}`}>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <div className="text-sm font-medium">{d.getDate()}</div>
+                                                        <button onClick={() => openNewForDate(d)} className="text-xs text-blue-600">New</button>
+                                                    </div>
+                                                    <div className="space-y-2 overflow-hidden">
+                                                        {list.slice(0, 3).map(e => (
+                                                            <JournalEntryCard key={e.id} entry={e} onEdit={openEdit} onDelete={deleteEntry} />
+                                                        ))}
+                                                        {list.length > 3 && (
+                                                            <div className="text-xs text-muted-foreground mt-1">+{list.length - 3} more</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         )}
                     </div>
                 )}
@@ -341,6 +670,7 @@ export default function JournalPage() {
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 entry={selectedEntry}
+                initialDate={selectedEntry ? undefined : selectedDate}
             />
         </div>
     );

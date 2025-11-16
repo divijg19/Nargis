@@ -215,53 +215,8 @@ export interface UpdateHabitRequest extends Partial<CreateHabitRequest> {
 }
 
 // Goal types for v1 Goal Assistant
-export interface Goal {
-	id: string;
-	title: string;
-	description?: string;
-	category: "personal" | "career" | "health" | "learning" | "finance" | "other";
-	deadline?: Date;
-	status: "planning" | "active" | "paused" | "completed" | "archived";
-	createdAt: Date;
-	updatedAt: Date;
-	milestones: Milestone[];
-	linkedTaskIds: string[];
-	linkedHabitIds: string[];
-	aiSuggestions?: string[];
-	progress: number; // 0-100
-}
-
-export interface Milestone {
-	id: string;
-	title: string;
-	description?: string;
-	completed: boolean;
-	dueDate?: Date;
-	order: number;
-}
-
-export interface CreateGoalRequest {
-	title: string;
-	description?: string;
-	category: Goal["category"];
-	deadline?: Date;
-}
-
-export interface UpdateGoalRequest extends Partial<CreateGoalRequest> {
-	id: string;
-	status?: Goal["status"];
-	progress?: number;
-	milestones?: Milestone[];
-	linkedTaskIds?: string[];
-	linkedHabitIds?: string[];
-}
-
-export interface GoalStore {
-	goals: Goal[];
-	loading: boolean;
-	activeGoals: Goal[];
-	completedGoals: Goal[];
-}
+// Goal types removed as part of feature cleanup. If you relied on these types,
+// reintroduce them under a dedicated feature or replace with simpler models.
 
 // AI Conversation types
 export interface ConversationMessage {
