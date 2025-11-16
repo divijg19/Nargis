@@ -126,6 +126,18 @@ export function isThisWeek(date: Date | string): boolean {
 }
 
 /**
+ * Return a stable YYYY-MM-DD key in the user's local timezone suitable for grouping
+ */
+export function dateKey(date: Date | string): string {
+	const d = typeof date === "string" ? new Date(date) : date;
+	const local = new Date(d);
+	const y = local.getFullYear();
+	const m = String(local.getMonth() + 1).padStart(2, "0");
+	const day = String(local.getDate()).padStart(2, "0");
+	return `${y}-${m}-${day}`;
+}
+
+/**
  * Format duration in minutes to human readable format
  */
 export function formatDuration(minutes: number): string {

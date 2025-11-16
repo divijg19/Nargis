@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useGoalStore } from "@/contexts/GoalContext";
+// Goals feature removed; avoid importing GoalContext
 import { useHabitStore } from "@/contexts/HabitContext";
 import { usePomodoroStore } from "@/contexts/PomodoroContext";
 import { useTaskStore } from "@/contexts/TaskContext";
@@ -13,7 +13,8 @@ interface AIOverviewProps {
 export function AIOverview({ className = "" }: AIOverviewProps) {
     const { todayTasks, completedToday } = useTaskStore();
     const { todayProgress } = useHabitStore();
-    const { goals } = useGoalStore();
+    // Goals removed — use empty list for insights
+    const goals: any[] = [];
     const { todaySessionsCount, sessions } = usePomodoroStore();
 
     // Calculate total focus minutes from today's completed sessions

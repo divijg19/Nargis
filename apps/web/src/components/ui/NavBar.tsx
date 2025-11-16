@@ -28,7 +28,7 @@ function InlineVoice() {
 
 const navigationItems = [
 	{ href: "/dashboard", label: "Dashboard", icon: "📊" },
-	{ href: "/goals", label: "Goals", icon: "🎯" },
+	{ href: "/journal", label: "Journal", icon: "📔" },
 	{ href: "/tasks", label: "Tasks", icon: "✓" },
 	{ href: "/habits", label: "Habits", icon: "🔥" },
 	{ href: "/pomodoro", label: "Focus", icon: "🍅" },

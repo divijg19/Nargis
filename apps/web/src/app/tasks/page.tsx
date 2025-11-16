@@ -128,7 +128,7 @@ export default function TasksPage() {
 				</aside>
 
 				{/* Column 2: Today's Focus (center) and In Progress stacked */}
-				<main className="w-full max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5 pb-10 lg:col-start-4 lg:col-end-5">
+				<main className="w-full px-4 sm:px-6 lg:px-8 space-y-5 pb-10 lg:col-start-4 lg:col-end-5">
 					{/* Mobile-only summary stats */}
 					<div className="lg:hidden flex flex-col space-y-4">
 						<div className="glass bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl p-2.5 border border-slate-200/60 dark:border-slate-700/60 shadow-lg hover:shadow-xl transition-all duration-300 hover-elevate">

@@ -3,12 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ActionButton } from "@/components/ui/ActionButton";
-import { AIOverview } from "@/components/ui/AIOverview";
 import { DashboardCard } from "@/components/ui/DashboardCard";
 import DashboardHero from "@/components/ui/DashboardHero";
 import { HabitCard } from "@/components/ui/HabitCard";
 import HabitModal from "@/components/ui/HabitModal";
-import { RecentChats } from "@/components/ui/RecentChats";
 import { StatCard } from "@/components/ui/StatCard";
 import { TaskModal } from "@/components/ui/TaskModal";
 import { TaskPreview } from "@/components/ui/TaskPreview";
@@ -62,13 +60,13 @@ export default function DashboardPage() {
 	};
 
 	return (
-		<div className="min-h-screen pt-24 md:pt-28 bg-app-light transition-all duration-500">
+		<div className="min-h-screen pt-8 md:pt-12 bg-app-light transition-all duration-500">
 			{/* Quick Actions: rendered beneath the hero (desktop) - mobile kept in the stacked area */}
 
 			{/* Grid wrapper to prevent overlap on large screens */}
 			<div className="relative lg:grid lg:grid-cols-[3rem_18rem_0rem_1fr_0rem_16rem_3rem] lg:gap-0 xl:grid-cols-[4rem_18rem_0rem_1fr_0rem_16rem_4rem] 2xl:grid-cols-[6rem_18rem_0rem_1fr_0rem_16rem_6rem]">
 				{/* Today's Tasks: left rail, sticky within its column */}
-				<aside className="hidden lg:flex flex-col sticky top-24 w-64 xl:w-72 justify-self-end gap-4 z-30 lg:col-start-2 lg:col-end-3">
+				<aside className="hidden lg:flex flex-col sticky top-16 w-64 xl:w-72 justify-self-end gap-4 z-30 lg:col-start-2 lg:col-end-3">
 					<DashboardCard
 						title="Today's Tasks"
 						size="sm"
@@ -141,7 +139,7 @@ export default function DashboardPage() {
 								</DashboardCard>
 							</div>
 							{/* Stack Task Status Overview above the hero, center hero in available viewport */}
-							<div className="w-full flex flex-col items-center gap-1 lg:-mt-8">
+							<div className="w-full flex flex-col items-center gap-1 lg:-mt-12">
 								<div className="w-full max-w-lg">
 									<DashboardCard title="Task Status Overview" size="xs">
 										<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -192,14 +190,14 @@ export default function DashboardPage() {
 								</div>
 
 								<div className="w-full flex flex-col gap-0 items-center">
-									<div className="flex-1 w-full flex items-center justify-center">
-										<div className="w-full max-w-lg mt-0 lg:mt-0 lg:my-auto">
+									<div className="w-full flex items-start justify-center">
+										<div className="w-full max-w-md mt-0">
 											<DashboardHero greeting={getGreeting()} />
 										</div>
 									</div>
 
 									{/* Desktop Quick Actions: beneath the hero, aligned to the hero's left edge */}
-									<div className="w-full max-w-lg hidden lg:flex lg:justify-start lg:-mt-4">
+									<div className="w-full max-w-lg hidden lg:flex lg:justify-start lg:-mt-6">
 										<div className="w-72">
 											<DashboardCard title="Quick Actions" size="xs">
 												<div className="space-y-2">
@@ -235,57 +233,12 @@ export default function DashboardPage() {
 							</div>
 						</div>
 
-						{/* AI Overview and Recent Chats - below the hero */}
-						<div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 pb-8">
-							{/* AI Overview Section */}
-							<DashboardCard title="AI Overview" size="md">
-								<AIOverview />
-							</DashboardCard>
-
-							{/* Recent Chats Section */}
-							<DashboardCard title="Recent Conversations" size="md">
-								<RecentChats maxChats={3} />
-							</DashboardCard>
-						</div>
 					</div>
 				</main>
 
 				{/* Right stat stack: right rail, sticky within its column */}
-				<aside className="hidden lg:flex flex-col sticky top-24 w-48 xl:w-56 justify-self-start gap-3 z-20 lg:col-start-6 lg:col-end-7">
+				<aside className="hidden lg:flex flex-col sticky top-16 w-48 xl:w-56 justify-self-start gap-3 z-20 lg:col-start-6 lg:col-end-7">
 					<StatCard title="Tasks Completed" value={completedToday} icon="✅" />
-
-					{/* Today's Habits */}
-					<DashboardCard
-						title="Today's Habits"
-						size="sm"
-						headerAction={
-							<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
-								{todayProgress.filter((h) => h.completed).length}/
-								{todayProgress.length}
-							</span>
-						}
-					>
-						<div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-							{todayProgress.length > 0 ? (
-								todayProgress.map((habit) => (
-									<HabitCard
-										key={habit.id}
-										habit={habit}
-										onUpdateCount={updateHabitCount}
-										compact
-									/>
-								))
-							) : (
-								<div className="text-center py-8 text-muted-foreground">
-									<p className="text-sm">No habits yet</p>
-									<p className="text-xs mt-1">
-										Create your first habit to start tracking
-									</p>
-								</div>
-							)}
-						</div>
-					</DashboardCard>
-
 					<StatCard title="Focus Sessions" value={todaySessionsCount} icon="🍅" />
 					<StatCard title="Active Streaks" value={totalStreaks} icon="🔥" />
 					<StatCard

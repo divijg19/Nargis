@@ -9,6 +9,8 @@ interface JournalModalProps {
     isOpen: boolean;
     onClose: () => void;
     entry?: JournalEntry;
+    /** Optional initial date to assign to a newly created entry (for calendar cell) */
+    initialDate?: Date;
 }
 
 const MOOD_OPTIONS = [
@@ -19,7 +21,7 @@ const MOOD_OPTIONS = [
     { value: "terrible" as const, emoji: "😢", label: "Terrible" },
 ];
 
-export function JournalModal({ isOpen, onClose, entry }: JournalModalProps) {
+export function JournalModal({ isOpen, onClose, entry, initialDate }: JournalModalProps) {
     const { addEntry, updateEntry, getSummary } = useJournalStore();
     const [type, setType] = useState<"text" | "voice">("text");
     const [title, setTitle] = useState("");
@@ -61,6 +63,14 @@ export function JournalModal({ isOpen, onClose, entry }: JournalModalProps) {
             contentRef.current.style.height = `${contentRef.current.scrollHeight}px`;
         }
     });
+
+    // Focus the content textarea when modal opens for quick entry
+    useEffect(() => {
+        if (isOpen && contentRef.current) {
+            // schedule after render
+            setTimeout(() => contentRef.current?.focus(), 50);
+        }
+    }, [isOpen]);
 
     const handleAddTag = () => {
         const trimmedTag = tagInput.trim().toLowerCase();
@@ -108,7 +118,16 @@ export function JournalModal({ isOpen, onClose, entry }: JournalModalProps) {
                     aiSummary,
                 });
             } else {
-                await addEntry(entryData);
+                // create and optionally backdate the entry when initialDate is provided
+                const created = await addEntry(entryData);
+                if (initialDate) {
+                    try {
+                        await updateEntry(created.id, { createdAt: initialDate });
+                    } catch (err) {
+                        // non-fatal: log and continue
+                        console.error("Failed to set entry date:", err);
+                    }
+                }
             }
 
             onClose();
