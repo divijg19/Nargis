@@ -3,9 +3,9 @@
 import dynamic from "next/dynamic";
 
 const FloatingChatButton = dynamic(() => import("./FloatingChatButton"), {
-	ssr: false,
+  ssr: false,
 });
 
 export default function FloatingChatButtonLoader() {
-	return <FloatingChatButton />;
+  return <FloatingChatButton />;
 }

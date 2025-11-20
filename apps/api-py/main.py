@@ -66,6 +66,7 @@ from services.ai_clients import (
     DEEPGRAM_API_KEY,
     HTTP_TIMEOUT,
 )
+from agent import graph as agent_graph
 
 app = FastAPI(title="Nargis AI Service")
 
@@ -124,9 +125,30 @@ async def process_audio_pipeline(audio_file: UploadFile = File(...)):
         if not transcribed_text or not transcribed_text.strip():
             return {"choices": [{"message": {"content": "I'm sorry, I didn't catch that. Could you please repeat?"}}]}
 
-        # Call the LLM and return both the transcript and the model response so
-        # the frontend can show the user's transcript immediately and then the AI response.
-        llm_result = await _get_llm_response(transcribed_text)
+        # Use the LangGraph agent runtime for reasoning-heavy flows. If the
+        # agent runtime is unavailable or fails, fall back to the linear LLM
+        # call for resilience.
+        final_text = None
+        if getattr(agent_graph, "agent_app", None):
+            try:
+                # agent_app.invoke may be blocking depending on implementation;
+                # run it in a thread to avoid blocking the event loop.
+                result = await __import__("asyncio").to_thread(agent_graph.agent_app.invoke, {"input": transcribed_text})
+                if isinstance(result, dict):
+                    final_text = result.get("output") or result.get("response") or result.get("text") or result.get("state", {}).get("final_text")
+                else:
+                    final_text = str(result)
+            except Exception:
+                # Log and fall back
+                logging.exception("Agent invocation failed; falling back to linear LLM")
+                llm_result = await _get_llm_response(transcribed_text)
+                return {"transcript": transcribed_text, "llm": llm_result}
+        else:
+            # Agent not available in this environment, use legacy LLM path
+            llm_result = await _get_llm_response(transcribed_text)
+            return {"transcript": transcribed_text, "llm": llm_result}
+
+        llm_result = {"reply": final_text}
         return {"transcript": transcribed_text, "llm": llm_result}
 
     except httpx.HTTPStatusError as e:

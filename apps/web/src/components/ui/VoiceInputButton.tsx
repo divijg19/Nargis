@@ -7,232 +7,242 @@ import { useToasts } from "@/contexts/ToastContext";
 type VoiceSize = "sm" | "md" | "lg";
 
 export function VoiceInputButton({
-	size = "md",
-	showStatus = true,
-	variantOverride,
-	iconTranslateY,
-	iconSizeClass: iconSizeClassProp,
-	statusInline = false,
+  size = "md",
+  showStatus = true,
+  variantOverride,
+  iconTranslateY,
+  iconSizeClass: iconSizeClassProp,
+  statusInline = false,
 }: {
-	size?: VoiceSize;
-	showStatus?: boolean;
-	variantOverride?: string;
-	iconTranslateY?: number;
-	iconSizeClass?: string;
-	statusInline?: boolean;
+  size?: VoiceSize;
+  showStatus?: boolean;
+  variantOverride?: string;
+  iconTranslateY?: number;
+  iconSizeClass?: string;
+  statusInline?: boolean;
 }) {
-	const { isListening, startListening, stopListening, connectionStatus } =
-		useRealtime();
-	const { push } = useToasts();
-	const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const { isListening, startListening, stopListening, connectionStatus } =
+    useRealtime();
+  const { push } = useToasts();
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
-	// Announce recording state changes via toast for screen reader & visual users.
-	const firstRef = useRef(true);
-	useEffect(() => {
-		if (firstRef.current) {
-			firstRef.current = false;
-			return;
-		}
-		if (isListening)
-			push({
-				message: "Recording started",
-				variant: "info",
-				type: "recording-started",
-			});
-		else
-			push({
-				message: "Recording stopped",
-				variant: "info",
-				type: "recording-stopped",
-			});
-	}, [isListening, push]);
+  // Announce recording state changes via toast for screen reader & visual users.
+  const firstRef = useRef(true);
+  useEffect(() => {
+    if (firstRef.current) {
+      firstRef.current = false;
+      return;
+    }
+    if (isListening)
+      push({
+        message: "Recording started",
+        variant: "info",
+        type: "recording-started",
+      });
+    else
+      push({
+        message: "Recording stopped",
+        variant: "info",
+        type: "recording-stopped",
+      });
+  }, [isListening, push]);
 
-	// Allow clicks while the connection is still establishing; startListening
-	// will attempt to connect and notify the user.
-	const disabled = false;
+  // Allow clicks while the connection is still establishing; startListening
+  // will attempt to connect and notify the user.
+  const disabled = false;
 
-	const handleClick = useCallback(() => {
-		if (isListening) stopListening();
-		else startListening();
-	}, [isListening, startListening, stopListening]);
+  const handleClick = useCallback(() => {
+    if (isListening) stopListening();
+    else startListening();
+  }, [isListening, startListening, stopListening]);
 
-	const defaultSizeClass =
-		size === "lg"
-			? "w-28 h-28 sm:w-32 sm:h-32 text-2xl aspect-square px-0"
-			: size === "sm"
-				? "w-8 h-8 text-sm aspect-square px-0"
-				: "w-10 h-10 text-base aspect-square px-0";
+  const defaultSizeClass =
+    size === "lg"
+      ? "w-28 h-28 sm:w-32 sm:h-32 text-2xl aspect-square px-0"
+      : size === "sm"
+        ? "w-8 h-8 text-sm aspect-square px-0"
+        : "w-10 h-10 text-base aspect-square px-0";
 
-	// If a variantOverride is provided, callers may want custom proportions
-	// (e.g., a rounded square). Remove the `aspect-square` helper so width
-	// and height can be independently controlled by the override classes.
-	const sizeClass = variantOverride
-		? defaultSizeClass.replace(" aspect-square", "")
-		: defaultSizeClass;
-	const iconSizeClass =
-		size === "lg" ? "w-16 h-16" : size === "sm" ? "w-5 h-5" : "w-9 h-9";
+  // If a variantOverride is provided, callers may want custom proportions
+  // (e.g., a rounded square). Remove the `aspect-square` helper so width
+  // and height can be independently controlled by the override classes.
+  const sizeClass = variantOverride
+    ? defaultSizeClass.replace(" aspect-square", "")
+    : defaultSizeClass;
+  const iconSizeClass =
+    size === "lg" ? "w-16 h-16" : size === "sm" ? "w-5 h-5" : "w-9 h-9";
 
-	// Allow callers to override the icon size independently of the overall button
-	// size. If an explicit iconSizeClass is provided, use that instead.
-	const finalIconSizeClass = iconSizeClassProp ?? iconSizeClass;
+  // Allow callers to override the icon size independently of the overall button
+  // size. If an explicit iconSizeClass is provided, use that instead.
+  const finalIconSizeClass = iconSizeClassProp ?? iconSizeClass;
 
-	const statusMap: Record<string, { dot: string; label: string }> = {
-		open: { dot: "bg-success", label: "Connected" },
-		connecting: { dot: "bg-warning", label: "Connecting…" },
-		retrying: { dot: "bg-warning", label: "Reconnecting…" },
-		closed: { dot: "bg-destructive", label: "Disconnected" },
-		error: { dot: "bg-destructive", label: "Connection Error" },
-		idle: { dot: "bg-muted", label: "Idle" },
-	};
+  const statusMap: Record<string, { dot: string; label: string }> = {
+    open: { dot: "bg-success", label: "Connected" },
+    connecting: { dot: "bg-warning", label: "Connecting…" },
+    retrying: { dot: "bg-warning", label: "Reconnecting…" },
+    closed: { dot: "bg-destructive", label: "Disconnected" },
+    error: { dot: "bg-destructive", label: "Connection Error" },
+    idle: { dot: "bg-muted", label: "Idle" },
+  };
 
-	const status = statusMap[connectionStatus] ?? statusMap.idle;
+  const status = statusMap[connectionStatus] ?? statusMap.idle;
 
-	// Detect inline/compact usage (navbar) — small size with no status shown
-	const isInline = size === "sm" && showStatus === false;
+  // Detect inline/compact usage (navbar) — small size with no status shown
+  const isInline = size === "sm" && showStatus === false;
 
-	// Determine variant classes driven by global tokens in globals.css
-	const variantClass = isListening
-		? "voice-btn--listening"
-		: connectionStatus === "connecting"
-			? "voice-btn--connecting"
-			: isInline
-				? "voice-btn--inline"
-				: "voice-btn--idle";
+  // Determine variant classes driven by global tokens in globals.css
+  const variantClass = isListening
+    ? "voice-btn--listening"
+    : connectionStatus === "connecting"
+      ? "voice-btn--connecting"
+      : isInline
+        ? "voice-btn--inline"
+        : "voice-btn--idle";
 
-	const roundedClass = variantOverride ? "" : "rounded-full";
+  const roundedClass = variantOverride ? "" : "rounded-full";
 
-	// When callers override with rounded-* classes, some component-level
-	// rules (like .btn) may set their own border-radius. To ensure the
-	// caller's desired radius (rounded-md/lg/xl/full) always wins, map
-	// common Tailwind rounded utilities to an inline style which has
-	// higher specificity than stylesheet rules.
-	const inlineStyle: React.CSSProperties = {};
-	if (variantOverride) {
-		if (variantOverride.includes("rounded-full")) inlineStyle.borderRadius = "9999px";
-		else if (variantOverride.includes("rounded-xl")) inlineStyle.borderRadius = "0.75rem";
-		else if (variantOverride.includes("rounded-lg")) inlineStyle.borderRadius = "0.5rem";
-		else if (variantOverride.includes("rounded-md")) inlineStyle.borderRadius = "0.375rem";
-	}
+  // When callers override with rounded-* classes, some component-level
+  // rules (like .btn) may set their own border-radius. To ensure the
+  // caller's desired radius (rounded-md/lg/xl/full) always wins, map
+  // common Tailwind rounded utilities to an inline style which has
+  // higher specificity than stylesheet rules.
+  const inlineStyle: React.CSSProperties = {};
+  if (variantOverride) {
+    if (variantOverride.includes("rounded-full"))
+      inlineStyle.borderRadius = "9999px";
+    else if (variantOverride.includes("rounded-xl"))
+      inlineStyle.borderRadius = "0.75rem";
+    else if (variantOverride.includes("rounded-lg"))
+      inlineStyle.borderRadius = "0.5rem";
+    else if (variantOverride.includes("rounded-md"))
+      inlineStyle.borderRadius = "0.375rem";
+  }
 
-	// Determine container layout: stacked (default when showStatus true),
-	// inline (when caller requests statusInline), or compact (no status)
-	const containerClass = statusInline
-		? "flex items-center gap-2"
-		: showStatus
-			? "flex flex-col items-center gap-3"
-			: "flex items-center gap-2";
+  // Determine container layout: stacked (default when showStatus true),
+  // inline (when caller requests statusInline), or compact (no status)
+  const containerClass = statusInline
+    ? "flex items-center gap-2"
+    : showStatus
+      ? "flex flex-col items-center gap-3"
+      : "flex items-center gap-2";
 
-	// Determine if this is used as a compact icon button (e.g., footer)
-	const isIconButtonVariant = Boolean(
-		variantOverride?.includes("btn-icon-primary") ?? false
-	);
+  // Determine if this is used as a compact icon button (e.g., footer)
+  const isIconButtonVariant = Boolean(
+    variantOverride?.includes("btn-icon-primary") ?? false,
+  );
 
-	// Unified translate computation for DRY, with size-aware listening nudge
-	const computeTop = (isListeningState: boolean): number => {
-		// Treat iconTranslateY (if provided) as the baseline, then apply listening delta
-		const base =
-			iconTranslateY !== undefined
-				? iconTranslateY
-				: isIconButtonVariant || size === "sm"
-					? 0
-					: isInline
-						? 5
-						: 10;
+  // Unified translate computation for DRY, with size-aware listening nudge
+  const computeTop = (isListeningState: boolean): number => {
+    // Treat iconTranslateY (if provided) as the baseline, then apply listening delta
+    const base =
+      iconTranslateY !== undefined
+        ? iconTranslateY
+        : isIconButtonVariant || size === "sm"
+          ? 0
+          : isInline
+            ? 5
+            : 10;
 
-		if (!isListeningState) return base;
+    if (!isListeningState) return base;
 
-		// Raise the recording icon to match perceived center across contexts
-		const isHero = size === "lg" && !isIconButtonVariant && !isInline;
-		const isCompact = isIconButtonVariant || size === "sm" || isInline;
-		const delta = isHero ? -10 : isCompact ? -5 : -5; // default medium uses -5 as well
-		return base + delta;
-	};
+    // Raise the recording icon to match perceived center across contexts
+    const isHero = size === "lg" && !isIconButtonVariant && !isInline;
+    const isCompact = isIconButtonVariant || size === "sm" || isInline;
+    const delta = isHero ? -10 : isCompact ? -5 : -5; // default medium uses -5 as well
+    return base + delta;
+  };
 
-	return (
-		<div className={containerClass}>
-			{/* When rendering inline status we show the small status first so the
+  return (
+    <div className={containerClass}>
+      {/* When rendering inline status we show the small status first so the
 			   icon sits to the right of the status (per design request). */}
-			{showStatus && statusInline && (
-				<div className="flex items-center gap-2 text-xs text-muted-foreground" aria-hidden>
-					<span className={`inline-flex items-center w-2 h-2 rounded-full ${status.dot}`} />
-					<span className="font-medium">{isListening ? "Listening" : status.label}</span>
-				</div>
-			)}
-			<button
-				type="button"
-				ref={buttonRef}
-				data-voice-button
-				aria-pressed={isListening}
-				disabled={disabled}
-				onClick={handleClick}
-				className={`btn voice-btn ${sizeClass} ${roundedClass} ${variantClass} ${isInline ? "" : "hover-elevate"} ${variantOverride ?? ""} disabled:opacity-40 disabled:cursor-not-allowed`}
-				style={inlineStyle}
-				title={
-					connectionStatus === "connecting"
-						? "Connecting..."
-						: isListening
-							? "Stop listening"
-							: "Start listening"
-				}
-				aria-live="polite"
-			>
-				<span className="sr-only">Voice Input</span>
-				{isListening ? (
-					<svg
-						role="img"
-						aria-label="Stop recording"
-						className={`${finalIconSizeClass} animate-pulse block mx-auto leading-none relative`}
-						style={{
-							top: `${computeTop(true)}px`,
-						}}
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						strokeWidth={2}
-					>
-						<title>Stop recording</title>
-						<path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12" />
-					</svg>
-				) : (
-					<svg
-						role="img"
-						aria-label="Start recording"
-						className={`${finalIconSizeClass} block mx-auto leading-none relative`}
-						style={{
-							top: `${computeTop(false)}px`,
-						}}
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						strokeWidth={2}
-					>
-						<title>Start recording</title>
-						<path
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							d="M12 1v11m0 0a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3z"
-						/>
-					</svg>
-				)}
-			</button>
+      {showStatus && statusInline && (
+        <div
+          className="flex items-center gap-2 text-xs text-muted-foreground"
+          aria-hidden
+        >
+          <span
+            className={`inline-flex items-center w-2 h-2 rounded-full ${status.dot}`}
+          />
+          <span className="font-medium">
+            {isListening ? "Listening" : status.label}
+          </span>
+        </div>
+      )}
+      <button
+        type="button"
+        ref={buttonRef}
+        data-voice-button
+        aria-pressed={isListening}
+        disabled={disabled}
+        onClick={handleClick}
+        className={`btn voice-btn ${sizeClass} ${roundedClass} ${variantClass} ${isInline ? "" : "hover-elevate"} ${variantOverride ?? ""} disabled:opacity-40 disabled:cursor-not-allowed`}
+        style={inlineStyle}
+        title={
+          connectionStatus === "connecting"
+            ? "Connecting..."
+            : isListening
+              ? "Stop listening"
+              : "Start listening"
+        }
+        aria-live="polite"
+      >
+        <span className="sr-only">Voice Input</span>
+        {isListening ? (
+          <svg
+            role="img"
+            aria-label="Stop recording"
+            className={`${finalIconSizeClass} animate-pulse block mx-auto leading-none relative`}
+            style={{
+              top: `${computeTop(true)}px`,
+            }}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <title>Stop recording</title>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12" />
+          </svg>
+        ) : (
+          <svg
+            role="img"
+            aria-label="Start recording"
+            className={`${finalIconSizeClass} block mx-auto leading-none relative`}
+            style={{
+              top: `${computeTop(false)}px`,
+            }}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <title>Start recording</title>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 1v11m0 0a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3z"
+            />
+          </svg>
+        )}
+      </button>
 
-			{/* Optional status badge: shown below the button for larger placements,
+      {/* Optional status badge: shown below the button for larger placements,
           or hidden when the caller prefers to render a compact status inline
           (for example, inside a navbar). */}
-			{showStatus && !statusInline && (
-				<div
-					className="flex items-center gap-2 text-2xs text-muted-foreground"
-					aria-hidden
-				>
-					<span
-						className={`inline-flex items-center w-2 h-2 rounded-full ${status.dot}`}
-					/>
-					<span className="font-medium">
-						{isListening ? "Listening" : status.label}
-					</span>
-				</div>
-			)}
-
-		</div>
-	);
+      {showStatus && !statusInline && (
+        <div
+          className="flex items-center gap-2 text-2xs text-muted-foreground"
+          aria-hidden
+        >
+          <span
+            className={`inline-flex items-center w-2 h-2 rounded-full ${status.dot}`}
+          />
+          <span className="font-medium">
+            {isListening ? "Listening" : status.label}
+          </span>
+        </div>
+      )}
+    </div>
+  );
 }

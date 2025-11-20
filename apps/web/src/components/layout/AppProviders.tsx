@@ -11,21 +11,21 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
-	return (
-		<ThemeProvider>
-			<ToastProvider>
-				<AuthProvider>
-					<RealtimeProvider>
-						<TaskProvider>
-							<HabitProvider>
-								<JournalProvider>
-									<PomodoroProvider>{children}</PomodoroProvider>
-								</JournalProvider>
-							</HabitProvider>
-						</TaskProvider>
-					</RealtimeProvider>
-				</AuthProvider>
-			</ToastProvider>
-		</ThemeProvider>
-	);
+  return (
+    <ThemeProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <RealtimeProvider>
+            <TaskProvider>
+              <HabitProvider>
+                <JournalProvider>
+                  <PomodoroProvider>{children}</PomodoroProvider>
+                </JournalProvider>
+              </HabitProvider>
+            </TaskProvider>
+          </RealtimeProvider>
+        </AuthProvider>
+      </ToastProvider>
+    </ThemeProvider>
+  );
 }
