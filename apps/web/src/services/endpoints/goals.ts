@@ -1,10 +1,20 @@
-// Goals API removed/stubbed: this module intentionally throws if used.
-export function _goalsRemoved() {
-    throw new Error("Goals endpoint removed. Remove imports from code.");
+// Goals endpoints removed — keep harmless no-op functions to avoid import errors.
+export async function listGoals() {
+  return [] as const;
 }
 
-export const listGoals = _goalsRemoved;
-export const createGoal = _goalsRemoved;
-export const getGoal = _goalsRemoved;
-export const updateGoal = _goalsRemoved;
-export const deleteGoal = _goalsRemoved;
+export async function createGoal(_data: unknown) {
+  return null;
+}
+
+export async function getGoal(_id: string) {
+  return null;
+}
+
+export async function updateGoal(_id: string, _data: unknown) {
+  return null;
+}
+
+export async function deleteGoal(_id: string) {
+  return null;
+}

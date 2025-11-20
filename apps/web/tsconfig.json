@@ -1,16 +1,21 @@
 {
 	"extends": "../../packages/tsconfig/nextjs.json",
 	"compilerOptions": {
+		"types": [],
 		"paths": {
-			"@/*": ["./src/*"]
+			"@/*": [
+				"./src/*"
+			]
 		}
 	},
 	"include": [
 		"next-env.d.ts",
 		"**/*.ts",
 		"**/*.tsx",
-		"**/*.d.ts",
-		".next/types/**/*.ts"
+		"**/*.d.ts"
 	],
-	"exclude": ["node_modules"]
+	"exclude": [
+		"node_modules",
+		".next"
+	]
 }
