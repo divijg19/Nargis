@@ -229,7 +229,17 @@ export interface ConversationMessage {
     entities?: Record<string, unknown>;
     suggestedActions?: SuggestedAction[];
   };
+  // NEW: optional thoughts collected from streaming agent events
+  thoughts?: string[];
 }
+
+// NEW: Agent streaming event discriminated union
+export type AgentEvent =
+  | { type: "thought"; content: string }
+  | { type: "tool_use"; tool: string; input: string }
+  | { type: "response"; content: string }
+  | { type: "error"; content: string }
+  | { type: "end"; content?: string };
 
 export interface SuggestedAction {
   type: "create_task" | "create_habit" | "update_goal" | "set_reminder";

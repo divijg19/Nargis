@@ -61,19 +61,20 @@ WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    postgresql-client \
-    gcc \
-    python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+  postgresql-client \
+  gcc \
+  python3-dev \
+  && rm -rf /var/lib/apt/lists/*
 
 # Copy dependency files
 COPY pyproject.toml ./
 COPY uv.lock ./
 
-# Install uv
-RUN pip install uv
+# Bootstrap uv (pinned) then use it for deterministic installs
+RUN python -m pip install --upgrade pip && \
+  python -m pip install --no-cache-dir "uv==0.9.11"
 
-# Install dependencies
+# Install dependencies using uv (reads pyproject + uv.lock)
 RUN uv pip install --system -r pyproject.toml
 
 # Copy application code

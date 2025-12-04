@@ -1,64 +1,64 @@
 {
-	"root": true,
-	"$schema": "https://biomejs.dev/schemas/2.3.6/schema.json",
-	"vcs": {
-		"enabled": true,
-		"clientKind": "git",
-		"useIgnoreFile": true
-	},
-	"files": {
-		"ignoreUnknown": true,
-		"includes": [
-			"apps/web/**/*",
-			"packages/**/*",
-			"tools/**/*",
-			"apps/gateway/**/*",
-			"apps/ml-worker/**/*",
-			"apps/api-py/**/*",
-			".github/**/*",
-			"package.json",
-			"biome.json",
-			"!node_modules",
-			"!.next",
-			"!build",
-			"!dist",
-			"!backup",
-			"!**/*.tsbuildinfo",
-			"!.turbo",
-			"!.cache",
-			"!.venv",
-			"!**/*.pyc",
-			"!bun.lock"
-		]
-	},
-	"formatter": {
-		"enabled": true,
-		"indentStyle": "space",
-		"indentWidth": 2
-	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true,
-			"suspicious": {
-				"noUnknownAtRules": "off"
-			}
-		},
-		"domains": {
-			"next": "recommended",
-			"react": "recommended"
-		}
-	},
-	"assist": {
-		"actions": {
-			"source": {
-				"organizeImports": "on"
-			}
-		}
-	},
-	"css": {
-		"parser": {
-			"tailwindDirectives": true
-		}
-	}
+  "root": true,
+  "$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": [
+      "apps/web/**/*",
+      "packages/**/*",
+      "tools/**/*",
+      "apps/gateway/**/*",
+      "apps/ml-worker/**/*",
+      "apps/api-py/**/*",
+      ".github/**/*",
+      "package.json",
+      "biome.json",
+      "!node_modules",
+      "!.next",
+      "!build",
+      "!dist",
+      "!backup",
+      "!**/*.tsbuildinfo",
+      "!.turbo",
+      "!.cache",
+      "!.venv",
+      "!**/*.pyc",
+      "!bun.lock"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "suspicious": {
+        "noUnknownAtRules": "off"
+      }
+    },
+    "domains": {
+      "next": "recommended",
+      "react": "recommended"
+    }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  }
 }

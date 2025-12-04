@@ -40,6 +40,9 @@ export default function ChatPanel({
     clearMessages,
     simulateIncoming,
     isListening,
+    currentAgentState,
+    processing,
+    stopListening,
   } = useRealtime();
   const { push } = useToasts();
   const { addTask } = useTaskStore();
@@ -478,9 +481,9 @@ export default function ChatPanel({
 
               <div>
                 <div className="text-xs font-medium mb-1">
-                  Nargis is thinking
+                  {processing ? "Nargis is thinking" : "Nargis"}
                 </div>
-                {!aiResponse ? (
+                {processing ? (
                   <div className="flex items-center space-x-2">
                     <svg
                       role="img"
@@ -505,11 +508,32 @@ export default function ChatPanel({
                         d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                       />
                     </svg>
-                    <span className="text-xs text-muted">Thinking...</span>
+                    <span className="text-xs text-muted font-mono animate-pulse">
+                      {currentAgentState || "Thinking..."}
+                    </span>
+                    <button
+                      type="button"
+                      className="ml-2 px-2 py-1 text-xs rounded bg-muted hover:bg-muted/80"
+                      onClick={() => {
+                        try {
+                          // Request barge-in cancellation via context method
+                          stopListening();
+                        } catch {
+                          /* noop */
+                        }
+                      }}
+                      aria-label="Stop processing"
+                    >
+                      Stop
+                    </button>
+                  </div>
+                ) : !aiResponse ? (
+                  // Fallback if no response yet and not processing (e.g. just transcript)
+                  <div className="text-xs text-muted-foreground italic">
+                    Waiting for response...
                   </div>
                 ) : (
                   <div>
-                    <div className="text-xs font-medium mb-1">Nargis</div>
                     <div
                       className="max-h-44 overflow-auto text-sm leading-relaxed"
                       aria-live="polite"

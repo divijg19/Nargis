@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 
 from sqlalchemy.orm import Session
@@ -43,8 +43,8 @@ def create_task_service(payload: Dict[str, Any], user_id: str, db: Session) -> d
         status=payload.get("status", "pending"),
         priority=payload.get("priority"),
         due_date=payload.get("due_date") or payload.get("dueDate"),
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db.add(task)
     db.commit()
@@ -66,7 +66,9 @@ def get_task_service(task_id: str, user_id: str, db: Session) -> Optional[dict]:
     return task_to_dict(task)
 
 
-def update_task_service(task_id: str, patch: Dict[str, Any], user_id: str, db: Session) -> Optional[dict]:
+def update_task_service(
+    task_id: str, patch: Dict[str, Any], user_id: str, db: Session
+) -> Optional[dict]:
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         return None
@@ -83,7 +85,7 @@ def update_task_service(task_id: str, patch: Dict[str, Any], user_id: str, db: S
         task.priority = updates["priority"]
     if "due_date" in updates or "dueDate" in updates:
         task.due_date = updates.get("due_date") or updates.get("dueDate")
-    task.updated_at = datetime.utcnow()
+    task.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(task)
     return task_to_dict(task)

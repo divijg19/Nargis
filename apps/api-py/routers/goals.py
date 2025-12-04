@@ -22,16 +22,22 @@ class MilestoneModel(BaseModel):
 class GoalCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=2000)
-    category: str = Field(..., pattern="^(personal|career|health|learning|finance|other)$")
+    category: str = Field(
+        ..., pattern="^(personal|career|health|learning|finance|other)$"
+    )
     deadline: Optional[str] = None
 
 
 class GoalUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=2000)
-    category: Optional[str] = Field(None, pattern="^(personal|career|health|learning|finance|other)$")
+    category: Optional[str] = Field(
+        None, pattern="^(personal|career|health|learning|finance|other)$"
+    )
     deadline: Optional[str] = None
-    status: Optional[str] = Field(None, pattern="^(planning|active|paused|completed|archived)$")
+    status: Optional[str] = Field(
+        None, pattern="^(planning|active|paused|completed|archived)$"
+    )
     progress: Optional[int] = Field(None, ge=0, le=100)
     milestones: Optional[List[MilestoneModel]] = None
     linkedTaskIds: Optional[List[str]] = None
@@ -46,7 +52,9 @@ async def list_goals(current_user: dict = Depends(get_current_user)):
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-async def create_goal(payload: GoalCreate, current_user: dict = Depends(get_current_user)):
+async def create_goal(
+    payload: GoalCreate, current_user: dict = Depends(get_current_user)
+):
     """Create a new goal"""
     goal_dict = payload.model_dump()
     goal_dict["userId"] = current_user["id"]
@@ -58,7 +66,7 @@ async def create_goal(payload: GoalCreate, current_user: dict = Depends(get_curr
     goal_dict["aiSuggestions"] = []
     goal_dict["createdAt"] = datetime.utcnow().isoformat()
     goal_dict["updatedAt"] = datetime.utcnow().isoformat()
-    
+
     created = await goals_repo.create(goal_dict)
     return created
 
@@ -75,19 +83,23 @@ async def get_goal(goal_id: str, current_user: dict = Depends(get_current_user))
 
 
 @router.patch("/{goal_id}")
-async def update_goal(goal_id: str, patch: GoalUpdate, current_user: dict = Depends(get_current_user)):
+async def update_goal(
+    goal_id: str, patch: GoalUpdate, current_user: dict = Depends(get_current_user)
+):
     """Update a goal"""
     goal = await goals_repo.get(goal_id)
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
     if goal.get("userId") != current_user["id"]:
         raise HTTPException(status_code=403, detail="Access denied")
-    
-    updates = {k: v for k, v in patch.model_dump(exclude_unset=True).items() if v is not None}
+
+    updates = {
+        k: v for k, v in patch.model_dump(exclude_unset=True).items() if v is not None
+    }
     if updates:
         updates["updatedAt"] = datetime.utcnow().isoformat()
         await goals_repo.update(goal_id, updates)
-    
+
     return await goals_repo.get(goal_id)
 
 

@@ -6,5 +6,11 @@
     "bun.lock": "jsonc"
   },
   // 👇 Disable built-in JSON/JSONC validation (Biome or Bun will handle consistency)
-  "json.validate.enable": false
+  "json.validate.enable": false,
+  "python.testing.pytestArgs": [
+    "."
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "python.terminal.useEnvFile": true
 }

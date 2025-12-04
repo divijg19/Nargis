@@ -17,7 +17,8 @@ RUN apt-get update && \
 WORKDIR /app
 
 # Install uv, the fast Python package manager used by the project.
-RUN pip install --no-cache-dir --upgrade pip uv
+RUN python -m pip install --upgrade pip && \
+    python -m pip install --no-cache-dir "uv==0.9.11"
 
 # Copy only the dependency definition file first to leverage Docker layer caching.
 # The slow dependency installation step will only re-run if this file changes.

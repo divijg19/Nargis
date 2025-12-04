@@ -96,7 +96,7 @@ Key files:
 
 Environment & dependencies:
 
-- Add `langgraph`, `langchain`, and `langchain-groq` to the Python environment used by `apps/api-py` (see `apps/api-py/requirements.txt` or `pyproject.toml`).
+- Add `langgraph`, `langchain`, and `langchain-groq` to the Python environment used by `apps/api-py` (see `apps/api-py/pyproject.toml` and commit `apps/api-py/uv.lock` for reproducible installs).
 - Configure AI keys and endpoints as usual (`GROQ_API_KEY`, `DEEPGRAM_API_KEY`, `LLM_URL`, `TTS_URL`, etc.) and add any agent-specific settings (e.g., `AGENT_MODEL`, `AGENT_TEMPERATURE`).
 
 The refactor keeps the HTTP surface unchanged while enabling safe, testable agent tooling.
@@ -115,7 +115,7 @@ This series of updates represents a complete overhaul of the backend architectur
 
 -   **✅ Refactored to a Single-Hop Pipeline**: The entire AI workflow was consolidated. The Go gateway now makes a single, efficient call to the Python API, which orchestrates the full STT -> LLM chain. This dramatically reduces latency and complexity.
 -   **✅ Implemented Dual-Mode AI Backend**: The Python API now intelligently switches between high-speed external APIs (Deepgram, Groq) and a local-only fallback (Whisper, Ollama) based on environment variables, providing maximum flexibility for development and deployment.
--   **✅ Modernized Python Dependencies**: Migrated from multiple `requirements.txt` files and build arguments to a single, modern `pyproject.toml` with `uv` for dependency management and `requirements.lock` for reproducible builds.
+-   **✅ Modernized Python Dependencies**: Migrated from multiple `requirements.txt` files and build arguments to a single, modern `pyproject.toml` with `uv` for dependency management and `uv.lock` for reproducible builds.
 -   **✅ Implemented Distributed Tracing**: The Go gateway now generates a unique `RequestID` for every voice request and forwards it to the Python API, enabling end-to-end traceability in the logs.
 -   **✅ Stabilized Development Workflows**: Created and debugged two distinct, reliable development modes (`dev:hybrid` and `dev`) with hot-reloading for all services (Go, Python, Next.js) and cross-platform compatibility.
 -   **✅ Production-Hardened Services**: Fixed numerous bugs related to timeouts, configuration loading (`.env`), and logging. Implemented graceful shutdown in the Go gateway for robust operation.

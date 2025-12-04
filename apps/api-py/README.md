@@ -39,7 +39,7 @@ Agent & Developer Notes
 - How the audio pipeline uses the agent:
 	- `apps/api-py/main.py` now invokes `agent.graph.agent_app.invoke()` with the transcribed text; the agent returns a final reply and may call tools (for example, to create tasks) as part of reasoning.
 - Dependencies to add for agent development:
-	- `langgraph`, `langchain`, and `langchain-groq` (add to `requirements.txt` or `pyproject.toml`).
+	- `langgraph`, `langchain`, and `langchain-groq` (add to `pyproject.toml`; commit `uv.lock` for reproducible installs).
 - Testing:
 	- Unit-test service functions directly (e.g., `services/tasks.py`) — this keeps DB logic easy to test without spinning up FastAPI.
 	- Integration tests for the agent should run in a controlled environment (mocks for external LLM endpoints and DB).
@@ -53,15 +53,55 @@ Environment variables (new/agent-specific)
 Run locally (dev)
 -----------------
 
-Typical local dev workflow remains the same — the API will try to initialize agent components if agent dependencies and configuration are present. To run the API locally:
+Recommended (reproducible) setup — uses `uv` (pinned) to install and lock dependencies. This is the required workflow for development, CI, and Docker builder stages.
+
+PowerShell (Windows):
 
 ```pwsh
 cd apps/api-py
+
+# Ensure Python 3.12 is active
+python -c "import sys; sys.exit(0 if sys.version_info[:3]==(3,12) else 1)" || (Write-Host 'Please use Python 3.12'; exit 1)
+
 python -m venv .venv
 .\.venv\Scripts\Activate
-pip install -r requirements.txt
+
+# Bootstrap uv (pinned) - this is the only step that uses pip directly
+python -m pip install --upgrade pip
+python -m pip install --no-cache-dir "uv==0.9.11"
+
+# Install runtime + dev deps using uv only
+uv pip install --no-cache-dir '.[dev]'
+
+# Create/update lockfile for deterministic installs
+uv lock create --output uv.lock
+
+# Run the server
 uvicorn main:app --reload
 ```
 
-If agent dependencies are not present, the API falls back to the previous LLM path. Add agent packages to your env to drive agent behaviors.
+POSIX / macOS:
+
+```bash
+cd apps/api-py
+
+# Ensure Python 3.12 is active
+python -c 'import sys; sys.exit(0 if sys.version_info[:3]==(3,12) else 1)' || (echo 'Please use Python 3.12' && exit 1)
+
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install --no-cache-dir "uv==0.9.11"
+uv pip install --no-cache-dir '.[dev]'
+uv lock create --output uv.lock
+uvicorn main:app --reload
+```
+
+Bootstrap note:
+- The only allowed pip usage is to install `uv` itself (bootstrapping). After that, use `uv` for all dependency operations.
+
+Notes
+- The Dockerfile is configured to use uv in the builder stage and will install dependencies using `uv`.
+- Commit `uv.lock` when you create it if you want fully reproducible builds in CI or when building Docker images.
+- If agent dependencies are not present, the API falls back to the previous LLM path. Add agent packages (LangGraph, LangChain, etc.) to the project extras if you need agent behaviors.
 

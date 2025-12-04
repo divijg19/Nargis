@@ -18,6 +18,7 @@ dependencies = [
     "email-validator>=2.0.0",
     "sqlalchemy>=2.0.0",
     "psycopg2-binary>=2.9.0",
+    "pgvector>=0.4.0,<0.5",
     "alembic>=1.13.0",
     "langgraph",
     "langchain",
@@ -36,6 +37,10 @@ ml = [
     # Optional local-only helpers
     "whisperx",
     "openai-whisper",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=1.3.0",
 ]
 
 [build-system]

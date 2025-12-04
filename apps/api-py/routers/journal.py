@@ -2,9 +2,21 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Header, HTTPException, status, Depends
 from pydantic import BaseModel, Field
-from typing import Optional, List
-from storage.memory import journal_repo, idempotent_post
+from typing import Optional, List, Dict, Any
+from sqlalchemy.orm import Session
+
+from storage.database import get_db
+from storage.models import JournalEntry
 from routers.auth import get_current_user
+
+from services.journal import (
+    create_entry_service,
+    list_entries_service,
+    get_entry_service,
+    update_entry_service,
+    delete_entry_service,
+    generate_summary_service,
+)
 
 router = APIRouter(prefix="/v1/journal", tags=["journal"])
 
@@ -12,14 +24,14 @@ router = APIRouter(prefix="/v1/journal", tags=["journal"])
 class JournalEntryCreate(BaseModel):
     title: Optional[str] = Field(None, max_length=200)
     content: str = Field(..., min_length=1)
-    type: str = Field(default="text")  # "text" | "voice"
-    mood: Optional[str] = None  # "great" | "good" | "neutral" | "bad" | "terrible"
+    type: str = Field(default="text")
+    mood: Optional[str] = None
     tags: Optional[List[str]] = Field(default_factory=list)
     audioUrl: Optional[str] = None
 
 
 class JournalEntryUpdate(BaseModel):
-    title: Optional[str] = Field(None, max_length=200)
+    title: Optional[str] = None
     content: Optional[str] = None
     type: Optional[str] = None
     mood: Optional[str] = None
@@ -28,132 +40,128 @@ class JournalEntryUpdate(BaseModel):
     aiSummary: Optional[str] = None
 
 
-@router.get("", response_model=List[dict])
-async def list_entries(current_user: dict = Depends(get_current_user)):
-    """List all journal entries for the current user, sorted by creation date (newest first)"""
-    entries = await journal_repo.list()
-    # Filter by user ID
-    user_entries = [e for e in entries if e.get("userId") == current_user["id"]]
-    # Sort by createdAt descending
-    return sorted(user_entries, key=lambda x: x.get("createdAt", ""), reverse=True)
+@router.get("", response_model=List[Dict[str, Any]])
+async def list_entries(
+    current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    return list_entries_service(current_user["id"], db)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_entry(
     payload: JournalEntryCreate,
     current_user: dict = Depends(get_current_user),
-    Idempotency_Key: Optional[str] = Header(default=None, convert_underscores=False)
+    Idempotency_Key: Optional[str] = Header(default=None, convert_underscores=False),
+    db: Session = Depends(get_db),
 ):
-    """Create a new journal entry"""
-    key = Idempotency_Key or None
     entry_data = payload.model_dump()
-    
-    # Add user ID to the entry
     entry_data["userId"] = current_user["id"]
-    
-    # Generate AI summary if content is provided
-    if entry_data.get("content"):
-        # Simple extractive summary: first sentence + note about length
-        content = entry_data["content"]
-        sentences = content.split(". ")
-        first_sentence = sentences[0] if sentences else content[:100]
-        entry_data["aiSummary"] = f"{first_sentence}..."
-    
-    if key:
-        record, replay = await idempotent_post(key, journal_repo.create(entry_data))
-        if replay:
-            return record
-        return record
-    return await journal_repo.create(entry_data)
+    # idempotency handling can be added here; service will populate aiSummary if missing
+    return create_entry_service(entry_data, current_user["id"], db)
 
 
 @router.get("/{entry_id}")
-async def get_entry(entry_id: str, current_user: dict = Depends(get_current_user)):
-    """Get a specific journal entry by ID"""
-    entry = await journal_repo.get(entry_id)
+async def get_entry(
+    entry_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    entry = get_entry_service(entry_id, current_user["id"], db)
     if not entry:
-        raise HTTPException(
-            status_code=404,
-            detail={"error": {"code": "ENTRY_NOT_FOUND", "message": f"No entry with id: {entry_id}"}}
-        )
-    
-    # Verify ownership
-    if entry.get("userId") != current_user["id"]:
+        e = db.query(JournalEntry).filter(JournalEntry.id == entry_id).first()
+        if not e:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "error": {
+                        "code": "ENTRY_NOT_FOUND",
+                        "message": f"No entry with id: {entry_id}",
+                    }
+                },
+            )
         raise HTTPException(
             status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "You do not have access to this entry"}}
+            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
         )
-    
     return entry
 
 
 @router.patch("/{entry_id}")
-async def update_entry(entry_id: str, patch: JournalEntryUpdate, current_user: dict = Depends(get_current_user)):
-    """Update a journal entry"""
-    # Check if entry exists and user owns it
-    entry = await journal_repo.get(entry_id)
-    if not entry:
-        raise HTTPException(
-            status_code=404,
-            detail={"error": {"code": "ENTRY_NOT_FOUND", "message": f"No entry with id: {entry_id}"}}
-        )
-    
-    # Verify ownership
-    if entry.get("userId") != current_user["id"]:
+async def update_entry(
+    entry_id: str,
+    patch: JournalEntryUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    updated = update_entry_service(
+        entry_id, patch.model_dump(exclude_unset=True), current_user["id"], db
+    )
+    if not updated:
+        e = db.query(JournalEntry).filter(JournalEntry.id == entry_id).first()
+        if not e:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "error": {
+                        "code": "ENTRY_NOT_FOUND",
+                        "message": f"No entry with id: {entry_id}",
+                    }
+                },
+            )
         raise HTTPException(
             status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "You do not have access to this entry"}}
+            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
         )
-    
-    updated = await journal_repo.update(entry_id, patch.model_dump(exclude_unset=True))
     return updated
 
 
 @router.delete("/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_entry(entry_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a journal entry"""
-    # Check if entry exists and user owns it
-    entry = await journal_repo.get(entry_id)
-    if not entry:
-        raise HTTPException(
-            status_code=404,
-            detail={"error": {"code": "ENTRY_NOT_FOUND", "message": f"No entry with id: {entry_id}"}}
-        )
-    
-    # Verify ownership
-    if entry.get("userId") != current_user["id"]:
+async def delete_entry(
+    entry_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    ok = delete_entry_service(entry_id, current_user["id"], db)
+    if not ok:
+        e = db.query(JournalEntry).filter(JournalEntry.id == entry_id).first()
+        if not e:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "error": {
+                        "code": "ENTRY_NOT_FOUND",
+                        "message": f"No entry with id: {entry_id}",
+                    }
+                },
+            )
         raise HTTPException(
             status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "You do not have access to this entry"}}
+            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
         )
-    
-    await journal_repo.delete(entry_id)
     return None
 
 
 @router.post("/{entry_id}/summary")
-async def generate_summary(entry_id: str, current_user: dict = Depends(get_current_user)):
-    """Generate or regenerate AI summary for an entry"""
-    entry = await journal_repo.get(entry_id)
-    if not entry:
-        raise HTTPException(
-            status_code=404,
-            detail={"error": {"code": "ENTRY_NOT_FOUND", "message": f"No entry with id: {entry_id}"}}
-        )
-    
-    # Verify ownership
-    if entry.get("userId") != current_user["id"]:
+async def generate_summary(
+    entry_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    result = generate_summary_service(entry_id, current_user["id"], db)
+    if not result:
+        e = db.query(JournalEntry).filter(JournalEntry.id == entry_id).first()
+        if not e:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "error": {
+                        "code": "ENTRY_NOT_FOUND",
+                        "message": f"No entry with id: {entry_id}",
+                    }
+                },
+            )
         raise HTTPException(
             status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "You do not have access to this entry"}}
+            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
         )
-    
-    content = entry.get("content", "")
-    # Simple extractive summary
-    sentences = content.split(". ")
-    first_sentence = sentences[0] if sentences else content[:100]
-    summary = f"{first_sentence}..."
-    
-    # Update entry with new summary
-    updated = await journal_repo.update(entry_id, {"aiSummary": summary})
-    return {"summary": summary, "entry": updated}
+    return {"summary": result.get("aiSummary"), "entry": result}
