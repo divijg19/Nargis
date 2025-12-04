@@ -13,7 +13,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import jwt
 import bcrypt
 import os
@@ -61,18 +61,20 @@ class UserProfileUpdate(BaseModel):
 
 def hash_password(password: str) -> str:
     """Hash password using bcrypt"""
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify password against hash"""
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    return bcrypt.checkpw(
+        plain_password.encode("utf-8"), hashed_password.encode("utf-8")
+    )
 
 
 def create_access_token(data: dict) -> str:
     """Create JWT access token"""
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -80,37 +82,35 @@ def create_access_token(data: dict) -> str:
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> dict:
     """Dependency to get current authenticated user"""
     token = credentials.credentials
-    
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials"
+                detail="Could not validate credentials",
             )
     except jwt.ExpiredSignatureError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired"
         )
-    except jwt.JWTError:
+    except jwt.PyJWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials"
+            detail="Could not validate credentials",
         )
-    
+
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
-    
+
     # Return as dict for compatibility with existing code
     return {
         "id": user.id,
@@ -127,26 +127,25 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.email == user_data.email).first()
     if existing_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
         )
-    
+
     # Create user with hashed password
     user = User(
         id=str(uuid.uuid4()),
         email=user_data.email,
         name=user_data.name,
         password_hash=hash_password(user_data.password),
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     db.add(user)
     db.commit()
     db.refresh(user)
-    
+
     # Create access token
     access_token = create_access_token(data={"sub": user.id})
-    
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -155,16 +154,16 @@ async def login(credentials: UserLogin, db: Session = Depends(get_db)):
     """Login user and return JWT token"""
     # Find user by email
     user = db.query(User).filter(User.email == credentials.email).first()
-    
+
     if not user or not verify_password(credentials.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password"
+            detail="Incorrect email or password",
         )
-    
+
     # Create access token
     access_token = create_access_token(data={"sub": user.id})
-    
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -175,7 +174,7 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
         "id": current_user["id"],
         "email": current_user["email"],
         "name": current_user["name"],
-        "createdAt": current_user["createdAt"]
+        "createdAt": current_user["createdAt"],
     }
 
 
@@ -183,36 +182,36 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
 async def update_profile(
     updates: UserProfileUpdate,
     current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Update current user profile"""
     user = db.query(User).filter(User.id == current_user["id"]).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     # Update fields if provided
     if updates.name is not None:
         user.name = updates.name
     if updates.email is not None:
         # Check if new email is already taken
-        existing = db.query(User).filter(
-            User.email == updates.email,
-            User.id != user.id
-        ).first()
+        existing = (
+            db.query(User)
+            .filter(User.email == updates.email, User.id != user.id)
+            .first()
+        )
         if existing:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already in use"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Email already in use"
             )
         user.email = updates.email
-    
-    user.updated_at = datetime.utcnow()
+
+    user.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(user)
-    
+
     return {
         "id": user.id,
         "email": user.email,
         "name": user.name,
-        "createdAt": user.created_at.isoformat()
+        "createdAt": user.created_at.isoformat(),
     }

@@ -1,4 +1,4 @@
-app = "nargis-api-go"
+app = "nargis-gateway"
 
 [build]
   image = ""

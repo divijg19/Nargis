@@ -366,7 +366,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 if (e.key === "Tab") {
                   const els = Array.from(
                     mAside?.querySelectorAll<HTMLElement>(focusableSelector) ??
-                    [],
+                      [],
                   );
                   if (!els.length) return;
                   const first = els[0];

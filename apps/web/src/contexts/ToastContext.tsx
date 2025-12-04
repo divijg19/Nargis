@@ -25,7 +25,8 @@ export interface Toast {
     | "reconnected"
     | "connection-error"
     | "transcript-ready"
-    | "ai-response";
+    | "ai-response"
+    | "stream-canceled";
   createdAt: number;
   ttlMs?: number;
 }

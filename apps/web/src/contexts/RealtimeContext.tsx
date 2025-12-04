@@ -13,6 +13,7 @@ import { isFlagEnabled } from "@/flags/flags";
 import { useMediaRecorder } from "@/hooks/useMediaRecorder";
 import { sanitizeText } from "@/lib/sanitize";
 import { RealtimeConnection } from "@/realtime/connection";
+import type { AgentEvent } from "@/types";
 import { useToasts } from "./ToastContext";
 
 // Narrow incoming messages safely (top-level to avoid hook deps)
@@ -53,12 +54,20 @@ interface RealtimeContextValue {
   transcribedText: string | null;
   clearTranscribedText: () => void;
   // Conversation history exposed to UI
-  messages: Array<{ role: "user" | "assistant"; text: string; ts: number }>;
+  messages: Array<{
+    role: "user" | "assistant";
+    text: string;
+    ts: number;
+    thoughts?: string[];
+  }>;
   clearMessages: () => void;
   /** Insert a user message into the conversation programmatically */
   sendUserMessage: (text: string) => void;
   openConversation: boolean;
   setOpenConversation: (v: boolean) => void;
+  // NEW: agent streaming state
+  currentAgentState: string | null;
+  processing: boolean;
   // dev helper to inject messages into the same handling logic (useful for testing)
   simulateIncoming?: (msg: unknown) => void;
 }
@@ -76,7 +85,12 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   const [transcribedText, setTranscribedText] = useState<string | null>(null);
   // Conversation history (user / assistant messages)
   const [messages, setMessages] = useState<
-    Array<{ role: "user" | "assistant"; text: string; ts: number }>
+    Array<{
+      role: "user" | "assistant";
+      text: string;
+      ts: number;
+      thoughts?: string[];
+    }>
   >([]);
   const [openConversation, setOpenConversation] = useState(false);
   const { push } = useToasts();
@@ -90,6 +104,15 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   const connectionRef = useRef<RealtimeConnection | null>(null);
   const STORAGE_KEY = "nargis:ai:messages:v1";
 
+  // NEW: Agent state
+  const [currentAgentState, setCurrentAgentState] = useState<string | null>(
+    null,
+  );
+  const [processing, setProcessing] = useState<boolean>(false);
+
+  // Accumulate thoughts during a streaming session until a final response
+  const pendingThoughtsRef = useRef<string[]>([]);
+
   // Centralized incoming message handler (used for both real WS messages and
   // dev/testing injections). Kept stable via useCallback so it can be used
   // outside the connection effect.
@@ -97,6 +120,81 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     (msg: unknown) => {
       // This is where we receive the final, processed response from the backend.
       console.debug("[Realtime] AI Response Received:", msg);
+
+      // NEW: handle AgentEvent NDJSON shape
+      if (typeof msg === "object" && msg !== null) {
+        const maybe = msg as Record<string, unknown>;
+        if ("type" in maybe) {
+          const evt = maybe as AgentEvent;
+          switch (evt.type) {
+            case "thought": {
+              const t = String(evt.content || "").trim();
+              if (t) pendingThoughtsRef.current.push(t);
+              // show transient thinking hint
+              setCurrentAgentState(t || "Thinking…");
+              setProcessing(true);
+              // do not append to final history yet
+              return;
+            }
+            case "tool_use": {
+              // Safe narrow: only tool_use variant has input
+              const detail =
+                evt.type === "tool_use" && typeof evt.input === "string"
+                  ? evt.input
+                  : "";
+              const t = detail
+                ? `Using ${evt.tool} (${detail})…`
+                : `Using ${evt.tool}…`;
+              pendingThoughtsRef.current.push(t);
+              setCurrentAgentState(t);
+              setProcessing(true);
+              return;
+            }
+            case "response": {
+              const aiText = sanitizeText(evt.content);
+              const thoughts = pendingThoughtsRef.current.slice();
+              pendingThoughtsRef.current = [];
+              setAiResponse(aiText);
+              setMessages((cur) => [
+                ...cur,
+                { role: "assistant", text: aiText, ts: Date.now(), thoughts },
+              ]);
+              setCurrentAgentState(null);
+              setProcessing(false);
+              setOpenConversation(true);
+              return;
+            }
+            case "error":
+              pendingThoughtsRef.current = [];
+              push({ message: String(evt.content), variant: "error" });
+              setCurrentAgentState(null);
+              setProcessing(false);
+              return;
+            case "end":
+              // Upstream signaled end-of-stream; if no final response arrived, clear processing
+              setProcessing(false);
+              setCurrentAgentState(null);
+              try {
+                const content = String(evt.content || "").toLowerCase();
+                if (
+                  content.includes("canceled") ||
+                  content.includes("cancelled")
+                ) {
+                  push({
+                    message: "Canceled",
+                    variant: "warning",
+                    type: "stream-canceled",
+                  });
+                }
+              } catch {
+                /* noop */
+              }
+              return;
+            // fallthrough to legacy handlers otherwise
+          }
+        }
+      }
+
       // Support simple string messages as interim transcripts from the server.
       if (typeof msg === "string") {
         // interim transcripts — show live text but do not add to history until
@@ -313,6 +411,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
         role: "user" | "assistant";
         text: string;
         ts: number;
+        thoughts?: string[];
       }>;
       if (Array.isArray(parsed) && parsed.length > 0) {
         setMessages(parsed);
@@ -396,6 +495,9 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       // Clear any previous conversation state immediately so the UI resets
       setAiResponse(null);
       setTranscribedText(null);
+      pendingThoughtsRef.current = [];
+      setCurrentAgentState(null);
+      setProcessing(false);
 
       await start(
         async (data: Blob) => {
@@ -421,6 +523,12 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
   const stopListening = useCallback(() => {
     if (!isRecording) return;
+    try {
+      // Request upstream cancellation immediately (barge-in)
+      connectionRef.current?.send("STOP");
+    } catch {
+      /* ignore */
+    }
     stop();
   }, [isRecording, stop]);
 
@@ -449,6 +557,8 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       openConversation,
       sendUserMessage,
       setOpenConversation,
+      currentAgentState,
+      processing,
       // Dev/testing helper: allow consumers to inject messages through the
       // same handling pipeline. Only useful in non-prod or debugging.
       simulateIncoming:
@@ -470,6 +580,8 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       openConversation,
       sendUserMessage,
       handleIncoming,
+      currentAgentState,
+      processing,
     ],
   );
 

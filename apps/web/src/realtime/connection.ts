@@ -32,6 +32,10 @@ export class RealtimeConnection {
   private setStatus(s: Parameters<StatusHandler>[0]) {
     for (const h of this.statusHandlers) h(s);
   }
+  // Send a control message to request upstream cancellation (barge-in)
+  sendStop() {
+    this.send("STOP");
+  }
   private connect() {
     this.setStatus("connecting");
     this.ws = new WebSocket(this.opts.url);

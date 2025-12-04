@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import uuid
 from typing import Dict, Optional, Any, List
-from datetime import datetime
+from datetime import datetime, timezone
 import threading
 
 
@@ -36,7 +36,7 @@ class InMemoryRepo:
     async def create(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Async-compatible create method"""
         with self._lock:
-            now = datetime.utcnow().isoformat()
+            now = datetime.now(timezone.utc).isoformat()
             item_id = data.get("id") or str(uuid.uuid4())
             record = {
                 **data,
@@ -47,14 +47,16 @@ class InMemoryRepo:
             self._items[item_id] = record
             return record
 
-    async def update(self, item_id: str, patch: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def update(
+        self, item_id: str, patch: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """Async-compatible update method"""
         with self._lock:
             if item_id not in self._items:
                 return None
             current = self._items[item_id]
             current.update({k: v for k, v in patch.items() if v is not None})
-            current["updatedAt"] = datetime.utcnow().isoformat()
+            current["updatedAt"] = datetime.now(timezone.utc).isoformat()
             return current
 
     async def delete(self, item_id: str) -> bool:
@@ -82,11 +84,11 @@ async def idempotent_post(key: str, coro):
     with _idempotency_lock:
         if key in _idempotency_cache:
             return _idempotency_cache[key], True  # (record, replay=True)
-    
+
     # Execute the creation
     record = await coro
-    
+
     with _idempotency_lock:
         _idempotency_cache[key] = record
-    
+
     return record, False  # (record, replay=False)

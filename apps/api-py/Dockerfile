@@ -5,7 +5,8 @@ FROM python:3.12-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
-RUN pip install --no-cache-dir --upgrade pip uv
+RUN python -m pip install --upgrade pip && \
+    python -m pip install --no-cache-dir "uv==0.9.11"
 
 # Install system-level dependencies including PostgreSQL client
 RUN apt-get update && \
@@ -60,6 +61,21 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 WORKDIR /app
 COPY --from=builder --chown=nargis:nargis /app /app
 
+# Create an entrypoint that runs migrations and then execs the given command so signals are forwarded.
+RUN cat > /usr/local/bin/docker-entrypoint.sh <<'EOF'
+#!/bin/sh
+set -e
+
+# Run migrations if alembic is available
+if command -v alembic >/dev/null 2>&1; then
+  alembic upgrade head
+fi
+
+# Exec the command passed as arguments so signals are forwarded to the server process.
+exec "$@"
+EOF
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh && chown nargis:nargis /usr/local/bin/docker-entrypoint.sh
+
 USER nargis
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
@@ -67,5 +83,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 
 EXPOSE 8080
 
-# Run migrations then start server
-CMD alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8080
+# Use the entrypoint script (exec form) and provide uvicorn as the default CMD in JSON form
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["uvicorn","main:app","--host","0.0.0.0","--port","8080"]

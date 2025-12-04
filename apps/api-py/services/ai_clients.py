@@ -4,9 +4,6 @@ import soundfile as sf
 import subprocess
 import asyncio
 import os
-import uuid
-from typing import Optional
-from contextvars import ContextVar
 import httpx
 from openai import OpenAI
 from fastapi import HTTPException
@@ -29,11 +26,14 @@ _stt_lock = asyncio.Lock()
 
 # Initialize local Ollama client if available
 try:
-    ollama_client = OpenAI(base_url='http://localhost:11434/v1', api_key='ollama')
+    ollama_client = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")
     logging.info("Local Ollama client initialized successfully.")
 except Exception as e:
-    logging.warning(f"Failed to initialize Ollama client. Is Ollama running? Error: {e}")
+    logging.warning(
+        f"Failed to initialize Ollama client. Is Ollama running? Error: {e}"
+    )
     ollama_client = None
+
 
 async def ensure_stt_loaded():
     global stt_processor, stt_model
@@ -44,16 +44,31 @@ async def ensure_stt_loaded():
             return
         logging.info("Lazy loading Whisper STT model...")
         from transformers import AutoProcessor, AutoModelForSpeechSeq2Seq
+
         stt_processor = AutoProcessor.from_pretrained("openai/whisper-base")
         stt_model = AutoModelForSpeechSeq2Seq.from_pretrained("openai/whisper-base")
         stt_model.to(device)
         logging.info("STT model ready.")
 
+
 def convert_audio_to_wav_sync(audio_bytes: bytes) -> bytes:
     logging.info("Converting audio with FFmpeg...")
     try:
-        command = [ 'ffmpeg', '-i', 'pipe:0', '-f', 'wav', '-ar', '16000', '-ac', '1', 'pipe:1' ]
-        process = subprocess.run(command, input=audio_bytes, capture_output=True, check=True)
+        command = [
+            "ffmpeg",
+            "-i",
+            "pipe:0",
+            "-f",
+            "wav",
+            "-ar",
+            "16000",
+            "-ac",
+            "1",
+            "pipe:1",
+        ]
+        process = subprocess.run(
+            command, input=audio_bytes, capture_output=True, check=True
+        )
         return process.stdout
     except subprocess.CalledProcessError as e:
         logging.error(f"FFmpeg error: {e.stderr.decode('utf-8')}")
@@ -67,7 +82,9 @@ def run_stt_inference_sync(wav_audio_bytes: bytes) -> str:
     inputs = stt_processor(waveform, sampling_rate=16000, return_tensors="pt")
     input_features = inputs.input_features.to(device)
     predicted_ids = stt_model.generate(input_features)
-    transcription = stt_processor.batch_decode(predicted_ids, skip_special_tokens=True)[0]
+    transcription = stt_processor.batch_decode(predicted_ids, skip_special_tokens=True)[
+        0
+    ]
     return transcription
 
 
@@ -78,7 +95,10 @@ def run_llm_sync(text: str) -> dict:
     try:
         chat_completion = ollama_client.chat.completions.create(
             messages=[
-                {"role": "system", "content": "You are Nargis, a friendly AI assistant."},
+                {
+                    "role": "system",
+                    "content": "You are Nargis, a friendly AI assistant.",
+                },
                 {"role": "user", "content": text},
             ],
             model=OLLAMA_MODEL,
@@ -98,7 +118,9 @@ async def _get_transcription(audio_bytes: bytes) -> str:
             headers = {"Authorization": f"Token {DEEPGRAM_API_KEY}"}
             resp = await client.post(STT_URL, headers=headers, files=files)
             resp.raise_for_status()
-            return resp.json()["results"]["channels"][0]["alternatives"][0]["transcript"]
+            return resp.json()["results"]["channels"][0]["alternatives"][0][
+                "transcript"
+            ]
 
     # If an ML worker is available, prefer delegating to it (isolates heavy deps)
     if ML_WORKER_URL:
@@ -119,7 +141,9 @@ async def _get_transcription(audio_bytes: bytes) -> str:
     logging.info("Using local STT model.")
     await ensure_stt_loaded()
     loop = asyncio.get_running_loop()
-    wav_audio_bytes = await loop.run_in_executor(None, convert_audio_to_wav_sync, audio_bytes)
+    wav_audio_bytes = await loop.run_in_executor(
+        None, convert_audio_to_wav_sync, audio_bytes
+    )
     return await loop.run_in_executor(None, run_stt_inference_sync, wav_audio_bytes)
 
 
@@ -130,13 +154,16 @@ async def _get_llm_response(text: str) -> dict:
         payload = {
             "model": GROQ_MODEL,
             "messages": [
-                {"role": "system", "content": "You are Nargis, a friendly and concise AI productivity assistant."},
-                {"role": "user", "content": text}
-            ]
+                {
+                    "role": "system",
+                    "content": "You are Nargis, a friendly and concise AI productivity assistant.",
+                },
+                {"role": "user", "content": text},
+            ],
         }
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {GROQ_API_KEY}"
+            "Authorization": f"Bearer {GROQ_API_KEY}",
         }
         async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
             resp = await client.post(LLM_URL, json=payload, headers=headers)
@@ -157,6 +184,38 @@ async def _get_llm_response(text: str) -> dict:
 
     logging.info("Using local LLM (Ollama).")
     if not ollama_client:
-        raise HTTPException(status_code=503, detail="Local LLM client is not initialized.")
+        raise HTTPException(
+            status_code=503, detail="Local LLM client is not initialized."
+        )
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, run_llm_sync, text)
+
+
+def get_embedding(text: str) -> list[float]:
+    """Return an embedding vector for the given text.
+
+    Tries providers in order: OpenAI -> sentence-transformers local model.
+    Raises RuntimeError if no provider is available.
+    """
+    # Try OpenAI (synchronous client usage)
+    try:
+        import openai as _openai
+
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key:
+            _openai.api_key = api_key
+        model = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+        resp = _openai.Embedding.create(input=text, model=model)
+        emb = resp["data"][0]["embedding"]
+        return emb
+    except Exception:
+        # Fall back to sentence-transformers if available
+        try:
+            from sentence_transformers import SentenceTransformer
+
+            model_name = os.getenv("SENTENCE_TRANSFORMER_MODEL", "all-MiniLM-L6-v2")
+            model = SentenceTransformer(model_name)
+            vec = model.encode(text)
+            return vec.tolist()
+        except Exception:
+            raise RuntimeError("No embedding provider available. Install OpenAI SDK or sentence-transformers.")

@@ -29,7 +29,8 @@ This project follows a simple code of conduct:
 
 ### Prerequisites
 - **Bun** >= 1.2
-- **Python** >= 3.12 with **uv**
+- **Python** >= 3.12
+- **uv** >= 0.9.11
 - **Go** >= 1.25
 - **Git** for version control
 
@@ -42,6 +43,23 @@ cd Nargis
 
 # 2. Install dependencies
 bun install
+
+#  (Python backend) create venv and install deps using `uv` (recommended)
+cd apps/api-py
+
+# Ensure you're running the required Python version (3.12)
+python -c "import sys
+sys.exit(0 if sys.version_info[:3]==(3,12) else 1)" || (Write-Host 'Please use Python 3.12 (pyenv or system)'; exit 1)
+
+python -m venv .venv
+.\.venv\Scripts\Activate  # or `source .venv/bin/activate` on POSIX
+
+# Bootstrap `uv` (this is the only pip usage required to install `uv` itself)
+python -m pip install --upgrade pip
+python -m pip install --no-cache-dir "uv==0.9.11"
+
+# Install runtime + dev deps using `uv` exclusively
+uv pip install --no-cache-dir '.[dev]'
 
 # 3. Configure environment files
 Copy the example env for the frontend and adjust values if needed:

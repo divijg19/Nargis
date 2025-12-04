@@ -1,6 +1,5 @@
 from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
-import asyncio
 
 app = FastAPI(title="Nargis ML Worker")
 
@@ -17,7 +16,7 @@ async def health():
 @app.post("/stt")
 async def stt(audio: UploadFile = File(...)):
     # Placeholder: integrate whisper.cpp or whisperx here
-    data = await audio.read()
+    await audio.read()
     return {"text": "(transcription placeholder)"}
 
 

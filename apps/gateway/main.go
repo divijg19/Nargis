@@ -23,6 +23,8 @@ import (
 	"syscall"
 	"time"
 
+	"bufio"
+
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
@@ -418,8 +420,12 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Prepare a cancelable context derived from the request for upstream cancellation
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
 	// Prepare the HTTP request that will stream the body from the pipe reader
-	req, err := http.NewRequest("POST", pipelineURL, pr)
+	req, err := http.NewRequestWithContext(ctx, "POST", pipelineURL, pr)
 	if err != nil {
 		log.Printf("Error creating streaming HTTP request: %v", err)
 		_ = ws.WriteMessage(websocket.TextMessage, []byte(`{"error":"server_internal","detail":"request create failed"}`))
@@ -476,6 +482,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	canceled := false
 	// Read websocket messages and stream audio binary into the multipart part.
 	for {
 		messageType, p, err := ws.ReadMessage()
@@ -483,12 +490,23 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			log.Printf("Read error (client likely disconnected): %v", err)
 			// Propagate the error to the pipe so the HTTP client doesn't hang.
 			_ = pw.CloseWithError(err)
+			cancel()
 			return
 		}
 
-		if messageType == websocket.TextMessage && string(p) == "EOS" {
-			log.Println("EOS received. Finalizing streaming to orchestrator.")
-			break
+		if messageType == websocket.TextMessage {
+			if string(p) == "EOS" {
+				log.Println("EOS received. Finalizing streaming to orchestrator.")
+				break
+			}
+			if string(p) == "STOP" {
+				log.Println("STOP received. Canceling upstream request and closing stream.")
+				canceled = true
+				// Cancel upstream and close multipart writer to unblock HTTP client
+				cancel()
+				_ = pw.CloseWithError(fmt.Errorf("client stop"))
+				break
+			}
 		}
 
 		if messageType == websocket.BinaryMessage {
@@ -517,26 +535,46 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		return
 	case resp := <-respCh:
 		defer resp.Body.Close()
-		responseBody, rerr := io.ReadAll(resp.Body)
-		if rerr != nil {
-			log.Printf("[RequestID: %s] Error reading response body: %v", requestID, rerr)
-			_ = ws.WriteMessage(websocket.TextMessage, []byte(`{"error":"read_response_failed"}`))
-			return
-		}
 
+		// If upstream returned non-200, forward an initial error frame but continue streaming body if present.
 		if resp.StatusCode != http.StatusOK {
-			log.Printf("[RequestID: %s] Orchestrator returned non-200: %d body:%s", requestID, resp.StatusCode, string(responseBody))
-			_ = ws.WriteMessage(websocket.TextMessage, responseBody)
-			return
+			msg := fmt.Sprintf(`{"type":"error","status":%d}`, resp.StatusCode)
+			_ = ws.WriteMessage(websocket.TextMessage, []byte(msg))
+			// continue to stream NDJSON lines below (useful if Python streams error details)
 		}
 
-		log.Printf("[RequestID: %s] Streaming LLM response received: %s", requestID, string(responseBody))
-		if err := ws.WriteMessage(websocket.TextMessage, responseBody); err != nil {
-			log.Printf("[RequestID: %s] Error writing message back to client: %v", requestID, err)
+		// Stream NDJSON / line-oriented events from Python to the websocket client.
+		scanner := bufio.NewScanner(resp.Body)
+		// Increase the scanner buffer to safely handle longer NDJSON lines
+		buf := make([]byte, 0, 64*1024)
+		scanner.Buffer(buf, 1<<20) // up to ~1MB lines
+		for scanner.Scan() {
+			line := scanner.Bytes() // raw bytes of the line (without newline)
+			if err := ws.WriteMessage(websocket.TextMessage, line); err != nil {
+				log.Printf("[RequestID: %s] Failed to write ws message: %v", requestID, err)
+				return
+			}
 		}
+		if err := scanner.Err(); err != nil {
+			log.Printf("[RequestID: %s] Error scanning Python stream: %v", requestID, err)
+			_ = ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"error","content":"%s"}`, err.Error())))
+			return
+		}
+		// EOF reached normally; signal end-of-stream optionally
+		if canceled {
+			_ = ws.WriteMessage(websocket.TextMessage, []byte(`{"type":"end","content":"canceled"}`))
+		} else {
+			_ = ws.WriteMessage(websocket.TextMessage, []byte(`{"type":"end","content":"stream_closed"}`))
+		}
+		return
 	case <-time.After(130 * time.Second):
 		log.Printf("[RequestID: %s] Timeout waiting for orchestrator response", requestID)
 		_ = ws.WriteMessage(websocket.TextMessage, []byte(`{"error":"orchestrator_timeout"}`))
+		return
+	case <-ctx.Done():
+		// Upstream was canceled before we received a response body
+		log.Printf("[RequestID: %s] Upstream request canceled.", requestID)
+		_ = ws.WriteMessage(websocket.TextMessage, []byte(`{"type":"end","content":"canceled"}`))
 		return
 	}
 }
@@ -619,23 +657,29 @@ func processAudioPipeline(audioData []byte, ws *websocket.Conn) {
 	}
 	defer resp.Body.Close()
 
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("Error reading response body from Python API: %v", err)
-		return
-	}
-
+	// Stream NDJSON / line-oriented events from Python to the websocket client.
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("[RequestID: %s] Python API returned a non-200 status: %d. Body: %s", requestID, resp.StatusCode, string(responseBody))
-		_ = ws.WriteMessage(websocket.TextMessage, responseBody) // Forward the error details to the client.
+		// send an initial error frame but continue streaming body if present
+		msg := fmt.Sprintf(`{"type":"error","status":%d}`, resp.StatusCode)
+		_ = ws.WriteMessage(websocket.TextMessage, []byte(msg))
+	}
+	scanner := bufio.NewScanner(resp.Body)
+	// Increase the scanner buffer to safely handle longer NDJSON lines
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1<<20) // up to ~1MB lines
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if err := ws.WriteMessage(websocket.TextMessage, line); err != nil {
+			log.Printf("[RequestID: %s] Failed to write ws message: %v", requestID, err)
+			return
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Printf("[RequestID: %s] Error scanning Python stream: %v", requestID, err)
+		_ = ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"type":"error","content":"%s"}`, err.Error())))
 		return
 	}
-
-	log.Printf("[RequestID: %s] Final LLM response received: %s", requestID, string(responseBody))
-	log.Printf("[RequestID: %s] Sending response back to client...", requestID)
-	if err := ws.WriteMessage(websocket.TextMessage, responseBody); err != nil {
-		log.Printf("[RequestID: %s] Error writing message back to client: %v", requestID, err)
-	}
+	_ = ws.WriteMessage(websocket.TextMessage, []byte(`{"type":"end","content":"stream_closed"}`))
 }
 
 func healthHandler(w http.ResponseWriter, _ *http.Request) {

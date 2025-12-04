@@ -4,4 +4,4 @@ Services should contain pure business logic and DB access helpers.
 Routers import and call these services to keep HTTP code thin.
 """
 
-__all__ = ["tasks"]
+__all__ = ["tasks", "habits", "journal"]

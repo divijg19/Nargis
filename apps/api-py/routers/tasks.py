@@ -37,7 +37,9 @@ class TaskUpdate(BaseModel):
 
 
 @router.get("", response_model=List[dict])
-async def list_tasks(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+async def list_tasks(
+    current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
+):
     return list_tasks_service(current_user["id"], db)
 
 
@@ -54,33 +56,81 @@ async def create_task(
 
 
 @router.get("/{task_id}")
-async def get_task(task_id: str, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_task(
+    task_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     result = get_task_service(task_id, current_user["id"], db)
     if not result:
         task = db.query(Task).filter(Task.id == task_id).first()
         if not task:
-            raise HTTPException(status_code=404, detail={"error": {"code": "TASK_NOT_FOUND", "message": f"No task with id: {task_id}"}})
-        raise HTTPException(status_code=403, detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}})
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "error": {
+                        "code": "TASK_NOT_FOUND",
+                        "message": f"No task with id: {task_id}",
+                    }
+                },
+            )
+        raise HTTPException(
+            status_code=403,
+            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        )
     return result
 
 
 @router.patch("/{task_id}")
-async def update_task(task_id: str, patch: TaskUpdate, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    updated = update_task_service(task_id, patch.model_dump(exclude_unset=True), current_user["id"], db)
+async def update_task(
+    task_id: str,
+    patch: TaskUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    updated = update_task_service(
+        task_id, patch.model_dump(exclude_unset=True), current_user["id"], db
+    )
     if not updated:
         task = db.query(Task).filter(Task.id == task_id).first()
         if not task:
-            raise HTTPException(status_code=404, detail={"error": {"code": "TASK_NOT_FOUND", "message": f"No task with id: {task_id}"}})
-        raise HTTPException(status_code=403, detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}})
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "error": {
+                        "code": "TASK_NOT_FOUND",
+                        "message": f"No task with id: {task_id}",
+                    }
+                },
+            )
+        raise HTTPException(
+            status_code=403,
+            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        )
     return updated
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_task(task_id: str, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+async def delete_task(
+    task_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     ok = delete_task_service(task_id, current_user["id"], db)
     if not ok:
         task = db.query(Task).filter(Task.id == task_id).first()
         if not task:
-            raise HTTPException(status_code=404, detail={"error": {"code": "TASK_NOT_FOUND", "message": f"No task with id: {task_id}"}})
-        raise HTTPException(status_code=403, detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}})
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "error": {
+                        "code": "TASK_NOT_FOUND",
+                        "message": f"No task with id: {task_id}",
+                    }
+                },
+            )
+        raise HTTPException(
+            status_code=403,
+            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        )
     return None
