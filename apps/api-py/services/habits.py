@@ -29,21 +29,24 @@ def _compute_streaks(entries: List[HabitEntry]) -> Dict[str, int]:
     # compute best streak by scanning sorted dates
     best = 0
     running = 0
+    prev_date = None
     # sort by date asc
     for e in sorted(entries, key=lambda x: x.date):
         if e.completed:
-            # continue streak if previous day or start new
             if running == 0:
                 running = 1
             else:
-                # attempt to ensure consecutive days
-                # if previous entry date is exactly one day before current, increment
-                # else reset to 1
-                running += 1
+                # Check if current date is consecutive to previous completed date
+                if prev_date and (e.date == prev_date.fromordinal(prev_date.toordinal() + 1)):
+                    running += 1
+                else:
+                    running = 1
+            prev_date = e.date
             if running > best:
                 best = running
         else:
             running = 0
+            prev_date = None
     return {"currentStreak": cur, "bestStreak": max(best, cur)}
 
 
