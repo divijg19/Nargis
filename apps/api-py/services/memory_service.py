@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 from storage.models import Memory
 
 try:
-    from pgvector.sqlalchemy import Vector  # type: ignore
     PGVECTOR_AVAILABLE = True
 except Exception:
     PGVECTOR_AVAILABLE = False

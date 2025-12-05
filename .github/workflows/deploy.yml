@@ -11,7 +11,7 @@ jobs:
     # (assuming you set up branch protection rules in GitHub).
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install flyctl
         run: curl -L https://fly.io/install.sh | sh

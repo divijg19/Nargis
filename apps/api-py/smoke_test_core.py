@@ -15,7 +15,6 @@ from __future__ import annotations
 import sys
 import uuid
 import traceback
-from pprint import pprint
 
 from storage.database import get_session_now
 from storage.models import User, Task, Memory

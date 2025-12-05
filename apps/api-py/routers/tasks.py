@@ -15,6 +15,7 @@ from services.tasks import (
     get_task_service,
     update_task_service,
     delete_task_service,
+    toggle_task_service,
 )
 
 router = APIRouter(prefix="/v1/tasks", tags=["tasks"])
@@ -38,9 +39,21 @@ class TaskUpdate(BaseModel):
 
 @router.get("", response_model=List[dict])
 async def list_tasks(
-    current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    limit: Optional[int] = None,
+    offset: int = 0,
+    sort: str = "created_at",
+    order: str = "desc",
 ):
-    return list_tasks_service(current_user["id"], db)
+    return list_tasks_service(
+        current_user["id"],
+        db,
+        limit=limit,
+        offset=offset,
+        sort=sort,
+        order=order,
+    )
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -134,3 +147,29 @@ async def delete_task(
             detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
         )
     return None
+
+
+@router.post("/{task_id}/toggle")
+async def toggle_task(
+    task_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    updated = toggle_task_service(task_id, current_user["id"], db)
+    if not updated:
+        task = db.query(Task).filter(Task.id == task_id).first()
+        if not task:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "error": {
+                        "code": "TASK_NOT_FOUND",
+                        "message": f"No task with id: {task_id}",
+                    }
+                },
+            )
+        raise HTTPException(
+            status_code=403,
+            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        )
+    return updated

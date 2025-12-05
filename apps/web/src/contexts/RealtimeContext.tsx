@@ -299,7 +299,20 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     const enabled = isFlagEnabled("realtime") || hasWsUrl;
     if (!enabled) return;
 
-    const url = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws";
+    let url = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws";
+    // Append JWT as query param for gateway auth if available
+    try {
+      const { authService } = require("@/services/auth");
+      const tok = authService.getToken?.();
+      if (tok) {
+        const u = new URL(url);
+        // preserve existing params and add token
+        u.searchParams.set("token", tok);
+        url = u.toString();
+      }
+    } catch {
+      /* ignore */
+    }
     console.debug("[Realtime] initializing connection to", url);
     const conn = new RealtimeConnection({ url, maxRetries: 6 });
     connectionRef.current = conn;

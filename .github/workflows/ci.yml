@@ -11,21 +11,34 @@ jobs:
   # Job 1: Validate the frontend
   validate-frontend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: apps/web/node_modules
+          key: web-${{ runner.os }}-bun-${{ hashFiles('apps/web/package.json') }}
+          restore-keys: |
+            web-${{ runner.os }}-bun-
 
       - name: Install dependencies
-        run: bun install
+        run: bun install --no-save
 
       - name: Run Linter
         run: bun run lint
 
       - name: Run Type Check
-        run: bun run typecheck
+        run: bun run type-check
 
       - name: Run Build
         run: bun run build
@@ -35,19 +48,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       # --- Go Gateway Validation ---
-      - name: Build api-go image for scanning
-        run: docker build -t nargis-api-go:ci ./apps/gateway
+      - name: Build gateway image for scanning
+        run: docker build -t nargis-gateway:ci ./apps/gateway
 
       - name: Scan api-go image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "nargis-api-go:ci"
+          image-ref: "nargis-gateway:ci"
           format: "table"
           exit-code: "1"
           ignore-unfixed: true
@@ -55,7 +68,7 @@ jobs:
 
       - name: Run go vet
         run: |
-          cd apps/gateway-go # Use the renamed folder
+          cd apps/gateway
           go vet ./...
 
       # --- Python Orchestrator Validation ---
@@ -73,6 +86,6 @@ jobs:
 
       - name: Run pip-audit for Python dependency vulnerabilities
         run: |
-          python -m pip install uv
-          uv pip install '.[ml]' -p $(which python) --system --no-cache-dir -e ./apps/api-py
-          pip-audit
+          python -m pip install --upgrade pip
+          python -m pip install pip-audit
+          pip-audit -r apps/api-py/requirements.txt

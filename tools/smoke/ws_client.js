@@ -4,7 +4,19 @@
 
 const WebSocket = require("ws");
 
-const WS_URL = process.env.WS_URL || "ws://localhost:8080/ws";
+let WS_URL = process.env.WS_URL || "ws://localhost:8080/ws";
+// Append JWT token if provided for auth-enabled gateways
+if (process.env.WS_TOKEN) {
+  try {
+    const u = new URL(WS_URL);
+    u.searchParams.set("token", process.env.WS_TOKEN);
+    WS_URL = u.toString();
+  } catch {
+    // fallback if WS_URL isn't a valid URL string
+    const sep = WS_URL.includes("?") ? "&" : "?";
+    WS_URL = `${WS_URL}${sep}token=${encodeURIComponent(process.env.WS_TOKEN)}`;
+  }
+}
 
 function sleep(ms) {
   return new Promise((res) => setTimeout(res, ms));

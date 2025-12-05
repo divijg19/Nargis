@@ -57,12 +57,12 @@ export default function TasksPage() {
     tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
   return (
-    <div className="min-h-screen pt-16 md:pt-20 bg-app-light transition-all duration-500 transform -translate-y-6">
+    <div className="h-screen overflow-hidden flex flex-col pt-16 md:pt-20 bg-app-light transition-all duration-500">
       {/* Premium ambient overlay */}
       <div className="absolute inset-0 bg-linear-to-r from-transparent via-blue-500/5 to-transparent dark:via-blue-400/10 pointer-events-none" />
 
       {/* Premium Header */}
-      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-1">
+      <div className="w-full max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-8 py-1">
         <div className="animate-fade-in">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 md:gap-6 mb-3">
             <div>
@@ -86,8 +86,8 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* Grid wrapper with outer gutters and snug side columns */}
-      <div className="relative lg:grid lg:grid-cols-[3rem_16rem_0rem_1fr_0rem_16rem_3rem] lg:gap-0 xl:grid-cols-[4rem_16rem_0rem_1fr_0rem_16rem_4rem] 2xl:grid-cols-[6rem_20rem_0rem_1fr_0rem_24rem_6rem]">
+      {/* Grid wrapper with outer gutters and snug side columns; internal scroll only */}
+      <div className="relative flex-1 min-h-0 lg:grid lg:grid-cols-[3rem_16rem_0rem_1fr_0rem_16rem_3rem] lg:gap-0 xl:grid-cols-[4rem_16rem_0rem_1fr_0rem_16rem_4rem] 2xl:grid-cols-[6rem_20rem_0rem_1fr_0rem_24rem_6rem]">
         {/* Column 1: stacked summary stats - left rail */}
         <aside className="hidden lg:flex flex-col w-64 xl:w-72 justify-self-end space-y-4 lg:col-start-2 lg:col-end-3">
           <div className="glass bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl p-2.5 border border-slate-200/60 dark:border-slate-700/60 shadow-lg hover:shadow-xl transition-all duration-300 hover-elevate">
@@ -128,7 +128,7 @@ export default function TasksPage() {
         </aside>
 
         {/* Column 2: Today's Focus (center) and In Progress stacked */}
-        <main className="w-full px-4 sm:px-6 lg:px-8 space-y-5 pb-10 lg:col-start-4 lg:col-end-5">
+        <main className="w-full px-3 sm:px-4 lg:px-8 space-y-5 pb-10 lg:col-start-4 lg:col-end-5 h-full overflow-auto">
           {/* Mobile-only summary stats */}
           <div className="lg:hidden flex flex-col space-y-4">
             <div className="glass bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl p-2.5 border border-slate-200/60 dark:border-slate-700/60 shadow-lg hover:shadow-xl transition-all duration-300 hover-elevate">
@@ -179,7 +179,7 @@ export default function TasksPage() {
                 </span>
               }
             >
-              <div className="max-h-[35vh] overflow-auto pr-1">
+              <div className="max-h-[32vh] lg:max-h-[35vh] overflow-auto pr-1">
                 <TaskPreview
                   tasks={todayTasks}
                   limit={6}
@@ -198,7 +198,7 @@ export default function TasksPage() {
               </span>
             }
           >
-            <div className="max-h-[35vh] overflow-auto pr-1">
+            <div className="max-h-[32vh] lg:max-h-[35vh] overflow-auto pr-1">
               <TaskPreview
                 tasks={tasksByStatus.inProgress}
                 limit={6}
@@ -267,7 +267,7 @@ export default function TasksPage() {
               </span>
             }
           >
-            <div className="h-40 pr-1">
+            <div className="h-36 lg:h-40 pr-1">
               <TaskPreview
                 tasks={tasksByStatus.todo}
                 limit={3}
@@ -288,7 +288,7 @@ export default function TasksPage() {
               </span>
             }
           >
-            <div className="h-40 pr-1">
+            <div className="h-36 lg:h-40 pr-1">
               <TaskPreview
                 tasks={tasksByStatus.done}
                 limit={3}

@@ -58,11 +58,11 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen pt-8 md:pt-12 bg-app-light transition-all duration-500">
+    <div className="h-screen overflow-hidden flex flex-col pt-8 md:pt-12 bg-app-light transition-all duration-500">
       {/* Quick Actions: rendered beneath the hero (desktop) - mobile kept in the stacked area */}
 
-      {/* Grid wrapper to prevent overlap on large screens */}
-      <div className="relative lg:grid lg:grid-cols-[3rem_18rem_0rem_1fr_0rem_16rem_3rem] lg:gap-0 xl:grid-cols-[4rem_18rem_0rem_1fr_0rem_16rem_4rem] 2xl:grid-cols-[6rem_18rem_0rem_1fr_0rem_16rem_6rem]">
+      {/* Grid wrapper in a flex container to enable internal scrolling only */}
+      <div className="relative flex-1 min-h-0 lg:grid lg:grid-cols-[3rem_18rem_0rem_1fr_0rem_16rem_3rem] lg:gap-0 xl:grid-cols-[4rem_18rem_0rem_1fr_0rem_16rem_4rem] 2xl:grid-cols-[6rem_18rem_0rem_1fr_0rem_16rem_6rem]">
         {/* Today's Tasks: left rail, sticky within its column */}
         <aside className="hidden lg:flex flex-col sticky top-16 w-64 xl:w-72 justify-self-end gap-4 z-30 lg:col-start-2 lg:col-end-3">
           <DashboardCard
@@ -85,7 +85,7 @@ export default function DashboardPage() {
         </aside>
 
         {/* Center content column */}
-        <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pb-16 lg:col-start-4 lg:col-end-5">
+        <main className="w-full max-w-5xl mx-auto px-3 sm:px-4 lg:px-8 space-y-6 lg:space-y-8 pb-14 lg:pb-16 lg:col-start-4 lg:col-end-5 h-full overflow-auto">
           <div className="app-viewport-available">
             <div className="grid grid-cols-1 gap-4 md:gap-6">
               {/* Mobile-only stacked left area */}
@@ -138,7 +138,7 @@ export default function DashboardPage() {
               </div>
               {/* Stack Task Status Overview above the hero, center hero in available viewport */}
               <div className="w-full flex flex-col items-center gap-1 lg:-mt-12">
-                <div className="w-full max-w-lg">
+                <div className="w-full max-w-md sm:max-w-lg">
                   <DashboardCard title="Task Status Overview" size="xs">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="text-center p-2.5 rounded-xl bg-gray-50 dark:bg-gray-700/30 transition-all hover:shadow-md">
@@ -189,7 +189,7 @@ export default function DashboardPage() {
 
                 <div className="w-full flex flex-col gap-0 items-center">
                   <div className="w-full flex items-start justify-center">
-                    <div className="w-full max-w-md mt-0">
+                    <div className="w-full max-w-sm sm:max-w-md mt-0">
                       <DashboardHero greeting={getGreeting()} />
                     </div>
                   </div>
@@ -203,23 +203,23 @@ export default function DashboardPage() {
                             icon="➕"
                             label="Create Task"
                             variant="primary"
-                            size="sm"
+                            size="md"
                             onClick={() => setIsTaskModalOpen(true)}
                             className="w-full"
                           />
                           <ActionButton
                             icon="🍅"
                             label="Start Focus Session"
-                            variant="primary"
-                            size="sm"
+                            variant="secondary"
+                            size="md"
                             onClick={handleStartFocus}
                             className="w-full"
                           />
                           <ActionButton
                             icon="⚡"
                             label="Log Habit"
-                            variant="primary"
-                            size="sm"
+                            variant="secondary"
+                            size="md"
                             onClick={() => setIsHabitModalOpen(true)}
                             className="w-full"
                           />

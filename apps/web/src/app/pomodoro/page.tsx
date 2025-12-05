@@ -89,7 +89,7 @@ export default function PomodoroPage() {
   const sessionInfo = getSessionInfo();
 
   return (
-    <div className="min-h-screen bg-app-light transition-all duration-500">
+    <div className="h-screen overflow-hidden flex flex-col bg-app-light transition-all duration-500">
       {/* Premium ambient overlay (place behind content) */}
       <div
         className="absolute inset-0 bg-linear-to-r from-transparent via-emerald-500/5 to-transparent dark:via-emerald-400/10 pointer-events-none -z-10"
@@ -98,7 +98,7 @@ export default function PomodoroPage() {
       {/* Main content: wider container and accessible main landmark. Add top padding to avoid fixed header overlap. */}
       <main
         id="maincontent"
-        className="relative z-10 max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12 app-viewport-available safe-padding"
+        className="relative z-10 max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12 app-viewport-available safe-padding flex-1 min-h-0 overflow-auto"
         tabIndex={-1}
       >
         {/* Premium Header */}
@@ -117,10 +117,10 @@ export default function PomodoroPage() {
         {/* Premium Stats Bar removed — metrics are shown in the left stacked column to avoid redundancy */}
 
         {/* Main Timer Card */}
-        <div className="animate-scale-in mt-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-12 items-start">
+        <div className="animate-scale-in mt-6 sm:mt-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-12 items-start">
             {/* Left stacked metric column */}
-            <div className="lg:col-span-1 flex flex-col space-y-6">
+            <div className="lg:col-span-1 flex flex-col space-y-4 sm:space-y-6">
               <div className="glass bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl p-4 border border-slate-200/60 dark:border-slate-700/60 shadow-lg text-center">
                 <div className="text-sm text-muted-foreground">
                   Sessions Today
@@ -159,12 +159,15 @@ export default function PomodoroPage() {
             </div>
             {/* Timer column (spans 2 columns on large screens) */}
             <div className="lg:col-span-2 flex items-center justify-center">
-              <DashboardCard title="" className="p-8 overflow-visible w-full">
+              <DashboardCard
+                title=""
+                className="p-4 sm:p-6 lg:p-8 overflow-visible w-full"
+              >
                 <PomodoroTimer size="lg" showControls={true} />
               </DashboardCard>
             </div>{" "}
             {/* Right column: controls, stats, guidance and shortcuts - stacked vertically */}
-            <aside className="lg:col-span-1 space-y-6 flex flex-col items-stretch aside-sticky">
+            <aside className="lg:col-span-1 space-y-4 sm:space-y-6 flex flex-col items-stretch aside-sticky">
               <div className="flex flex-col items-center space-y-4">
                 {/* Session badge */}
                 <div
@@ -181,13 +184,13 @@ export default function PomodoroPage() {
                 </div>
 
                 {/* Controls */}
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 sm:space-x-3">
                   {!isRunning ? (
                     <ActionButton
                       icon="▶"
                       label="Start"
                       variant="primary"
-                      size="lg"
+                      size="md"
                       onClick={() => startTimer()}
                       aria-label={"Start timer (Space)"}
                     />
@@ -196,7 +199,7 @@ export default function PomodoroPage() {
                       icon="⏸"
                       label="Pause"
                       variant="secondary"
-                      size="lg"
+                      size="md"
                       onClick={pauseTimer}
                       aria-label={"Pause timer (Space)"}
                     />
@@ -205,7 +208,7 @@ export default function PomodoroPage() {
                     icon="⟲"
                     label="Reset"
                     variant="danger"
-                    size="lg"
+                    size="md"
                     onClick={resetTimer}
                     aria-label={"Reset timer (R)"}
                   />
@@ -278,12 +281,12 @@ export default function PomodoroPage() {
           </div>
 
           {/* Analytics & Statistics Section */}
-          <div className="mt-12">
+          <div className="mt-10 sm:mt-12">
             <PomodoroStats sessions={sessions} />
           </div>
 
           {/* Session History Section */}
-          <div className="mt-8">
+          <div className="mt-6 sm:mt-8">
             <DashboardCard title="Session History" size="md">
               <SessionHistory sessions={sessions} maxItems={15} />
             </DashboardCard>

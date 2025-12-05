@@ -1,20 +1,22 @@
 import os
-from dotenv import load_dotenv
-load_dotenv(override=True) 
-from logging.config import fileConfig
 import sys
 from pathlib import Path
+from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+from dotenv import load_dotenv
+
+# Load environment variables from .env early
+load_dotenv(override=True)
 
 # Add the parent directory to the Python path to import our modules
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # Import our database configuration and models
-from storage.database import Base, DATABASE_URL
+from storage.database import Base, DATABASE_URL  # noqa: E402
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

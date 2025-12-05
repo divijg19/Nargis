@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useJournalStore } from "@/contexts/JournalContext";
 import type { JournalEntry } from "@/types";
 import { cn } from "@/utils";
 
@@ -20,6 +21,7 @@ export function JournalEntryCard({
   compact = false,
 }: JournalEntryCardProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { summarizeEntry } = useJournalStore();
 
   const getMoodColor = (mood?: JournalEntry["mood"]) => {
     switch (mood) {
@@ -175,6 +177,28 @@ export function JournalEntryCard({
                 </svg>
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => summarizeEntry(entry.id)}
+              className="p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors"
+              aria-label="Refresh AI summary"
+              title="Refresh Summary"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <title>Refresh Summary</title>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0019 5"
+                />
+              </svg>
+            </button>
             {onDelete && (
               <button
                 type="button"

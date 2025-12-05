@@ -13,6 +13,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response, StreamingResponse
 import json
 from dotenv import load_dotenv
+from storage.database import init_db
 
 # Import routers at module top so all imports are at the top-level (fixes E402)
 from routers import (
@@ -71,6 +72,12 @@ logging.setLogRecordFactory(_record_factory)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: optionally preload STT if configured
+    # Ensure DB tables exist before serving any requests
+    try:
+        init_db()
+    except Exception:
+        # Avoid crashing startup in degenerate environments; tests will reveal issues
+        logging.exception("Database initialization failed")
     if os.getenv("PRELOAD_STT", "false").lower() == "true":
         from services.ai_clients import ensure_stt_loaded
 
@@ -147,9 +154,10 @@ async def process_audio_pipeline(request: Request, audio_file: UploadFile = File
     transcribed_text = await _get_transcription(audio_bytes)
 
     if not transcribed_text or not transcribed_text.strip():
-        # Immediate short-circuit response as NDJSON
+        # Immediate short-circuit response as NDJSON (include end marker)
         async def empty_stream() -> AsyncGenerator[bytes, None]:
             yield (json.dumps({"type": "response", "content": "I didn't catch that."}) + "\n").encode()
+            yield (json.dumps({"type": "end", "content": "done"}) + "\n").encode()
 
         return StreamingResponse(empty_stream(), media_type="application/x-ndjson")
 

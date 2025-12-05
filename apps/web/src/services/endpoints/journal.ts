@@ -1,121 +1,98 @@
+import { authService } from "@/services/auth";
 import type { CreateJournalEntryRequest, JournalEntry } from "@/types";
-import { generateId } from "@/utils";
-import { mockDelay } from "../apiClient";
+import { fetchJson } from "../apiClient";
 
-// Sample journal entries
-const now = new Date();
-const today = new Date(now);
-today.setHours(9, 30, 0, 0);
+type JournalEntryApi = {
+  id: string;
+  title?: string | null;
+  content: string;
+  type?: JournalEntry["type"] | string | null;
+  mood?: JournalEntry["mood"] | string | null;
+  tags?: string[] | null;
+  aiSummary?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  audioUrl?: string | null;
+};
 
-const yesterday = new Date(now);
-yesterday.setDate(yesterday.getDate() - 1);
-yesterday.setHours(20, 0, 0, 0);
-
-const threeDaysAgo = new Date(now);
-threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-threeDaysAgo.setHours(18, 30, 0, 0);
-
-let mockEntries: JournalEntry[] = [
-  {
-    id: generateId(),
-    title: "Morning Reflection",
-    content:
-      "Started the day with a clear mind. Planning to focus on the new project proposal. Feeling energized and ready to tackle challenging tasks.",
-    type: "text",
-    mood: "great",
-    tags: ["morning", "planning", "energy"],
-    aiSummary:
-      "User is starting the day positively, planning to work on a project proposal with high energy.",
-    createdAt: today,
-  },
-  {
-    id: generateId(),
-    title: "Evening Check-in",
-    content:
-      "Made good progress today. Completed the design mockups and had a productive meeting with the team. Need to work on time management for tomorrow.",
-    type: "text",
-    mood: "good",
-    tags: ["evening", "progress", "team"],
-    aiSummary:
-      "Productive day with design completion and team meeting. Identified time management as area for improvement.",
-    createdAt: yesterday,
-  },
-  {
-    id: generateId(),
-    content:
-      "Quick voice note about the presentation ideas. Need to incorporate more visual examples and simplify the technical sections.",
-    type: "voice",
-    mood: "neutral",
-    tags: ["ideas", "presentation"],
-    aiSummary:
-      "Planning presentation improvements: add visuals, simplify technical content.",
-    createdAt: threeDaysAgo,
-  },
-];
+function mapApiToEntry(api: JournalEntryApi): JournalEntry {
+  const type: JournalEntry["type"] = api.type === "voice" ? "voice" : "text";
+  const allowedMoods = new Set(["great", "good", "neutral", "bad", "terrible"]);
+  const mood: JournalEntry["mood"] | undefined =
+    api.mood && allowedMoods.has(api.mood as string)
+      ? (api.mood as JournalEntry["mood"])
+      : undefined;
+  return {
+    id: api.id,
+    title: api.title ?? undefined,
+    content: api.content,
+    type,
+    mood,
+    tags: Array.isArray(api.tags) ? api.tags : undefined,
+    aiSummary: api.aiSummary ?? undefined,
+    createdAt: api.createdAt ? new Date(api.createdAt) : new Date(),
+    updatedAt: api.updatedAt ? new Date(api.updatedAt) : undefined,
+    audioUrl: api.audioUrl ?? undefined,
+  };
+}
 
 export async function listJournalEntries(): Promise<JournalEntry[]> {
-  return mockDelay(
-    mockEntries
-      .map((e) => ({ ...e }))
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      ),
-    120,
-  );
+  const headers = authService.getAuthHeaders();
+  const apiEntries = await fetchJson<JournalEntryApi[]>("/v1/journal", {
+    headers,
+  });
+  return apiEntries.map(mapApiToEntry);
 }
 
 export async function createJournalEntry(
   data: CreateJournalEntryRequest,
 ): Promise<JournalEntry> {
-  const entry: JournalEntry = {
-    id: generateId(),
-    ...data,
-    createdAt: new Date(),
-  };
-
-  // Simulate AI summary generation
-  if (data.content.length > 20) {
-    entry.aiSummary = `Summary: ${data.content.substring(0, 100)}...`;
-  }
-
-  mockEntries = [entry, ...mockEntries];
-  return mockDelay({ ...entry }, 150);
+  const headers = { ...authService.getAuthHeaders() };
+  const body = JSON.stringify(data);
+  const apiEntry = await fetchJson<JournalEntryApi>("/v1/journal", {
+    method: "POST",
+    headers,
+    body,
+  });
+  return mapApiToEntry(apiEntry);
 }
 
 export async function updateJournalEntry(
   id: string,
   updates: Partial<JournalEntry>,
 ): Promise<JournalEntry> {
-  const index = mockEntries.findIndex((e) => e.id === id);
-  if (index === -1) throw new Error("Entry not found");
-
-  const updated = {
-    ...mockEntries[index],
-    ...updates,
-    updatedAt: new Date(),
-  };
-
-  mockEntries[index] = updated;
-  return mockDelay({ ...updated }, 100);
+  const headers = { ...authService.getAuthHeaders() };
+  const body = JSON.stringify(updates);
+  const apiEntry = await fetchJson<JournalEntryApi>(`/v1/journal/${id}`, {
+    method: "PATCH",
+    headers,
+    body,
+  });
+  return mapApiToEntry(apiEntry);
 }
 
 export async function deleteJournalEntry(id: string): Promise<void> {
-  mockEntries = mockEntries.filter((e) => e.id !== id);
-  return mockDelay(undefined, 80);
+  const headers = authService.getAuthHeaders();
+  await fetchJson<void>(`/v1/journal/${id}`, { method: "DELETE", headers });
+}
+
+// Server-side summary generation for an existing entry
+export async function summarizeEntry(id: string): Promise<JournalEntry> {
+  const headers = authService.getAuthHeaders();
+  const result = await fetchJson<{ summary: string; entry: JournalEntryApi }>(
+    `/v1/journal/${id}/summary`,
+    { method: "POST", headers },
+  );
+  return mapApiToEntry(result.entry ?? {});
 }
 
 export async function generateAISummary(content: string): Promise<string> {
-  // Simulate AI summary generation
-  await mockDelay(undefined, 500);
-
+  // If/when backend exposes summary endpoint, call it; for now keep client helper simple.
+  // This method is used by JournalContext; preserve behavior by returning a naive summary.
   if (content.length < 50) {
     return "Brief reflection captured.";
   }
-
-  // Simple extraction of key points
   const sentences = content.split(/[.!?]+/).filter((s) => s.trim().length > 0);
   const firstSentence = sentences[0]?.trim() || content.substring(0, 100);
-
   return `${firstSentence}${sentences.length > 1 ? ". Additional insights noted." : ""}`;
 }
