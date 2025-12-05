@@ -30,7 +30,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["habit_id"], ["habits.id"], ),
     )
     op.create_index("ix_habit_entries_habit_id", "habit_entries", ["habit_id"], unique=False)
-    op.create_unique_constraint("uq_habit_entries_habit_id_date", "habit_entries", ["habit_id", "date"]) 
+    op.create_unique_constraint("uq_habit_entries_habit_id_date", "habit_entries", ["habit_id", "date"])
 
 
 def downgrade() -> None:
