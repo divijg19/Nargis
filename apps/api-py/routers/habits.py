@@ -15,6 +15,7 @@ from services.habits import (
     get_habit_service,
     update_habit_service,
     delete_habit_service,
+    update_habit_count_service,
 )
 
 router = APIRouter(prefix="/v1/habits", tags=["habits"])
@@ -36,11 +37,29 @@ class HabitUpdate(BaseModel):
     color: Optional[str] = None
 
 
+class HabitCountUpdate(BaseModel):
+    # Either set absolute count or apply a delta (one of them required)
+    count: Optional[int] = Field(None, ge=0)
+    delta: Optional[int] = None
+
+
 @router.get("", response_model=List[Dict[str, Any]])
 async def list_habits(
-    current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    limit: Optional[int] = None,
+    offset: int = 0,
+    sort: str = "created_at",
+    order: str = "desc",
 ):
-    return list_habits_service(current_user["id"], db)
+    return list_habits_service(
+        current_user["id"],
+        db,
+        limit=limit,
+        offset=offset,
+        sort=sort,
+        order=order,
+    )
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -133,3 +152,32 @@ async def delete_habit(
             detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
         )
     return None
+
+
+@router.post("/{habit_id}/count")
+async def update_habit_count(
+    habit_id: str,
+    payload: HabitCountUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    updated = update_habit_count_service(
+        habit_id, payload.model_dump(exclude_unset=True), current_user["id"], db
+    )
+    if not updated:
+        h = db.query(Habit).filter(Habit.id == habit_id).first()
+        if not h:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "error": {
+                        "code": "HABIT_NOT_FOUND",
+                        "message": f"No habit with id: {habit_id}",
+                    }
+                },
+            )
+        raise HTTPException(
+            status_code=403,
+            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        )
+    return updated

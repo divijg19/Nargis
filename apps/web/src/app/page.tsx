@@ -123,27 +123,27 @@ export default function Home() {
     <main className="relative h-screen overflow-hidden pt-16">
       {/* Hero Section (center content + right aside) */}
       <section className="relative overflow-hidden">
-        <div className="relative z-10 max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-12 xl:px-16 h-full flex items-center">
+        <div className="relative z-10 max-w-screen-xl 2xl:max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-8 xl:px-12 h-full flex items-center">
           <div className="w-full">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-6 gap-x-6 lg:gap-x-8 h-full items-center">
               {/* Center column: Hero mic + ChatPanel */}
               <div className="order-2 lg:order-2 lg:col-span-7 h-full flex items-center justify-center">
                 <div
                   ref={heroRef}
-                  className="relative p-6 surface-floating rounded-3xl border border-border/30 mb-6 w-full max-w-3xl max-h-[calc(100vh-6.5rem)] overflow-auto flex flex-col"
+                  className="relative p-4 sm:p-6 surface-floating rounded-3xl border border-border/30 mb-4 sm:mb-6 w-full max-w-xl sm:max-w-2xl lg:max-w-3xl max-h-[calc(100vh-6.5rem)] overflow-auto flex flex-col"
                 >
                   <div className="text-center mb-6">
                     <div className="flex items-center justify-center">
                       <VoiceInputButton
-                        size="lg"
-                        iconSizeClass="w-20 h-20"
+                        size="md"
+                        iconSizeClass="w-16 h-16 sm:w-20 sm:h-20"
                         iconTranslateY={18}
                         showStatus={true}
                         statusInline={false}
                       />
                     </div>
                   </div>
-                  <div className="mt-4">
+                  <div className="mt-2 sm:mt-4">
                     <ChatPanel
                       compact
                       merged
@@ -156,27 +156,27 @@ export default function Home() {
               {/* Right column: Hero + Voice-First Productivity */}
               <div className="lg:order-3 order-3 lg:col-span-4">
                 {/* Hero moved to right aside */}
-                <div className="mb-6 text-left">
-                  <h1 className="text-2xl sm:text-3xl lg:text-3xl font-bold tracking-tight">
+                <div className="mb-4 sm:mb-6 text-left">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
                     <span className="gradient-text">Speak</span>
                     <span className="text-foreground"> Your </span>
                     <span className="gradient-text">Productivity</span>
                   </h1>
-                  <h2 className="text-lg font-semibold mt-2 text-foreground">
+                  <h2 className="text-base sm:text-lg font-semibold mt-1 sm:mt-2 text-foreground">
                     Meet{" "}
                     <strong className="font-semibold gradient-nargis">
                       Nargis
                     </strong>
                   </h2>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                     Your productivity management agent.
                   </p>
                 </div>
                 <div className="mb-4 text-left">
-                  <h3 className="text-lg font-semibold gradient-nargis mb-2">
+                  <h3 className="text-base sm:text-lg font-semibold gradient-nargis mb-2">
                     Voice-First Productivity
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     Every feature designed for seamless voice interaction and
                     natural conversation.
                   </p>
@@ -185,7 +185,7 @@ export default function Home() {
                 <div className="mt-2" />
 
                 {/* Usage guidelines */}
-                <div className="mt-4 text-sm text-muted-foreground space-y-3">
+                <div className="mt-3 sm:mt-4 text-xs sm:text-sm text-muted-foreground space-y-3">
                   <h4 className="font-semibold text-foreground">
                     How to use Nargis
                   </h4>

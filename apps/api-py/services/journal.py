@@ -15,6 +15,10 @@ def entry_to_dict(e: JournalEntry) -> dict:
         "userId": e.user_id,
         "title": e.title,
         "content": e.content,
+        "type": e.type,
+        "mood": e.mood,
+        "tags": e.tags if e.tags else [],
+        "audioUrl": e.audio_url,
         "aiSummary": e.ai_summary,
         "createdAt": e.created_at.isoformat() if e.created_at else None,
         "updatedAt": e.updated_at.isoformat() if e.updated_at else None,
@@ -43,6 +47,10 @@ def create_entry_service(payload: Dict[str, Any], user_id: str, db: Session) -> 
         user_id=user_id,
         title=payload.get("title"),
         content=payload.get("content"),
+        type=payload.get("type") or "text",
+        mood=payload.get("mood"),
+        tags=payload.get("tags") if isinstance(payload.get("tags"), list) else None,
+        audio_url=payload.get("audioUrl"),
         ai_summary=ai_summary,
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
@@ -53,8 +61,30 @@ def create_entry_service(payload: Dict[str, Any], user_id: str, db: Session) -> 
     return entry_to_dict(entry)
 
 
-def list_entries_service(user_id: str, db: Session) -> List[dict]:
-    results = db.query(JournalEntry).filter(JournalEntry.user_id == user_id).all()
+def list_entries_service(
+    user_id: str,
+    db: Session,
+    *,
+    limit: Optional[int] = None,
+    offset: int = 0,
+    sort: str = "created_at",
+    order: str = "desc",
+) -> List[dict]:
+    sort_map = {
+        "created_at": JournalEntry.created_at,
+        "updated_at": JournalEntry.updated_at,
+        "title": JournalEntry.title,
+        "mood": JournalEntry.mood,
+        "type": JournalEntry.type,
+    }
+    col = sort_map.get(sort, JournalEntry.created_at)
+    q = db.query(JournalEntry).filter(JournalEntry.user_id == user_id)
+    q = q.order_by(col.desc() if order.lower() == "desc" else col.asc())
+    if offset:
+        q = q.offset(int(offset))
+    if limit:
+        q = q.limit(int(limit))
+    results = q.all()
     return [entry_to_dict(e) for e in results]
 
 
@@ -79,6 +109,14 @@ def update_entry_service(
         e.title = patch["title"]
     if "content" in patch:
         e.content = patch["content"]
+    if "type" in patch:
+        e.type = patch["type"] or e.type
+    if "mood" in patch:
+        e.mood = patch["mood"]
+    if "tags" in patch:
+        e.tags = patch["tags"] if isinstance(patch["tags"], list) else e.tags
+    if "audioUrl" in patch:
+        e.audio_url = patch["audioUrl"]
     if "aiSummary" in patch:
         e.ai_summary = patch["aiSummary"]
     else:

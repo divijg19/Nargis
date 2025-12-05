@@ -60,24 +60,14 @@ func checkOrigin(r *http.Request) bool {
 	return false
 }
 
-// verifyJWT optionally validates a JWT using HS256 when JWT_HMAC_SECRET is set.
-// If no secret is configured, JWT validation is a no-op and returns ("", nil).
-// On success it returns the resolved user id to propagate downstream (sub/user_id/uid).
-func verifyJWT(r *http.Request) (string, error) {
+// verifyJWTToken validates a JWT string using HS256 when JWT_HMAC_SECRET is set.
+// Returns the resolved user id (sub/user_id/uid) or empty string if unverifiable/absent.
+func verifyJWTToken(token string) (string, error) {
 	secret := os.Getenv("JWT_HMAC_SECRET")
 	if strings.TrimSpace(secret) == "" {
 		// JWT validation not enabled
 		return "", nil
 	}
-
-	auth := r.Header.Get("Authorization")
-	if auth == "" {
-		return "", nil
-	}
-	if !strings.HasPrefix(auth, "Bearer ") {
-		return "", errors.New("invalid authorization header")
-	}
-	token := strings.TrimPrefix(auth, "Bearer ")
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
 		return "", errors.New("invalid token format")
@@ -115,6 +105,24 @@ func verifyJWT(r *http.Request) (string, error) {
 	if uidf, ok := claims["uid"].(float64); ok {
 		return fmt.Sprintf("%.0f", uidf), nil
 	}
+	return "", nil
+}
+
+// verifyJWT optionally validates a JWT from header or query param when JWT_HMAC_SECRET is set.
+// If no secret is configured, JWT validation is a no-op and returns ("", nil).
+// On success it returns the resolved user id to propagate downstream (sub/user_id/uid).
+func verifyJWT(r *http.Request) (string, error) {
+	// Prefer Authorization header if present
+	auth := r.Header.Get("Authorization")
+	if strings.HasPrefix(auth, "Bearer ") {
+		tok := strings.TrimPrefix(auth, "Bearer ")
+		return verifyJWTToken(tok)
+	}
+	// Fallback to query param `token` for browser WS clients
+	if tok := r.URL.Query().Get("token"); strings.TrimSpace(tok) != "" {
+		return verifyJWTToken(tok)
+	}
+	// Nothing to verify
 	return "", nil
 }
 

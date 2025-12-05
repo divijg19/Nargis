@@ -102,6 +102,9 @@ class Habit(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="habits")
+    entries: Mapped[List["HabitEntry"]] = relationship(
+        "HabitEntry", back_populates="habit", cascade="all, delete-orphan"
+    )
 
 
 class Goal(Base):
@@ -169,6 +172,28 @@ class JournalEntry(Base):
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="journal_entries")
+
+
+class HabitEntry(Base):
+    """Per-day habit tracking entries"""
+
+    __tablename__ = "habit_entries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    habit_id: Mapped[str] = mapped_column(
+        String, ForeignKey("habits.id"), nullable=False, index=True
+    )
+    date: Mapped[str] = mapped_column(String(10), nullable=False)  # YYYY-MM-DD
+    count: Mapped[int] = mapped_column(Integer, default=0)
+    completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+    )
+
+    habit: Mapped["Habit"] = relationship("Habit", back_populates="entries")
 
 
 class PomodoroSession(Base):

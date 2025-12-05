@@ -3,9 +3,16 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, Field
 from typing import Optional, List
-from datetime import datetime
-from storage.memory import goals_repo
 from routers.auth import get_current_user
+from sqlalchemy.orm import Session
+from storage.database import get_db
+from services.goals import (
+    list_goals_service,
+    create_goal_service,
+    get_goal_service,
+    update_goal_service,
+    delete_goal_service,
+)
 
 router = APIRouter(prefix="/v1/goals", tags=["goals"])
 
@@ -45,71 +52,59 @@ class GoalUpdate(BaseModel):
 
 
 @router.get("", response_model=List[dict])
-async def list_goals(current_user: dict = Depends(get_current_user)):
+async def list_goals(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    limit: Optional[int] = None,
+    offset: int = 0,
+    sort: str = "created_at",
+    order: str = "desc",
+):
     """List all goals for the current user"""
-    all_goals = await goals_repo.list()
-    return [g for g in all_goals if g.get("userId") == current_user["id"]]
+    return list_goals_service(
+        current_user["id"],
+        db,
+        limit=limit,
+        offset=offset,
+        sort=sort,
+        order=order,
+    )
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_goal(
-    payload: GoalCreate, current_user: dict = Depends(get_current_user)
+    payload: GoalCreate, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Create a new goal"""
     goal_dict = payload.model_dump()
-    goal_dict["userId"] = current_user["id"]
-    goal_dict["status"] = "planning"
-    goal_dict["progress"] = 0
-    goal_dict["milestones"] = []
-    goal_dict["linkedTaskIds"] = []
-    goal_dict["linkedHabitIds"] = []
-    goal_dict["aiSuggestions"] = []
-    goal_dict["createdAt"] = datetime.utcnow().isoformat()
-    goal_dict["updatedAt"] = datetime.utcnow().isoformat()
-
-    created = await goals_repo.create(goal_dict)
+    created = create_goal_service(goal_dict, current_user["id"], db)
     return created
 
 
 @router.get("/{goal_id}")
-async def get_goal(goal_id: str, current_user: dict = Depends(get_current_user)):
+async def get_goal(goal_id: str, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get a specific goal by ID"""
-    goal = await goals_repo.get(goal_id)
+    goal = get_goal_service(goal_id, current_user["id"], db)
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
-    if goal.get("userId") != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Access denied")
     return goal
 
 
 @router.patch("/{goal_id}")
 async def update_goal(
-    goal_id: str, patch: GoalUpdate, current_user: dict = Depends(get_current_user)
+    goal_id: str, patch: GoalUpdate, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Update a goal"""
-    goal = await goals_repo.get(goal_id)
-    if not goal:
+    updated = update_goal_service(goal_id, patch.model_dump(exclude_unset=True), current_user["id"], db)
+    if not updated:
         raise HTTPException(status_code=404, detail="Goal not found")
-    if goal.get("userId") != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Access denied")
-
-    updates = {
-        k: v for k, v in patch.model_dump(exclude_unset=True).items() if v is not None
-    }
-    if updates:
-        updates["updatedAt"] = datetime.utcnow().isoformat()
-        await goals_repo.update(goal_id, updates)
-
-    return await goals_repo.get(goal_id)
+    return updated
 
 
 @router.delete("/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_goal(goal_id: str, current_user: dict = Depends(get_current_user)):
+async def delete_goal(goal_id: str, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     """Delete a goal"""
-    goal = await goals_repo.get(goal_id)
-    if not goal:
+    ok = delete_goal_service(goal_id, current_user["id"], db)
+    if not ok:
         raise HTTPException(status_code=404, detail="Goal not found")
-    if goal.get("userId") != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Access denied")
-    await goals_repo.delete(goal_id)
     return None

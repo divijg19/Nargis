@@ -38,6 +38,15 @@ class AuthService {
   setToken(token: string): void {
     if (typeof window !== "undefined") {
       localStorage.setItem(this.tokenKey, token);
+      try {
+        const days = 30;
+        const maxAge = days * 24 * 60 * 60; // seconds
+        const secure = window.location.protocol === "https:" ? "; secure" : "";
+        // biome-ignore lint/suspicious/noDocumentCookie: Setting auth cookie for middleware gating
+        document.cookie = `nargis_auth_token=${encodeURIComponent(token)}; path=/; max-age=${maxAge}; samesite=lax${secure}`;
+      } catch {
+        /* ignore cookie failures */
+      }
     }
   }
 
@@ -58,6 +67,12 @@ class AuthService {
     if (typeof window !== "undefined") {
       localStorage.removeItem(this.tokenKey);
       localStorage.removeItem(this.userKey);
+      try {
+        // biome-ignore lint/suspicious/noDocumentCookie: Clearing auth cookie for logout
+        document.cookie = "nargis_auth_token=; path=/; max-age=0";
+      } catch {
+        /* ignore */
+      }
     }
   }
 

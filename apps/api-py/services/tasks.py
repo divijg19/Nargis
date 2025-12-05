@@ -52,8 +52,31 @@ def create_task_service(payload: Dict[str, Any], user_id: str, db: Session) -> d
     return task_to_dict(task)
 
 
-def list_tasks_service(user_id: str, db: Session) -> List[dict]:
-    tasks = db.query(Task).filter(Task.user_id == user_id).all()
+def list_tasks_service(
+    user_id: str,
+    db: Session,
+    *,
+    limit: Optional[int] = None,
+    offset: int = 0,
+    sort: str = "created_at",
+    order: str = "desc",
+) -> List[dict]:
+    sort_map = {
+        "created_at": Task.created_at,
+        "updated_at": Task.updated_at,
+        "due_date": Task.due_date,
+        "priority": Task.priority,
+        "status": Task.status,
+        "title": Task.title,
+    }
+    col = sort_map.get(sort, Task.created_at)
+    q = db.query(Task).filter(Task.user_id == user_id)
+    q = q.order_by(col.desc() if order.lower() == "desc" else col.asc())
+    if offset:
+        q = q.offset(int(offset))
+    if limit:
+        q = q.limit(int(limit))
+    tasks = q.all()
     return [task_to_dict(t) for t in tasks]
 
 
@@ -100,3 +123,18 @@ def delete_task_service(task_id: str, user_id: str, db: Session) -> bool:
     db.delete(task)
     db.commit()
     return True
+
+
+def toggle_task_service(task_id: str, user_id: str, db: Session) -> Optional[dict]:
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        return None
+    if task.user_id != user_id:
+        return None
+    # Map: pending/in_progress/done
+    next_status = "done" if task.status != "done" else "pending"
+    task.status = next_status
+    task.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(task)
+    return task_to_dict(task)

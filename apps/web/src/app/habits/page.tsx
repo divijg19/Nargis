@@ -54,10 +54,10 @@ export default function HabitsPage() {
   };
 
   return (
-    <div className="min-h-screen pt-24 md:pt-28 bg-app-light transition-all duration-500">
+    <div className="h-screen overflow-hidden flex flex-col pt-24 md:pt-28 bg-app-light transition-all duration-500">
       {/* Premium ambient overlay */}
       <div className="absolute inset-0 bg-linear-to-r from-transparent via-orange-500/5 to-transparent dark:via-orange-400/10 pointer-events-none" />
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 py-4">
+      <div className="w-full max-w-6xl 2xl:max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 space-y-6 py-4 flex-1 min-h-0 overflow-hidden">
         {/* Premium Header */}
         <div className="animate-fade-in">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-8">
@@ -84,12 +84,12 @@ export default function HabitsPage() {
         </div>
 
         {/* Split layout: Today's Progress (vertical list) beside Activity Heatmap (squarish) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4 h-full overflow-auto pr-1">
           {/* Left: Today's Progress - single vertical column with streak badge to the left on large screens */}
           <div className="lg:col-span-5">
             <div className="flex flex-col lg:flex-row lg:items-start gap-4">
               <div className="shrink-0 lg:-ml-28 lg:mr-8">
-                <div className="inline-flex items-center px-4 py-2 rounded-xl glass bg-linear-to-br from-orange-50/90 to-red-50/90 dark:from-orange-900/20 dark:to-red-900/20 backdrop-blur-xl border border-orange-200/60 dark:border-orange-800/60 shadow-lg transition-all duration-300 animate-scale-in">
+                <div className="inline-flex items-center px-3 sm:px-4 py-2 rounded-xl glass bg-linear-to-br from-orange-50/90 to-red-50/90 dark:from-orange-900/20 dark:to-red-900/20 backdrop-blur-xl border border-orange-200/60 dark:border-orange-800/60 shadow-lg transition-all duration-300 animate-scale-in">
                   <span className="text-2xl mr-2" aria-hidden="true">
                     🔥
                   </span>
@@ -121,7 +121,7 @@ export default function HabitsPage() {
                       />
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                       {todayProgress.map((habit) => (
                         <HabitCard
                           key={habit.id}
@@ -143,8 +143,8 @@ export default function HabitsPage() {
           <div className="lg:col-span-7 flex items-stretch">
             <DashboardCard title="Activity" className="w-full">
               <div className="w-full flex items-center justify-center">
-                <div className="w-full max-w-[420px] max-h-[420px] overflow-auto">
-                  <Heatmap habits={habits || []} weeks={16} />
+                <div className="w-full max-w-[360px] sm:max-w-[420px] max-h-[360px] sm:max-h-[420px] overflow-auto">
+                  <Heatmap habits={habits || []} weeks={14} />
                 </div>
               </div>
             </DashboardCard>

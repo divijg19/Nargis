@@ -3,20 +3,25 @@ Database configuration for PostgreSQL with SQLAlchemy
 """
 
 import os
+from contextlib import contextmanager
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.pool import StaticPool
 from dotenv import load_dotenv
 
 # Load .env so local DATABASE_URL is available when this module is imported.
 load_dotenv(override=True)
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from sqlalchemy.pool import StaticPool
-from contextlib import contextmanager
 
 # Get database URL from environment, default to SQLite for development
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "sqlite:///./nargis.db",  # Fallback to SQLite for easy development
 )
+
+# Use SQLite automatically when running pytest unless explicitly allowed
+if ("PYTEST_CURRENT_TEST" in os.environ) and os.getenv("ALLOW_POSTGRES_IN_TESTS") != "1":
+    DATABASE_URL = "sqlite:///./nargis.db"
 
 # For SQLite in-memory/file databases, use specific connection args
 connect_args = {}
@@ -38,6 +43,18 @@ else:
         pool_pre_ping=True,  # Verify connections before using
         echo=True,  # Log SQL queries in development
     )
+    # If Postgres is configured but unavailable (e.g., local tests), fall back to SQLite
+    try:
+        with engine.connect() as conn:
+            conn.execute("SELECT 1")
+    except Exception:
+        fallback_url = "sqlite:///./nargis.db"
+        engine = create_engine(
+            fallback_url,
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+            echo=True,
+        )
 
 # Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -46,6 +63,13 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Base class for all models
 class Base(DeclarativeBase):
     pass
+
+# Eagerly create tables in most environments to simplify dev/tests
+if os.getenv("AUTO_CREATE_DB", "1") == "1":
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception:
+        pass
 
 
 def get_db():

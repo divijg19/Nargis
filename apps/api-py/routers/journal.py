@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Header, HTTPException, status, Depends
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 from sqlalchemy.orm import Session
 
 from storage.database import get_db
@@ -24,8 +24,8 @@ router = APIRouter(prefix="/v1/journal", tags=["journal"])
 class JournalEntryCreate(BaseModel):
     title: Optional[str] = Field(None, max_length=200)
     content: str = Field(..., min_length=1)
-    type: str = Field(default="text")
-    mood: Optional[str] = None
+    type: Literal["text", "voice"] = Field(default="text")
+    mood: Optional[Literal["great", "good", "neutral", "bad", "terrible"]] = None
     tags: Optional[List[str]] = Field(default_factory=list)
     audioUrl: Optional[str] = None
 
@@ -33,8 +33,8 @@ class JournalEntryCreate(BaseModel):
 class JournalEntryUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
-    type: Optional[str] = None
-    mood: Optional[str] = None
+    type: Optional[Literal["text", "voice"]] = None
+    mood: Optional[Literal["great", "good", "neutral", "bad", "terrible"]] = None
     tags: Optional[List[str]] = None
     audioUrl: Optional[str] = None
     aiSummary: Optional[str] = None
@@ -42,9 +42,21 @@ class JournalEntryUpdate(BaseModel):
 
 @router.get("", response_model=List[Dict[str, Any]])
 async def list_entries(
-    current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    limit: Optional[int] = None,
+    offset: int = 0,
+    sort: str = "created_at",
+    order: str = "desc",
 ):
-    return list_entries_service(current_user["id"], db)
+    return list_entries_service(
+        current_user["id"],
+        db,
+        limit=limit,
+        offset=offset,
+        sort=sort,
+        order=order,
+    )
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

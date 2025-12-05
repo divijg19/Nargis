@@ -179,8 +179,8 @@ export default function JournalPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="h-screen overflow-hidden flex flex-col bg-background p-3 sm:p-4 md:p-6 lg:p-8">
+      <div className="max-w-6xl 2xl:max-w-7xl mx-auto flex-1 min-h-0 overflow-hidden">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
@@ -192,7 +192,7 @@ export default function JournalPage() {
         </div>
 
         {/* View controls, Search and Filters */}
-        <div className="mb-6 space-y-4">
+        <div className="mb-5 sm:mb-6 space-y-4">
           <div className="flex items-center justify-between gap-3 mb-3">
             <div className="flex items-center gap-2">
               <button
@@ -242,10 +242,10 @@ export default function JournalPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search entries..."
-              className="w-full px-4 py-3 pl-12 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pl-10 sm:pl-12 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <svg
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground"
+              className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 sm:w-5 h-4 sm:h-5 text-muted-foreground"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -370,7 +370,7 @@ export default function JournalPage() {
 
         {/* Entry sections */}
         {filteredEntries.length > 0 && (
-          <div className="space-y-8">
+          <div className="space-y-8 h-full overflow-auto pr-1">
             {viewMode === "list" ? (
               <div className="space-y-8">
                 {/* Today */}

@@ -13,7 +13,7 @@ except Exception:  # pragma: no cover - runtime may not have langchain during CI
 from storage.database import get_session_now
 from services.tasks import create_task_service, list_tasks_service
 from services.ai_clients import get_embedding
-from services.memory_service import search_memories, create_memory
+from services.memory_service import search_memories
 def _fallback_noop_decorator(*_args, **_kwargs):
     def _inner(fn):
         return fn

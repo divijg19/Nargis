@@ -14,6 +14,7 @@ import {
   deleteJournalEntry,
   generateAISummary,
   listJournalEntries,
+  summarizeEntry as summarizeEntryApi,
   updateJournalEntry,
 } from "@/services/endpoints/journal";
 import type {
@@ -87,6 +88,7 @@ interface JournalContextType extends JournalStore {
   deleteEntry: (id: string) => void;
   loadEntries: () => Promise<void>;
   getSummary: (content: string) => Promise<string>;
+  summarizeEntry: (id: string) => Promise<void>;
 }
 
 // Create context
@@ -219,6 +221,32 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const summarizeEntry = useCallback(
+    async (id: string) => {
+      try {
+        const updated = await summarizeEntryApi(id);
+        dispatch({
+          type: "UPDATE_ENTRY",
+          payload: { id, updates: updated },
+        });
+        emitDomainEvent(buildEvent("journal.entry.summarized", { id }));
+        push({
+          title: "Summary Updated",
+          message: "AI summary refreshed",
+          variant: "success",
+        });
+      } catch (error) {
+        console.error("Failed to summarize journal entry:", error);
+        push({
+          title: "Error",
+          message: "Failed to refresh summary",
+          variant: "error",
+        });
+      }
+    },
+    [push],
+  );
+
   const contextValue: JournalContextType = {
     ...state,
     todayEntries,
@@ -228,6 +256,7 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
     deleteEntry,
     loadEntries,
     getSummary,
+    summarizeEntry,
   };
 
   return (
