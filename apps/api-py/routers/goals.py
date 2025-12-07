@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Header
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from routers.auth import get_current_user
@@ -73,11 +73,25 @@ async def list_goals(
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_goal(
-    payload: GoalCreate, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)
+    payload: GoalCreate,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    Idempotency_Key: Optional[str] = Header(default=None, convert_underscores=False),
 ):
     """Create a new goal"""
+    from services.idempotency import get_idempotent_response, save_idempotent_response
+
     goal_dict = payload.model_dump()
+    if Idempotency_Key:
+        saved = get_idempotent_response(db, Idempotency_Key, current_user.get("id"), "POST", "/v1/goals")
+        if saved:
+            return saved["response"]
+
     created = create_goal_service(goal_dict, current_user["id"], db)
+
+    if Idempotency_Key:
+        save_idempotent_response(db, Idempotency_Key, current_user.get("id"), "POST", "/v1/goals", 201, created)
+
     return created
 
 

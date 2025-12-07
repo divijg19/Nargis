@@ -23,6 +23,7 @@ dependencies = [
     "langgraph",
     "langchain",
     "langchain-groq",
+    "pytest-asyncio>=1.3.0",
 ]
 
 [project.optional-dependencies]
@@ -49,3 +50,8 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["routers", "storage", "services", "agent"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+

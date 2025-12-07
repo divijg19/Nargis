@@ -122,6 +122,12 @@ func verifyJWT(r *http.Request) (string, error) {
 	if tok := r.URL.Query().Get("token"); strings.TrimSpace(tok) != "" {
 		return verifyJWTToken(tok)
 	}
+	// Fallback to cookie `access_token` for browser clients
+	if c, err := r.Cookie("access_token"); err == nil {
+		if strings.TrimSpace(c.Value) != "" {
+			return verifyJWTToken(c.Value)
+		}
+	}
 	// Nothing to verify
 	return "", nil
 }
@@ -137,7 +143,16 @@ func parseJWTClaims(r *http.Request) (map[string]interface{}, error) {
 	}
 	auth := r.Header.Get("Authorization")
 	if auth == "" {
-		return nil, nil
+		// Fallback to cookie if Authorization header is missing
+		if c, err := r.Cookie("access_token"); err == nil {
+			if strings.TrimSpace(c.Value) != "" {
+				auth = "Bearer " + c.Value
+			} else {
+				return nil, nil
+			}
+		} else {
+			return nil, nil
+		}
 	}
 	if !strings.HasPrefix(auth, "Bearer ") {
 		return nil, errors.New("invalid authorization header")
@@ -364,6 +379,10 @@ func (m *Metrics) IncIPCacheEvictions() {
 
 func handleConnections(w http.ResponseWriter, r *http.Request) {
 	// Optional JWT validation at upgrade time.
+	wsDebug := strings.TrimSpace(os.Getenv("WS_TEST_DEBUG")) == "1"
+	if wsDebug {
+		log.Printf("[WS-DEBUG] handleConnections start: remote=%s, headers=%v", r.RemoteAddr, r.Header)
+	}
 	// If WS_REQUIRE_AUTH=1 then a valid token must be presented in the
 	// Authorization header; otherwise we accept unauthenticated connections.
 	preAuthUserID := ""
@@ -388,7 +407,9 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer ws.Close()
-
+	if wsDebug {
+		log.Printf("[WS-DEBUG] upgrade successful, preAuthUserID=%s", preAuthUserID)
+	}
 	// Use the pre-upgrade extracted user id (if any) so it can be propagated
 	// downstream without needing to re-parse the Authorization header after
 	// the upgrade.
@@ -420,12 +441,8 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	pr, pw := io.Pipe()
 	mw := multipart.NewWriter(pw)
 
-	// Create the form file part that will receive binary chunks
-	part, err := mw.CreateFormFile("audio_file", "audio.webm")
-	if err != nil {
-		log.Printf("Failed to create multipart part: %v", err)
-		_ = ws.WriteMessage(websocket.TextMessage, []byte(`{"error":"server_internal","detail":"multipart init failed"}`))
-		return
+	if wsDebug {
+		log.Printf("[WS-DEBUG] multipart writer created")
 	}
 
 	// Prepare a cancelable context derived from the request for upstream cancellation
@@ -459,6 +476,24 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		}
 		respCh <- resp
 	}()
+
+	if wsDebug {
+		log.Printf("[WS-DEBUG] request sent to orchestrator, waiting for response")
+	}
+
+	// Create the form file part that will receive binary chunks
+	// Note: This writes the multipart header to the pipe, so it must happen AFTER
+	// the request goroutine has started reading from the pipe.
+	part, err := mw.CreateFormFile("audio_file", "audio.webm")
+	if err != nil {
+		log.Printf("Failed to create multipart part: %v", err)
+		_ = ws.WriteMessage(websocket.TextMessage, []byte(`{"error":"server_internal","detail":"multipart init failed"}`))
+		return
+	}
+
+	if wsDebug {
+		log.Printf("[WS-DEBUG] multipart part created, entering read loop")
+	}
 
 	// Opt-in buffered fallback: if ENABLE_BUFFERED_FALLBACK=1 then collect all
 	// binary messages into memory and call the legacy `processAudioPipeline`
@@ -505,6 +540,9 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		if messageType == websocket.TextMessage {
 			if string(p) == "EOS" {
 				log.Println("EOS received. Finalizing streaming to orchestrator.")
+				if wsDebug {
+					log.Printf("[WS-DEBUG] EOS received, closing multipart writer")
+				}
 				break
 			}
 			if string(p) == "STOP" {
@@ -533,6 +571,9 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		_ = pw.CloseWithError(err)
 		return
 	}
+	if wsDebug {
+		log.Printf("[WS-DEBUG] multipart writer closed, waiting for orchestrator response")
+	}
 	_ = pw.Close()
 
 	// Wait for response or error
@@ -558,6 +599,9 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		scanner.Buffer(buf, 1<<20) // up to ~1MB lines
 		for scanner.Scan() {
 			line := scanner.Bytes() // raw bytes of the line (without newline)
+			if wsDebug {
+				log.Printf("[WS-DEBUG] forwarding line: %s", string(line))
+			}
 			if err := ws.WriteMessage(websocket.TextMessage, line); err != nil {
 				log.Printf("[RequestID: %s] Failed to write ws message: %v", requestID, err)
 				return

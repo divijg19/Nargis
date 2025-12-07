@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { buildEvent, emitDomainEvent } from "@/events/dispatcher";
 import { isFlagEnabled } from "@/flags/flags";
 import { useMediaRecorder } from "@/hooks/useMediaRecorder";
 import { sanitizeText } from "@/lib/sanitize";
@@ -40,12 +41,12 @@ function isTranscriptLLM(
 // Define the shape of the data that the context will provide to the UI.
 interface RealtimeContextValue {
   connectionStatus:
-    | "idle"
-    | "connecting"
-    | "open"
-    | "closed"
-    | "error"
-    | "retrying";
+  | "idle"
+  | "connecting"
+  | "open"
+  | "closed"
+  | "error"
+  | "retrying";
   isListening: boolean;
   startListening: () => void;
   stopListening: () => void;
@@ -148,6 +149,18 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
               pendingThoughtsRef.current.push(t);
               setCurrentAgentState(t);
               setProcessing(true);
+              return;
+            }
+            case "tool_result": {
+              // Emit domain event so other contexts can refresh data
+              const toolName = evt.tool;
+              console.debug("[Realtime] Tool completed:", toolName);
+              emitDomainEvent(
+                buildEvent("remote.tool_completed", {
+                  tool: toolName,
+                  result: evt.result,
+                }),
+              );
               return;
             }
             case "response": {
@@ -481,7 +494,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
             settled = true;
             try {
               unsub();
-            } catch {}
+            } catch { }
             resolve(true);
           }
         });
@@ -489,7 +502,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
           if (!settled) {
             try {
               unsub();
-            } catch {}
+            } catch { }
             resolve(false);
           }
         }, 4000);

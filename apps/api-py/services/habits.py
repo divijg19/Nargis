@@ -12,42 +12,62 @@ from storage.models import Habit, HabitEntry
 def _compute_streaks(entries: List[HabitEntry]) -> Dict[str, int]:
     if not entries:
         return {"currentStreak": 0, "bestStreak": 0}
-    # index by date for O(1) lookup
-    by_date = {e.date: e for e in entries}
-    today = date_cls.today()
-    # compute current streak backwards from today
-    cur = 0
-    d = today
-    while True:
-        key = d.isoformat()
-        e = by_date.get(key)
-        if e and e.completed:
-            cur += 1
-            d = d.fromordinal(d.toordinal() - 1)
-            continue
-        break
-    # compute best streak by scanning sorted dates
-    best = 0
-    running = 0
-    prev_date = None
-    # sort by date asc
-    for e in sorted(entries, key=lambda x: x.date):
+
+    # Convert entries to a set of date objects for easier lookup
+    # entries have .date as "YYYY-MM-DD" string
+    completed_dates = set()
+    for e in entries:
         if e.completed:
-            if running == 0:
-                running = 1
-            else:
-                # Check if current date is consecutive to previous completed date
-                if prev_date and (e.date == prev_date.fromordinal(prev_date.toordinal() + 1)):
-                    running += 1
-                else:
-                    running = 1
-            prev_date = e.date
-            if running > best:
-                best = running
+            try:
+                d = datetime.strptime(e.date, "%Y-%m-%d").date()
+                completed_dates.add(d)
+            except ValueError:
+                continue  # Skip invalid dates
+
+    if not completed_dates:
+        return {"currentStreak": 0, "bestStreak": 0}
+
+    # Use UTC date to avoid server local time issues, though ideally this should be user-local
+    today = datetime.now(timezone.utc).date()
+
+    # Current Streak
+    current_streak = 0
+    check_date = today
+
+    # If today is not completed, check if yesterday was completed (forgiving streak)
+    if check_date not in completed_dates:
+        check_date = check_date.fromordinal(check_date.toordinal() - 1)
+        if check_date not in completed_dates:
+            # Neither today nor yesterday completed -> streak broken
+            current_streak = 0
         else:
-            running = 0
-            prev_date = None
-    return {"currentStreak": cur, "bestStreak": max(best, cur)}
+            # Yesterday completed, so streak is alive
+            pass
+
+    # Count backwards from the valid check_date
+    if check_date in completed_dates:
+        while check_date in completed_dates:
+            current_streak += 1
+            check_date = check_date.fromordinal(check_date.toordinal() - 1)
+
+    # Best Streak
+    best_streak = 0
+    running_streak = 0
+    sorted_dates = sorted(list(completed_dates))
+
+    if sorted_dates:
+        running_streak = 1
+        best_streak = 1
+        for i in range(1, len(sorted_dates)):
+            prev = sorted_dates[i - 1]
+            curr = sorted_dates[i]
+            if curr.toordinal() == prev.toordinal() + 1:
+                running_streak += 1
+            else:
+                running_streak = 1
+            best_streak = max(best_streak, running_streak)
+
+    return {"currentStreak": current_streak, "bestStreak": best_streak}
 
 
 def habit_to_dict(h: Habit) -> dict:

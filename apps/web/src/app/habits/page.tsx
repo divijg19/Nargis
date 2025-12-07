@@ -54,7 +54,7 @@ export default function HabitsPage() {
   };
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col pt-24 md:pt-28 bg-app-light transition-all duration-500">
+    <div className="h-full overflow-hidden flex flex-col bg-app-light transition-all duration-500">
       {/* Premium ambient overlay */}
       <div className="absolute inset-0 bg-linear-to-r from-transparent via-orange-500/5 to-transparent dark:via-orange-400/10 pointer-events-none" />
       <div className="w-full max-w-6xl 2xl:max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 space-y-6 py-4 flex-1 min-h-0 overflow-hidden">

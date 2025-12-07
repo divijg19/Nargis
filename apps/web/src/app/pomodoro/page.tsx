@@ -89,7 +89,7 @@ export default function PomodoroPage() {
   const sessionInfo = getSessionInfo();
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col bg-app-light transition-all duration-500">
+    <div className="h-full overflow-hidden flex flex-col bg-app-light transition-all duration-500">
       {/* Premium ambient overlay (place behind content) */}
       <div
         className="absolute inset-0 bg-linear-to-r from-transparent via-emerald-500/5 to-transparent dark:via-emerald-400/10 pointer-events-none -z-10"

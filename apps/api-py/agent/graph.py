@@ -7,34 +7,54 @@ that exposes the service-backed tools. The `agent_app` is the compiled runtime
 that the FastAPI pipeline can invoke.
 """
 try:
-    from langgraph import StateGraph
-    from langgraph.prebuilt import ToolNode, ChatGroq
+    from langgraph.prebuilt import create_react_agent
+    from langchain_groq import ChatGroq
 except Exception:  # pragma: no cover - dependencies optional during tests
-    StateGraph = None
-    ToolNode = None
+    create_react_agent = None
     ChatGroq = None
 
 
 # Minimal safe factory that compiles the graph if langgraph is present.
 def _build_agent_app():
-    if not (StateGraph and ChatGroq and ToolNode):
+    if not (create_react_agent and ChatGroq):
         return None
     # Import tools at runtime to avoid module-level imports after executable code
     # (keeps linters happy and allows optional langgraph during testing).
     try:
-        from agent.tools import create_task_tool, list_tasks_tool, recall_memory_tool
+        from agent.tools import (
+            create_task_tool,
+            list_tasks_tool,
+            recall_memory_tool,
+            create_habit_tool,
+            track_habit_tool,
+            create_journal_tool,
+            start_focus_tool,
+        )
     except Exception:
         create_task_tool = None
         list_tasks_tool = None
         recall_memory_tool = None
+        create_habit_tool = None
+        track_habit_tool = None
+        create_journal_tool = None
+        start_focus_tool = None
 
-    chat_node = ChatGroq(name="chat", model="llama-3.1-70b-versatile", temperature=0.2)
-    tools = [t for t in (create_task_tool, list_tasks_tool, recall_memory_tool) if t]
-    tools_node = ToolNode(name="tools", tools=tools)
-    graph = StateGraph(nodes=[chat_node, tools_node])
-    # Bind tools to the chat so it may call them during reasoning
-    chat_node.bind_tools(tools_node)
-    return graph.compile()
+    chat_model = ChatGroq(name="chat", model="llama-3.1-70b-versatile", temperature=0.2)
+    tools = [
+        t
+        for t in (
+            create_task_tool,
+            list_tasks_tool,
+            recall_memory_tool,
+            create_habit_tool,
+            track_habit_tool,
+            create_journal_tool,
+            start_focus_tool,
+        )
+        if t
+    ]
+    
+    return create_react_agent(chat_model, tools)
 
 
 agent_app = _build_agent_app()

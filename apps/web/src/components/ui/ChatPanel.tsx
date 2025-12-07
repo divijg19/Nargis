@@ -104,7 +104,7 @@ export default function ChatPanel({
     return () => {
       try {
         delete window.__nargis_simulate;
-      } catch {}
+      } catch { }
     };
   }, [simulateIncoming]);
 
@@ -200,14 +200,14 @@ export default function ChatPanel({
   return (
     <section
       ref={panelRef}
-      className={`mt-4 w-full ${compact ? "" : "max-w-4xl mx-auto"}`}
+      className={`w-full ${compact ? "" : "max-w-4xl mx-auto"} ${merged ? "h-full flex flex-col" : "mt-4"}`}
       aria-label="AI conversation panel"
       aria-labelledby={headerId}
     >
-      <div className={`chat-panel w-full ${compact ? "p-3" : "p-6"} shadow-sm`}>
+      <div className={`chat-panel w-full ${compact ? "p-3" : "p-6"} shadow-sm ${merged ? "flex-1 flex flex-col min-h-0" : ""}`}>
         {/* If merged, render compact status tiles and permission/ai areas at the top */}
         {merged && (
-          <div className="mb-3">
+          <div className="mb-3 shrink-0">
             {/* Header: compact, with left gradient accent and compact icon controls */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -416,7 +416,7 @@ export default function ChatPanel({
         )}
 
         {/* Chat body and controls (shared behavior with previous layout) */}
-        <div className="chat-body max-h-72 sm:max-h-64 overflow-auto space-y-3 mb-3">
+        <div className={`chat-body overflow-auto space-y-3 mb-3 ${merged ? "flex-1 min-h-0" : "max-h-72 sm:max-h-64"}`}>
           {messages && messages.length > 0 ? (
             messages.map((m, i) => {
               const ts = new Date(m.ts);

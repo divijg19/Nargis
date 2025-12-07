@@ -243,3 +243,21 @@ class Memory(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )
+
+
+class IdempotencyKey(Base):
+    """Store responses for Idempotency-Key to make POST idempotent."""
+
+    __tablename__ = "idempotency_keys"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    key: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    user_id: Mapped[Optional[str]] = mapped_column(String, ForeignKey("users.id"), nullable=True, index=True)
+    method: Mapped[str] = mapped_column(String(10), nullable=False)
+    path: Mapped[str] = mapped_column(String(300), nullable=False)
+    status_code: Mapped[int] = mapped_column(Integer, nullable=False)
+    response: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+

@@ -5,11 +5,12 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useReducer,
 } from "react";
 import { useToasts } from "@/contexts/ToastContext";
-import { buildEvent, emitDomainEvent } from "@/events/dispatcher";
+import { buildEvent, emitDomainEvent, onDomainEvent } from "@/events/dispatcher";
 import {
   createTask as apiCreateTask,
   deleteTask as apiDeleteTask,
@@ -79,11 +80,11 @@ function taskReducer(state: TaskStore, action: TaskAction): TaskStore {
       const updatedTasks = state.tasks.map((task) =>
         task.id === action.payload
           ? {
-              ...task,
-              completed: !task.completed,
-              status: (!task.completed ? "done" : "todo") as Task["status"],
-              updatedAt: new Date(),
-            }
+            ...task,
+            completed: !task.completed,
+            status: (!task.completed ? "done" : "todo") as Task["status"],
+            updatedAt: new Date(),
+          }
           : task,
       );
       return { ...state, tasks: updatedTasks };
@@ -221,6 +222,24 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       });
     }
   }, [push]);
+
+  // Listen for remote tool completion events to auto-refresh tasks
+  useEffect(() => {
+    return onDomainEvent((evt) => {
+      if (evt.type === "remote.tool_completed") {
+        const tool = evt.data.tool as string;
+        if (
+          tool === "create_task" ||
+          tool === "update_task" ||
+          tool === "delete_task" ||
+          tool === "complete_task"
+        ) {
+          console.debug("[TaskContext] Remote change detected, reloading...");
+          loadTasks();
+        }
+      }
+    });
+  }, [loadTasks]);
 
   const contextValue: TaskContextType = {
     ...state,

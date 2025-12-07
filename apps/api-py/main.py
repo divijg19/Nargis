@@ -6,6 +6,7 @@ from typing import Optional, List, AsyncGenerator
 from contextvars import ContextVar
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File, Request, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
@@ -13,7 +14,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response, StreamingResponse
 import json
 from dotenv import load_dotenv
-from storage.database import init_db
+from storage.database import init_db, SessionLocal
+from services.idempotency import prune_old_keys
 
 # Import routers at module top so all imports are at the top-level (fixes E402)
 from routers import (
@@ -75,6 +77,10 @@ async def lifespan(app: FastAPI):
     # Ensure DB tables exist before serving any requests
     try:
         init_db()
+        # Prune old idempotency keys on startup
+        with SessionLocal() as db:
+            deleted = prune_old_keys(db)
+            logging.info(f"Pruned {deleted} old idempotency keys")
     except Exception:
         # Avoid crashing startup in degenerate environments; tests will reveal issues
         logging.exception("Database initialization failed")
@@ -106,6 +112,9 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(CorrelationIdMiddleware)
+from middleware.idempotency import IdempotencyMiddleware
+
+app.add_middleware(IdempotencyMiddleware)
 
 app.include_router(auth_router.router)
 app.include_router(tasks_router.router)
@@ -132,6 +141,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    # Normalize HTTPException.detail into our standard envelope
+    try:
+        from utils.response import make_error_from_detail
+
+        payload = make_error_from_detail(exc.detail, default_code=str(exc.status_code))
+    except Exception:
+        payload = {"error": {"code": str(exc.status_code), "message": str(exc.detail)}}
+    return JSONResponse(status_code=exc.status_code, content=payload)
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    # Catch-all for unexpected errors; do not leak internals
+    logging.exception("Unhandled exception during request")
+    return JSONResponse(
+        status_code=500,
+        content={"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}},
+    )
 
 # AI client implementations live in apps/api-py/services/ai_clients.py
 
@@ -224,6 +255,19 @@ async def process_audio_pipeline(request: Request, audio_file: UploadFile = File
                         "type": "tool_use", 
                         "tool": tool_name, 
                         "input": tool_input
+                    }) + "\n").encode()
+                    continue
+
+                # Tool Result -> "tool_result"
+                if kind == "on_tool_end":
+                    tool_name = ev.get("name", "unknown")
+                    output = ev.get("data", {}).get("output")
+                    # Serialize output safely
+                    output_str = str(output)
+                    yield (json.dumps({
+                        "type": "tool_result",
+                        "tool": tool_name,
+                        "result": output_str
                     }) + "\n").encode()
                     continue
 

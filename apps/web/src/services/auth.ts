@@ -29,7 +29,9 @@ export interface RegisterData {
 }
 
 class AuthService {
-  private tokenKey = "nargis_auth_token";
+  // localStorage key for token (not authoritative for browser flows).
+  // The server now sets a secure httpOnly cookie named `access_token`.
+  private tokenKey = "access_token";
   private userKey = "nargis_user";
 
   /**
@@ -37,16 +39,8 @@ class AuthService {
    */
   setToken(token: string): void {
     if (typeof window !== "undefined") {
+      // Keep a local copy for non-browser API consumers or to support legacy flows.
       localStorage.setItem(this.tokenKey, token);
-      try {
-        const days = 30;
-        const maxAge = days * 24 * 60 * 60; // seconds
-        const secure = window.location.protocol === "https:" ? "; secure" : "";
-        // biome-ignore lint/suspicious/noDocumentCookie: Setting auth cookie for middleware gating
-        document.cookie = `nargis_auth_token=${encodeURIComponent(token)}; path=/; max-age=${maxAge}; samesite=lax${secure}`;
-      } catch {
-        /* ignore cookie failures */
-      }
     }
   }
 
@@ -67,12 +61,6 @@ class AuthService {
     if (typeof window !== "undefined") {
       localStorage.removeItem(this.tokenKey);
       localStorage.removeItem(this.userKey);
-      try {
-        // biome-ignore lint/suspicious/noDocumentCookie: Clearing auth cookie for logout
-        document.cookie = "nargis_auth_token=; path=/; max-age=0";
-      } catch {
-        /* ignore */
-      }
     }
   }
 
@@ -113,6 +101,8 @@ class AuthService {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(data),
+      // Ensure browser accepts server-set httpOnly cookie on cross-origin requests
+      credentials: "include",
     });
 
     if (!response.ok) {
@@ -121,6 +111,7 @@ class AuthService {
     }
 
     const tokens: AuthTokens = await response.json();
+    // Server sets httpOnly cookie; keep token locally only for non-browser uses.
     this.setToken(tokens.access_token);
 
     // Fetch user profile
@@ -140,6 +131,8 @@ class AuthService {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(credentials),
+      // Ensure browser accepts server-set httpOnly cookie on cross-origin requests
+      credentials: "include",
     });
 
     if (!response.ok) {
@@ -148,6 +141,7 @@ class AuthService {
     }
 
     const tokens: AuthTokens = await response.json();
+    // Server sets httpOnly cookie; keep token locally only for non-browser uses.
     this.setToken(tokens.access_token);
 
     // Fetch user profile
@@ -161,25 +155,37 @@ class AuthService {
    * Logout user
    */
   logout(): void {
-    this.removeToken();
-    if (typeof window !== "undefined") {
-      window.location.href = "/";
-    }
+    // Call server logout to clear httpOnly cookie, then clear local storage.
+    (async () => {
+      try {
+        await fetch(`${API_URL}/v1/auth/logout`, {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch {
+        /* ignore */
+      }
+      this.removeToken();
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
+    })();
   }
 
   /**
    * Get current user profile
    */
   async getProfile(): Promise<User> {
+    // Try local token first (legacy). If absent, rely on cookie being sent.
     const token = this.getToken();
-    if (!token) {
-      throw new Error("Not authenticated");
+    const headers: HeadersInit = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
     }
 
     const response = await fetch(`${API_URL}/v1/auth/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
+      credentials: "include",
     });
 
     if (!response.ok) {
@@ -201,16 +207,15 @@ class AuthService {
     email?: string;
   }): Promise<User> {
     const token = this.getToken();
-    if (!token) {
-      throw new Error("Not authenticated");
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
     }
 
     const response = await fetch(`${API_URL}/v1/auth/me`, {
       method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      headers,
+      credentials: "include",
       body: JSON.stringify(updates),
     });
 
@@ -246,18 +251,20 @@ class AuthService {
     url: string,
     options: RequestInit = {},
   ): Promise<Response> {
+    // If we have a local token, include it; otherwise rely on cookie.
     const token = this.getToken();
-    if (!token) {
-      throw new Error("Not authenticated");
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      ...options.headers,
+    } as HeadersInit;
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
     }
 
     const response = await fetch(url, {
       ...options,
-      headers: {
-        ...options.headers,
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      headers,
+      credentials: "include",
     });
 
     // Handle authentication errors
