@@ -4,11 +4,12 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useReducer,
 } from "react";
 import { useToasts } from "@/contexts/ToastContext";
-import { buildEvent, emitDomainEvent } from "@/events/dispatcher";
+import { buildEvent, emitDomainEvent, onDomainEvent } from "@/events/dispatcher";
 import {
   createJournalEntry,
   deleteJournalEntry,
@@ -30,9 +31,9 @@ type JournalAction =
   | { type: "SET_ENTRIES"; payload: JournalEntry[] }
   | { type: "ADD_ENTRY"; payload: JournalEntry }
   | {
-      type: "UPDATE_ENTRY";
-      payload: { id: string; updates: Partial<JournalEntry> };
-    }
+    type: "UPDATE_ENTRY";
+    payload: { id: string; updates: Partial<JournalEntry> };
+  }
   | { type: "DELETE_ENTRY"; payload: string };
 
 // Initial state
@@ -211,6 +212,23 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
       });
     }
   }, [push]);
+
+  // Listen for remote tool completion events to auto-refresh journal
+  useEffect(() => {
+    return onDomainEvent((evt) => {
+      if (evt.type === "remote.tool_completed") {
+        const tool = evt.data.tool as string;
+        if (
+          tool === "create_journal" ||
+          tool === "update_journal" ||
+          tool === "delete_journal"
+        ) {
+          console.debug("[JournalContext] Remote change detected, reloading...");
+          loadEntries();
+        }
+      }
+    });
+  }, [loadEntries]);
 
   const getSummary = useCallback(async (content: string): Promise<string> => {
     try {

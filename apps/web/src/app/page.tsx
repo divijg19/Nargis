@@ -66,73 +66,19 @@ export default function Home() {
 
   // unified rendering handled by ChatPanel; page does not need local showMore/panel state
 
-  // Freeze hero at mid-scroll only for large+ viewports (lg and above).
-  // Use matchMedia to avoid preventing scroll on small screens.
-  useEffect(() => {
-    if (!heroRef.current) return;
-
-    const mql = window.matchMedia("(min-width: 1024px)");
-    const el = heroRef.current;
-    const initialBodyOverflow = document.body.style.overflow;
-
-    const applyLock = () => {
-      if (!el) return;
-      // Scroll internal container to middle
-      el.scrollTop = Math.max(0, (el.scrollHeight - el.clientHeight) / 2);
-      // Prevent body scroll on large screens
-      document.body.style.overflow = "hidden";
-    };
-
-    const removeLock = () => {
-      // Restore the original body overflow when leaving large viewport
-      document.body.style.overflow = initialBodyOverflow;
-    };
-
-    // Apply immediately if we're already large
-    if (mql.matches) {
-      applyLock();
-    } else {
-      removeLock();
-    }
-
-    // Listen for viewport size changes and apply/remove lock accordingly
-    const onChange = (e: MediaQueryListEvent) => {
-      if (e.matches) applyLock();
-      else removeLock();
-    };
-
-    if (typeof mql.addEventListener === "function") {
-      mql.addEventListener("change", onChange);
-    } else {
-      // Safari & older browsers
-      mql.addListener(onChange);
-    }
-
-    return () => {
-      if (typeof mql.removeEventListener === "function") {
-        mql.removeEventListener("change", onChange);
-      } else {
-        mql.removeListener(onChange);
-      }
-      // Restore whatever overflow was set previously
-      document.body.style.overflow = initialBodyOverflow;
-    };
-  }, []);
-
   return (
-    <main className="relative h-screen overflow-hidden pt-16">
+    <div className="relative h-full overflow-hidden">
       {/* Hero Section (center content + right aside) */}
-      <section className="relative overflow-hidden">
-        <div className="relative z-10 max-w-screen-xl 2xl:max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-8 xl:px-12 h-full flex items-center">
-          <div className="w-full">
+      <section className="relative overflow-hidden h-full">
+        <div className="relative z-10 max-w-7xl 2xl:max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-8 xl:px-12 h-full flex items-center">
+          <div className="w-full h-full py-6">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-6 gap-x-6 lg:gap-x-8 h-full items-center">
               {/* Center column: Hero mic + ChatPanel */}
               <div className="order-2 lg:order-2 lg:col-span-7 h-full flex items-center justify-center">
                 <div
-                  ref={heroRef}
-                  className="relative p-4 sm:p-6 surface-floating rounded-3xl border border-border/30 mb-4 sm:mb-6 w-full max-w-xl sm:max-w-2xl lg:max-w-3xl max-h-[calc(100vh-6.5rem)] overflow-auto flex flex-col"
+                  className="relative p-4 sm:p-6 surface-floating rounded-3xl border border-border/30 w-full max-w-xl sm:max-w-2xl lg:max-w-3xl h-full max-h-full overflow-hidden flex flex-col"
                 >
-                  <div className="text-center mb-6">
+                  <div className="text-center mb-4 shrink-0">
                     <div className="flex items-center justify-center">
                       <VoiceInputButton
                         size="md"
@@ -143,7 +89,7 @@ export default function Home() {
                       />
                     </div>
                   </div>
-                  <div className="mt-2 sm:mt-4">
+                  <div className="mt-2 sm:mt-4 flex-1 min-h-0 overflow-hidden flex flex-col">
                     <ChatPanel
                       compact
                       merged
@@ -154,7 +100,7 @@ export default function Home() {
               </div>
 
               {/* Right column: Hero + Voice-First Productivity */}
-              <div className="lg:order-3 order-3 lg:col-span-4">
+              <div className="lg:order-3 order-3 lg:col-span-4 h-full flex flex-col justify-center overflow-y-auto">
                 {/* Hero moved to right aside */}
                 <div className="mb-4 sm:mb-6 text-left">
                   <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
@@ -213,6 +159,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

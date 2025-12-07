@@ -237,6 +237,7 @@ export interface ConversationMessage {
 export type AgentEvent =
   | { type: "thought"; content: string }
   | { type: "tool_use"; tool: string; input: string }
+  | { type: "tool_result"; tool: string; result: string }
   | { type: "response"; content: string }
   | { type: "error"; content: string }
   | { type: "end"; content?: string };

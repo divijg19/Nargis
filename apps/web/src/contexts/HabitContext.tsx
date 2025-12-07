@@ -5,11 +5,12 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useReducer,
 } from "react";
 import { useToasts } from "@/contexts/ToastContext";
-import { buildEvent, emitDomainEvent } from "@/events/dispatcher";
+import { buildEvent, emitDomainEvent, onDomainEvent } from "@/events/dispatcher";
 import {
   createHabit as apiCreateHabit,
   deleteHabit as apiDeleteHabit,
@@ -107,7 +108,7 @@ function habitReducer(state: HabitStore, action: HabitAction): HabitStore {
             const entryDate = new Date(entry.date);
             const daysDiff = Math.floor(
               (currentDate.getTime() - entryDate.getTime()) /
-                (1000 * 60 * 60 * 24),
+              (1000 * 60 * 60 * 24),
             );
 
             if (daysDiff === streak) {
@@ -268,6 +269,24 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
       });
     }
   }, [push]);
+
+  // Listen for remote tool completion events to auto-refresh habits
+  useEffect(() => {
+    return onDomainEvent((evt) => {
+      if (evt.type === "remote.tool_completed") {
+        const tool = evt.data.tool as string;
+        if (
+          tool === "create_habit" ||
+          tool === "update_habit" ||
+          tool === "delete_habit" ||
+          tool === "track_habit"
+        ) {
+          console.debug("[HabitContext] Remote change detected, reloading...");
+          loadHabits();
+        }
+      }
+    });
+  }, [loadHabits]);
 
   const contextValue: HabitContextType = {
     ...state,

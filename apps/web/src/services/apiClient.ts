@@ -29,6 +29,7 @@ export async function fetchJson<T>(
       "Content-Type": "application/json",
       ...(options.headers || {}),
     },
+    credentials: "include",
   });
   if (!res.ok) {
     let body: unknown = null;
@@ -37,13 +38,20 @@ export async function fetchJson<T>(
     } catch {
       /* ignore */
     }
-    const msg =
-      typeof body === "object" &&
-      body !== null &&
-      "message" in body &&
-      typeof (body as { message: unknown }).message === "string"
-        ? (body as { message: string }).message
-        : res.statusText;
+    let msg = res.statusText;
+    if (typeof body === "object" && body !== null) {
+      const b = body as any;
+      // Handle standard error envelope { error: { code, message } }
+      if (b.error && typeof b.error === "object" && b.error.message) {
+        msg = b.error.message;
+      }
+      // Handle legacy/FastAPI default { detail: ... } or { message: ... }
+      else if (b.message) {
+        msg = b.message;
+      } else if (b.detail) {
+        msg = typeof b.detail === "string" ? b.detail : JSON.stringify(b.detail);
+      }
+    }
     throw new ApiError({ status: res.status, message: msg, details: body });
   }
   // Handle empty responses

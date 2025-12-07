@@ -9,7 +9,7 @@ Features:
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
@@ -23,7 +23,7 @@ from storage.database import get_db
 from storage.models import User
 
 router = APIRouter(prefix="/v1/auth", tags=["auth"])
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 # JWT Configuration
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
@@ -81,11 +81,23 @@ def create_access_token(data: dict) -> str:
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db),
 ) -> dict:
     """Dependency to get current authenticated user"""
-    token = credentials.credentials
+    token = None
+    if credentials and getattr(credentials, "credentials", None):
+        token = credentials.credentials
+    # Fallback to cookie (httpOnly) if header not provided
+    if not token:
+        token = request.cookies.get("access_token")
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -121,7 +133,9 @@ async def get_current_user(
 
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserRegister, db: Session = Depends(get_db)):
+async def register(
+    user_data: UserRegister, db: Session = Depends(get_db), response: Response = None
+):
     """Register a new user"""
     # Check if email already exists
     existing_user = db.query(User).filter(User.email == user_data.email).first()
@@ -146,11 +160,31 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
     # Create access token
     access_token = create_access_token(data={"sub": user.id})
 
+    # Set httpOnly cookie for browser clients. Keep JSON body for API clients.
+    try:
+        secure_cookie = os.getenv("JWT_COOKIE_SECURE", "1") == "1"
+        max_age = ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        if response is not None:
+            response.set_cookie(
+                key="access_token",
+                value=access_token,
+                httponly=True,
+                secure=secure_cookie,
+                samesite="lax",
+                max_age=max_age,
+                path="/",
+            )
+    except Exception:
+        # If cookie can't be set (unlikely), fall back to returning token in body only
+        pass
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.post("/login", response_model=Token)
-async def login(credentials: UserLogin, db: Session = Depends(get_db)):
+async def login(
+    credentials: UserLogin, db: Session = Depends(get_db), response: Response = None
+):
     """Login user and return JWT token"""
     # Find user by email
     user = db.query(User).filter(User.email == credentials.email).first()
@@ -164,7 +198,37 @@ async def login(credentials: UserLogin, db: Session = Depends(get_db)):
     # Create access token
     access_token = create_access_token(data={"sub": user.id})
 
+    # Set httpOnly cookie for browser clients. Keep JSON body for API clients.
+    try:
+        secure_cookie = os.getenv("JWT_COOKIE_SECURE", "1") == "1"
+        max_age = ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        if response is not None:
+            response.set_cookie(
+                key="access_token",
+                value=access_token,
+                httponly=True,
+                secure=secure_cookie,
+                samesite="lax",
+                max_age=max_age,
+                path="/",
+            )
+    except Exception:
+        pass
+
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(response: Response):
+    """Logout by clearing the access_token cookie for browser clients."""
+    # Create the response we will return and ensure the delete-cookie header
+    resp = Response(status_code=status.HTTP_204_NO_CONTENT)
+    try:
+        resp.delete_cookie(key="access_token", path="/")
+    except Exception:
+        pass
+
+    return resp
 
 
 @router.get("/me", response_model=UserProfile)

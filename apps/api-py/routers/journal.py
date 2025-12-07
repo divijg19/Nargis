@@ -68,8 +68,19 @@ async def create_entry(
 ):
     entry_data = payload.model_dump()
     entry_data["userId"] = current_user["id"]
-    # idempotency handling can be added here; service will populate aiSummary if missing
-    return create_entry_service(entry_data, current_user["id"], db)
+    from services.idempotency import get_idempotent_response, save_idempotent_response
+
+    if Idempotency_Key:
+        saved = get_idempotent_response(db, Idempotency_Key, current_user.get("id"), "POST", "/v1/journal")
+        if saved:
+            return saved["response"]
+
+    created = create_entry_service(entry_data, current_user["id"], db)
+
+    if Idempotency_Key:
+        save_idempotent_response(db, Idempotency_Key, current_user.get("id"), "POST", "/v1/journal", 201, created)
+
+    return created
 
 
 @router.get("/{entry_id}")

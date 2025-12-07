@@ -57,12 +57,12 @@ export default function TasksPage() {
     tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col pt-16 md:pt-20 bg-app-light transition-all duration-500">
+    <div className="h-full overflow-hidden flex flex-col bg-app-light transition-all duration-500">
       {/* Premium ambient overlay */}
       <div className="absolute inset-0 bg-linear-to-r from-transparent via-blue-500/5 to-transparent dark:via-blue-400/10 pointer-events-none" />
 
       {/* Premium Header */}
-      <div className="w-full max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-8 py-1">
+      <div className="w-full max-w-[1200px] 2xl:max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-8 py-4">
         <div className="animate-fade-in">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 md:gap-6 mb-3">
             <div>

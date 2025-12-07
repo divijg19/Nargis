@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Header
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
@@ -67,9 +67,22 @@ async def create_habit(
     payload: HabitCreate,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
+    Idempotency_Key: Optional[str] = Header(default=None, convert_underscores=False),
 ):
+    from services.idempotency import get_idempotent_response, save_idempotent_response
+
     data = payload.model_dump()
-    return create_habit_service(data, current_user["id"], db)
+    if Idempotency_Key:
+        saved = get_idempotent_response(db, Idempotency_Key, current_user.get("id"), "POST", "/v1/habits")
+        if saved:
+            return saved["response"]
+
+    created = create_habit_service(data, current_user["id"], db)
+
+    if Idempotency_Key:
+        save_idempotent_response(db, Idempotency_Key, current_user.get("id"), "POST", "/v1/habits", 201, created)
+
+    return created
 
 
 @router.get("/{habit_id}")

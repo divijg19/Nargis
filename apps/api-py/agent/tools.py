@@ -12,6 +12,9 @@ except Exception:  # pragma: no cover - runtime may not have langchain during CI
     _lc_tool = None
 from storage.database import get_session_now
 from services.tasks import create_task_service, list_tasks_service
+from services.habits import create_habit_service, update_habit_count_service, list_habits_service
+from services.journal import create_entry_service
+from services.pomodoro import create_session_service
 from services.ai_clients import get_embedding
 from services.memory_service import search_memories
 def _fallback_noop_decorator(*_args, **_kwargs):
@@ -61,11 +64,12 @@ class CreateTaskArgs(BaseModel):
 
 
 @safe_tool(name="create_task", return_direct=True, args_schema=CreateTaskArgs)
-def create_task_tool(args: CreateTaskArgs) -> Dict[str, Any]:
+def create_task_tool(**kwargs) -> Dict[str, Any]:
     """
     Create a task using the service layer. The args are validated strictly by Pydantic
     to ensure the LLM returns a well-formed JSON object we can trust.
     """
+    args = CreateTaskArgs(**kwargs)
     payload = args.model_dump(exclude_none=True)
     user_id = payload.pop("user_id")
     with get_session_now() as db:
@@ -79,13 +83,14 @@ class ListTasksArgs(BaseModel):
 
 
 @safe_tool(name="list_tasks", return_direct=True, args_schema=ListTasksArgs)
-def list_tasks_tool(args: ListTasksArgs) -> str:
+def list_tasks_tool(**kwargs) -> str:
     """
     Read-only listing tool for agent use. Returns a concise, human-readable
     newline-separated string (one task per line) formatted as:
     "ID: <id> | Title: <title> | Due: <due>"
     This keeps LLM context usage low compared to returning raw JSON.
     """
+    args = ListTasksArgs(**kwargs)
     with get_session_now() as db:
         tasks = list_tasks_service(args.user_id, db)
 
@@ -109,11 +114,12 @@ class RecallArgs(BaseModel):
 
 
 @safe_tool(name="recall_memory", return_direct=True, args_schema=RecallArgs)
-def recall_memory_tool(args: RecallArgs) -> str:
+def recall_memory_tool(**kwargs) -> str:
     """Recall relevant long-term memories using vector search.
 
     The tool returns a short, human-readable string of the top matches.
     """
+    args = RecallArgs(**kwargs)
     # Generate embedding for the query (may raise if no provider installed)
     try:
         vec = get_embedding(args.query)
@@ -135,3 +141,92 @@ def recall_memory_tool(args: RecallArgs) -> str:
         lines.append(f"MemoryID: {mid} | Created: {created} | Content: {snippet}")
 
     return "\n".join(lines)
+
+
+class CreateHabitArgs(BaseModel):
+    user_id: str
+    name: str = Field(..., min_length=1)
+    target: int = 1
+    unit: str = "times"
+    frequency: str = "daily"
+
+@safe_tool(name="create_habit", return_direct=True, args_schema=CreateHabitArgs)
+def create_habit_tool(**kwargs) -> Dict[str, Any]:
+    """Create a new habit tracker."""
+    args = CreateHabitArgs(**kwargs)
+    payload = args.model_dump(exclude_none=True)
+    user_id = payload.pop("user_id")
+    with get_session_now() as db:
+        return create_habit_service(payload, user_id, db)
+        return create_habit_service(payload, user_id, db)
+
+
+class TrackHabitArgs(BaseModel):
+    user_id: str
+    habit_name_or_id: str = Field(..., description="Name or ID of the habit")
+    count: Optional[int] = None
+    delta: Optional[int] = 1
+
+@safe_tool(name="track_habit", return_direct=True, args_schema=TrackHabitArgs)
+def track_habit_tool(**kwargs) -> str:
+    """Log progress for a habit. If name is provided, it tries to find it."""
+    args = TrackHabitArgs(**kwargs)
+    with get_session_now() as db:
+        habits = list_habits_service(args.user_id, db)
+        habits = list_habits_service(args.user_id, db)
+        target_habit = None
+        for h in habits:
+            if (
+                h["id"] == args.habit_name_or_id
+                or h["name"].lower() == args.habit_name_or_id.lower()
+            ):
+                target_habit = h
+                break
+
+        if not target_habit:
+            return "Habit not found."
+
+        payload = {}
+        if args.count is not None:
+            payload["count"] = args.count
+        else:
+            payload["delta"] = args.delta
+
+        res = update_habit_count_service(target_habit["id"], payload, args.user_id, db)
+        if res:
+            return f"Tracked habit '{target_habit['name']}'. Current streak: {res.get('currentStreak')}"
+        return "Failed to track habit."
+
+
+class CreateJournalArgs(BaseModel):
+    user_id: str
+    content: str
+    title: Optional[str] = None
+    mood: Optional[str] = None
+
+@safe_tool(name="create_journal", return_direct=True, args_schema=CreateJournalArgs)
+def create_journal_tool(**kwargs) -> Dict[str, Any]:
+    """Create a new journal entry."""
+    args = CreateJournalArgs(**kwargs)
+    payload = args.model_dump(exclude_none=True)
+    user_id = payload.pop("user_id")
+    with get_session_now() as db:
+        return create_entry_service(payload, user_id, db)
+        return create_entry_service(payload, user_id, db)
+
+
+class StartFocusArgs(BaseModel):
+    user_id: str
+    duration_minutes: int = 25
+    task_id: Optional[str] = None
+@safe_tool(name="start_focus", return_direct=True, args_schema=StartFocusArgs)
+def start_focus_tool(**kwargs) -> Dict[str, Any]:
+    """Start a Pomodoro focus session."""
+    args = StartFocusArgs(**kwargs)
+    payload = args.model_dump(exclude_none=True)
+    user_id = payload.pop("user_id")
+    with get_session_now() as db:
+        return create_session_service(payload, user_id, db)
+    with get_session_now() as db:
+        return create_session_service(payload, user_id, db)
+

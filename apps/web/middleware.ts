@@ -26,8 +26,8 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for JWT cookie set by client-side auth service
-  const token = req.cookies.get("nargis_auth_token")?.value;
+  // Check for JWT cookie set by server-side auth flow
+  const token = req.cookies.get("access_token")?.value;
   if (!token) {
     const loginUrl = req.nextUrl.clone();
     loginUrl.pathname = "/login";

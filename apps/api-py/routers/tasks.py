@@ -63,8 +63,19 @@ async def create_task(
     db: Session = Depends(get_db),
     Idempotency_Key: Optional[str] = Header(default=None, convert_underscores=False),
 ):
-    # Delegate to service layer
+    # Idempotency: check for existing response
+    from services.idempotency import get_idempotent_response, save_idempotent_response
+
+    if Idempotency_Key:
+        saved = get_idempotent_response(db, Idempotency_Key, current_user.get("id"), "POST", "/v1/tasks")
+        if saved:
+            return saved["response"]
+
     created = create_task_service(payload.model_dump(), current_user["id"], db)
+
+    if Idempotency_Key:
+        save_idempotent_response(db, Idempotency_Key, current_user.get("id"), "POST", "/v1/tasks", 201, created)
+
     return created
 
 

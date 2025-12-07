@@ -9,7 +9,7 @@ import {
   useReducer,
 } from "react";
 import { useToasts } from "@/contexts/ToastContext";
-import { buildEvent, emitDomainEvent } from "@/events/dispatcher";
+import { buildEvent, emitDomainEvent, onDomainEvent } from "@/events/dispatcher";
 import { listSessions, recordSession } from "@/services/endpoints/pomodoro";
 import type { PomodoroSession, PomodoroSettings, PomodoroStore } from "@/types";
 import { generateId, isToday } from "@/utils";
@@ -20,9 +20,9 @@ type PomodoroAction =
   | { type: "SET_SESSIONS"; payload: PomodoroSession[] }
   | { type: "ADD_SESSION"; payload: PomodoroSession }
   | {
-      type: "UPDATE_SESSION";
-      payload: { id: string; updates: Partial<PomodoroSession> };
-    }
+    type: "UPDATE_SESSION";
+    payload: { id: string; updates: Partial<PomodoroSession> };
+  }
   | { type: "SET_CURRENT_SESSION"; payload: PomodoroSession | null }
   | { type: "SET_RUNNING"; payload: boolean }
   | { type: "SET_TIME_REMAINING"; payload: number }
@@ -447,6 +447,45 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
       });
     }
   };
+
+  // Listen for remote tool events
+  useEffect(() => {
+    const unsubscribe = onDomainEvent((event) => {
+      if (event.type === "remote.tool_completed") {
+        const data = event.data as { tool: string; result: any };
+        if (data.tool === "start_focus") {
+          const result = data.result;
+          if (result && result.id) {
+            const newSession: PomodoroSession = {
+              id: result.id,
+              type: (result.type as "work" | "shortBreak" | "longBreak") || "work",
+              duration: result.duration_minutes || 25,
+              startTime: new Date(result.started_at),
+              completed: result.completed,
+              taskId: result.taskId,
+            };
+
+            dispatch({ type: "SET_CURRENT_SESSION", payload: newSession });
+            dispatch({
+              type: "SET_TIME_REMAINING",
+              payload: newSession.duration * 60,
+            });
+            dispatch({ type: "SET_RUNNING", payload: true });
+
+            loadSessions();
+            push({
+              title: "Focus Session Started",
+              message: `AI started a ${newSession.duration}m session.`,
+              variant: "success",
+            });
+          }
+        }
+      }
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, [loadSessions, push]);
 
   const contextValue: PomodoroContextType = {
     ...state,
