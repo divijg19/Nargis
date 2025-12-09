@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -15,6 +17,8 @@ import (
 	"time"
 
 	"github.com/divijg19/Nargis/gateway/internal/auth"
+	"github.com/divijg19/Nargis/gateway/internal/orchestrator"
+	"github.com/divijg19/Nargis/gateway/internal/vad"
 	"github.com/gorilla/websocket"
 )
 
@@ -61,6 +65,10 @@ func TestGatewayCookieWSAuthIntegration(t *testing.T) {
 	// Simpler WS test: verify gateway accepts cookie on upgrade and we can echo the resolved user id.
 	secret := "test-hmac-secret"
 	os.Setenv("JWT_HMAC_SECRET", secret)
+
+	upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
 
 	// Handler that upgrades and replies with the verified user id (using verifyJWT)
 	authEcho := func(w http.ResponseWriter, r *http.Request) {
@@ -117,13 +125,24 @@ func TestGatewayProxyCookieAuthIntegration(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
+	// Initialize orchestrator client for the proxy handler to use
+	orchClient = orchestrator.NewClient(orch.URL)
+
 	// Build POST request to proxy with cookie
 	client := &http.Client{Timeout: 3 * time.Second}
-	req, err := http.NewRequest("POST", srv.URL+"/proxy/process-audio", strings.NewReader("dummy"))
+
+	// Create multipart body
+	bodyBuf := &bytes.Buffer{}
+	mw := multipart.NewWriter(bodyBuf)
+	part, _ := mw.CreateFormFile("audio_file", "test.wav")
+	part.Write([]byte("dummy audio content"))
+	mw.Close()
+
+	req, err := http.NewRequest("POST", srv.URL+"/proxy/process-audio", bodyBuf)
 	if err != nil {
 		t.Fatalf("failed create req: %v", err)
 	}
-	req.Header.Set("Content-Type", "multipart/form-data; boundary=foo")
+	req.Header.Set("Content-Type", mw.FormDataContentType())
 	req.Header.Set("Cookie", "access_token="+makeToken(secret, "proxy-user"))
 
 	resp, err := client.Do(req)
@@ -156,6 +175,18 @@ func TestGatewayFullStreaming(t *testing.T) {
 	defer orch.Close()
 	os.Setenv("ORCHESTRATOR_URL", orch.URL)
 
+	// Initialize globals
+	orchClient = orchestrator.NewClient(orch.URL)
+
+	// Permissive VAD for testing
+	vCfg := vad.DefaultConfig()
+	vCfg.EnergyThreshold = 0.0
+	vadProc = vad.NewProcessor(vCfg)
+
+	upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
+
 	// Start gateway mux with the real handleConnections handler
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", handleConnections)
@@ -174,10 +205,11 @@ func TestGatewayFullStreaming(t *testing.T) {
 	defer conn.Close()
 
 	// Send a couple of binary chunks then EOS
-	if err := conn.WriteMessage(websocket.BinaryMessage, []byte{0x1}); err != nil {
+	// Send 2 bytes to ensure it forms at least one int16 sample
+	if err := conn.WriteMessage(websocket.BinaryMessage, []byte{0x1, 0x0}); err != nil {
 		t.Fatalf("write chunk failed: %v", err)
 	}
-	if err := conn.WriteMessage(websocket.BinaryMessage, []byte{0x2}); err != nil {
+	if err := conn.WriteMessage(websocket.BinaryMessage, []byte{0x2, 0x0}); err != nil {
 		t.Fatalf("write chunk failed: %v", err)
 	}
 	if err := conn.WriteMessage(websocket.TextMessage, []byte("EOS")); err != nil {

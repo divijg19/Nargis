@@ -434,7 +434,7 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     try {
       const sessions = await listSessions();
       dispatch({ type: "SET_SESSIONS", payload: sessions });
@@ -450,13 +450,23 @@ export function PomodoroProvider({ children }: { children: React.ReactNode }) {
         variant: "error",
       });
     }
-  };
+  }, [push]);
 
   // Listen for remote tool events
   useEffect(() => {
     const unsubscribe = onDomainEvent((event) => {
       if (event.type === "remote.tool_completed") {
-        const data = event.data as { tool: string; result: any };
+        const data = event.data as {
+          tool: string;
+          result: {
+            id?: string;
+            type?: string;
+            duration_minutes?: number;
+            started_at: string;
+            completed: boolean;
+            taskId?: string;
+          };
+        };
         if (data.tool === "start_focus") {
           const result = data.result;
           if (result?.id) {

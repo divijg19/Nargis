@@ -98,7 +98,7 @@ export default function JournalPage() {
     });
 
     return { todayFiltered, weekFiltered, earlierFiltered };
-  }, [filteredEntries]);
+  }, [filteredEntries, today]);
 
   // helper: group entries by date (YYYY-MM-DD)
   const entriesByDate = useMemo(() => {
@@ -283,30 +283,33 @@ export default function JournalPage() {
               <button
                 type="button"
                 onClick={() => setFilterType("all")}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${filterType === "all"
+                className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  filterType === "all"
                     ? "bg-blue-600 text-white"
                     : "bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
+                }`}
               >
                 All
               </button>
               <button
                 type="button"
                 onClick={() => setFilterType("text")}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${filterType === "text"
+                className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  filterType === "text"
                     ? "bg-blue-600 text-white"
                     : "bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
+                }`}
               >
                 📝 Text
               </button>
               <button
                 type="button"
                 onClick={() => setFilterType("voice")}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${filterType === "voice"
+                className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  filterType === "voice"
                     ? "bg-blue-600 text-white"
                     : "bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
+                }`}
               >
                 🎤 Voice
               </button>
@@ -320,10 +323,11 @@ export default function JournalPage() {
               <button
                 type="button"
                 onClick={() => setFilterMood("all")}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${filterMood === "all"
+                className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                  filterMood === "all"
                     ? "bg-blue-600 text-white"
                     : "bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
+                }`}
               >
                 All Moods
               </button>
@@ -333,10 +337,11 @@ export default function JournalPage() {
                     key={mood}
                     type="button"
                     onClick={() => setFilterMood(mood)}
-                    className={`px-3 py-2 rounded-lg font-medium text-sm transition-colors ${filterMood === mood
+                    className={`px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                      filterMood === mood
                         ? "bg-blue-600 text-white"
                         : "bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600"
-                      }`}
+                    }`}
                     title={mood.charAt(0).toUpperCase() + mood.slice(1)}
                     aria-label={`Filter by ${mood} mood`}
                   >
