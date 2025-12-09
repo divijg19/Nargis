@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { PomodoroSession } from "@/types";
 import { cn } from "@/utils";
 
@@ -15,6 +15,14 @@ export function SessionHistory({
   className,
   maxItems = 10,
 }: SessionHistoryProps) {
+  const [today, setToday] = useState<Date | null>(null);
+
+  useEffect(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    setToday(d);
+  }, []);
+
   // Filter and sort sessions
   const sortedSessions = useMemo(() => {
     return sessions
@@ -28,11 +36,18 @@ export function SessionHistory({
 
   // Calculate statistics
   const stats = useMemo(() => {
+    if (!today) {
+      return {
+        total: 0,
+        workSessions: 0,
+        todaySessions: 0,
+        totalMinutes: 0,
+        totalHours: 0,
+      };
+    }
+
     const completedSessions = sessions.filter((s) => s.completed);
     const workSessions = completedSessions.filter((s) => s.type === "work");
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
     const todaySessions = completedSessions.filter((s) => {
       const sessionDate = new Date(s.startTime);
@@ -49,7 +64,7 @@ export function SessionHistory({
       totalMinutes,
       totalHours: Math.floor(totalMinutes / 60),
     };
-  }, [sessions]);
+  }, [sessions, today]);
 
   const getSessionIcon = (type: PomodoroSession["type"]) => {
     switch (type) {

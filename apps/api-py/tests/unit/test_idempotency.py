@@ -1,16 +1,23 @@
 from __future__ import annotations
 
+import uuid
+from datetime import UTC, datetime, timedelta
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime, timezone, timedelta
-import uuid
 
-from storage.models import Base, User, IdempotencyKey
-from services.idempotency import get_idempotent_response, save_idempotent_response, prune_old_keys
+from services.idempotency import (
+    get_idempotent_response,
+    prune_old_keys,
+    save_idempotent_response,
+)
+from storage.models import Base, IdempotencyKey, User
 
 
 def setup_inmemory_db():
-    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    engine = create_engine(
+        "sqlite:///:memory:", connect_args={"check_same_thread": False}
+    )
     Base.metadata.create_all(bind=engine)
     return sessionmaker(bind=engine)
 
@@ -52,7 +59,7 @@ def test_prune_old_keys():
         method="POST",
         path="/test",
         status_code=200,
-        created_at=datetime.now(timezone.utc) - timedelta(hours=25)
+        created_at=datetime.now(UTC) - timedelta(hours=25),
     )
     db.add(old_key)
 
@@ -63,7 +70,7 @@ def test_prune_old_keys():
         method="POST",
         path="/test",
         status_code=200,
-        created_at=datetime.now(timezone.utc)
+        created_at=datetime.now(UTC),
     )
     db.add(new_key)
     db.commit()

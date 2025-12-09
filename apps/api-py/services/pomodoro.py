@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone
 import uuid
+from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -24,18 +24,20 @@ def session_to_dict(s: PomodoroSession) -> dict:
     }
 
 
-def create_session_service(payload: Dict[str, Any], user_id: str, db: Session) -> dict:
+def create_session_service(payload: dict[str, Any], user_id: str, db: Session) -> dict:
     session = PomodoroSession(
         id=str(uuid.uuid4()),
         user_id=user_id,
         task_id=payload.get("task_id") or payload.get("taskId"),
         type=payload.get("type", "work"),
-        duration_minutes=int(payload.get("duration_minutes") or payload.get("durationMinutes") or 25),
-        started_at=datetime.now(timezone.utc),
+        duration_minutes=int(
+            payload.get("duration_minutes") or payload.get("durationMinutes") or 25
+        ),
+        started_at=datetime.now(UTC),
         ended_at=None,
         completed=False,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     db.add(session)
     db.commit()
@@ -47,11 +49,11 @@ def list_sessions_service(
     user_id: str,
     db: Session,
     *,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     offset: int = 0,
     sort: str = "created_at",
     order: str = "desc",
-) -> List[dict]:
+) -> list[dict]:
     sort_map = {
         "created_at": PomodoroSession.created_at,
         "updated_at": PomodoroSession.updated_at,
@@ -72,7 +74,7 @@ def list_sessions_service(
     return [session_to_dict(s) for s in items]
 
 
-def get_session_service(session_id: str, user_id: str, db: Session) -> Optional[dict]:
+def get_session_service(session_id: str, user_id: str, db: Session) -> dict | None:
     s = db.query(PomodoroSession).filter(PomodoroSession.id == session_id).first()
     if not s:
         return None
@@ -81,7 +83,9 @@ def get_session_service(session_id: str, user_id: str, db: Session) -> Optional[
     return session_to_dict(s)
 
 
-def update_session_service(session_id: str, patch: Dict[str, Any], user_id: str, db: Session) -> Optional[dict]:
+def update_session_service(
+    session_id: str, patch: dict[str, Any], user_id: str, db: Session
+) -> dict | None:
     s = db.query(PomodoroSession).filter(PomodoroSession.id == session_id).first()
     if not s:
         return None
@@ -97,7 +101,7 @@ def update_session_service(session_id: str, patch: Dict[str, Any], user_id: str,
         s.ended_at = patch["ended_at"]
     if "completed" in patch and patch["completed"] is not None:
         s.completed = bool(patch["completed"])
-    s.updated_at = datetime.now(timezone.utc)
+    s.updated_at = datetime.now(UTC)
     db.commit()
     db.refresh(s)
     return session_to_dict(s)

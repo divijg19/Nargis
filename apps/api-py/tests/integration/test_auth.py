@@ -6,6 +6,7 @@ import requests
 
 BASE_URL = "http://127.0.0.1:8080"
 
+
 def run_manual_auth_test():
     """Manual script to exercise auth endpoints.
 
@@ -29,7 +30,11 @@ def run_manual_auth_test():
 
     # Step 2: Register a new user
     print("\n2. Registering new user...")
-    user_data = {"email": "user2@nargis.ai", "password": "TestPass123!", "name": "User Two"}
+    user_data = {
+        "email": "user2@nargis.ai",
+        "password": "TestPass123!",
+        "name": "User Two",
+    }
     response = requests.post(f"{BASE_URL}/v1/auth/register", json=user_data)
     print(f"   Status: {response.status_code}")
     if response.status_code == 201:

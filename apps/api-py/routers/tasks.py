@@ -1,47 +1,47 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Header, HTTPException, status, Depends
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, Field
-from typing import Optional, List
 from sqlalchemy.orm import Session
-from storage.database import get_db
-from storage.models import Task
+
 from routers.auth import get_current_user
 
 # Import service functions
 from services.tasks import (
     create_task_service,
-    list_tasks_service,
-    get_task_service,
-    update_task_service,
     delete_task_service,
+    get_task_service,
+    list_tasks_service,
     toggle_task_service,
+    update_task_service,
 )
+from storage.database import get_db
+from storage.models import Task
 
 router = APIRouter(prefix="/v1/tasks", tags=["tasks"])
 
 
 class TaskCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=300)
-    description: Optional[str] = None
+    description: str | None = None
     status: str = Field(default="pending")
-    priority: Optional[str] = None
-    due_date: Optional[str] = None  # ISO date
+    priority: str | None = None
+    due_date: str | None = None  # ISO date
 
 
 class TaskUpdate(BaseModel):
-    title: Optional[str] = Field(None, min_length=1, max_length=300)
-    description: Optional[str] = None
-    status: Optional[str] = None
-    priority: Optional[str] = None
-    due_date: Optional[str] = None
+    title: str | None = Field(None, min_length=1, max_length=300)
+    description: str | None = None
+    status: str | None = None
+    priority: str | None = None
+    due_date: str | None = None
 
 
-@router.get("", response_model=List[dict])
+@router.get("", response_model=list[dict])
 async def list_tasks(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
-    limit: Optional[int] = None,
+    limit: int | None = None,
     offset: int = 0,
     sort: str = "created_at",
     order: str = "desc",
@@ -61,20 +61,39 @@ async def create_task(
     payload: TaskCreate,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
-    Idempotency_Key: Optional[str] = Header(default=None, convert_underscores=False),
+    Idempotency_Key: str | None = Header(default=None, convert_underscores=False),
 ):
     # Idempotency: check for existing response
     from services.idempotency import get_idempotent_response, save_idempotent_response
 
     if Idempotency_Key:
-        saved = get_idempotent_response(db, Idempotency_Key, current_user.get("id"), "POST", "/v1/tasks")
+        saved = get_idempotent_response(
+            db, Idempotency_Key, current_user.get("id"), "POST", "/v1/tasks"
+        )
         if saved:
             return saved["response"]
 
     created = create_task_service(payload.model_dump(), current_user["id"], db)
 
+    # Publish event
+    try:
+        from services.event_bus import get_event_bus
+
+        await get_event_bus().publish(current_user["id"], "task_created", created)
+    except Exception as e:
+        # Log error but don't fail request
+        print(f"Failed to publish event: {e}")
+
     if Idempotency_Key:
-        save_idempotent_response(db, Idempotency_Key, current_user.get("id"), "POST", "/v1/tasks", 201, created)
+        save_idempotent_response(
+            db,
+            Idempotency_Key,
+            current_user.get("id"),
+            "POST",
+            "/v1/tasks",
+            201,
+            created,
+        )
 
     return created
 

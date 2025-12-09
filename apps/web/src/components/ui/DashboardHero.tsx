@@ -1,17 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
 // import ChatPanel from "./ChatPanel"; // Removed ChatPanel usage
 import { VoiceInputButton } from "./VoiceInputButton";
 
 export default function DashboardHero({ greeting }: { greeting?: string }) {
-  const getGreeting = () =>
-    greeting ??
-    (() => {
-      const hour = new Date().getHours();
-      if (hour < 12) return "Good morning";
-      if (hour < 18) return "Good afternoon";
-      return "Good evening";
-    })();
+  const [fallbackGreeting, setFallbackGreeting] = useState("Good morning");
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setFallbackGreeting("Good morning");
+    else if (hour < 18) setFallbackGreeting("Good afternoon");
+    else setFallbackGreeting("Good evening");
+  }, []);
+
+  const displayGreeting = greeting ?? fallbackGreeting;
 
   return (
     <section className="relative mb-4 w-full">
@@ -20,7 +23,7 @@ export default function DashboardHero({ greeting }: { greeting?: string }) {
           <div className="flex items-center gap-3 mb-2">
             <h2 className="text-2xl md:text-3xl font-extrabold text-foreground">
               <span className="bg-linear-to-r from-indigo-600 via-purple-600 to-violet-600 bg-clip-text text-transparent">
-                {getGreeting()}!
+                {displayGreeting}!
               </span>
             </h2>
           </div>
@@ -30,8 +33,32 @@ export default function DashboardHero({ greeting }: { greeting?: string }) {
           </p>
         </div>
 
-        <div className="shrink-0">
+        <div className="shrink-0 flex flex-col gap-2">
           <VoiceInputButton size="lg" showStatus={true} />
+          <button
+            onClick={async () => {
+              // Trigger morning briefing
+              try {
+                const token = localStorage.getItem("token");
+                await fetch(
+                  `${process.env.NEXT_PUBLIC_API_URL}/v1/agent/trigger`,
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ trigger_type: "morning_briefing" }),
+                  },
+                );
+              } catch (e) {
+                console.error("Failed to trigger briefing", e);
+              }
+            }}
+            className="text-xs text-center text-blue-600 hover:underline"
+          >
+            Morning Briefing
+          </button>
         </div>
       </div>
     </section>

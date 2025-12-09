@@ -1,9 +1,9 @@
-import os
 import asyncio
+import importlib
 import json
+import os
 import sys
 import types
-import importlib
 
 # Ensure ML_WORKER_URL is set
 os.environ["ML_WORKER_URL"] = "http://ml-worker:8001"
@@ -39,7 +39,8 @@ class DummyClient:
         return DummyResp({})
 
 
-# Some heavy dependencies may not be installed in this environment (soundfile, openai, httpx).
+# Some heavy dependencies may not be installed in this environment
+# (soundfile, openai, httpx).
 # Insert lightweight stubs into sys.modules so the module can import successfully.
 if "soundfile" not in sys.modules:
     sys.modules["soundfile"] = types.ModuleType("soundfile")

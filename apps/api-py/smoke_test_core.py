@@ -10,20 +10,22 @@ Run from the `apps/api-py` folder with the project virtualenv active:
 
 It prints short PASS/FAIL results and exits with a non-zero code on failure.
 """
+
 from __future__ import annotations
 
 import sys
-import uuid
 import traceback
+import uuid
 
-from storage.database import get_session_now
-from storage.models import User, Task, Memory
-from services.tasks import create_task_service, list_tasks_service
 from services.memory_service import create_memory, search_memories
+from services.tasks import create_task_service, list_tasks_service
+from storage.database import get_session_now
+from storage.models import Memory, Task, User
 
 try:
     # Agent tool import is optional; we only assert it is importable and callable.
-    from agent.tools import recall_memory_tool, RecallArgs
+    from agent.tools import RecallArgs, recall_memory_tool
+
     AGENT_TOOL_AVAILABLE = True
 except Exception:
     recall_memory_tool = None
@@ -36,7 +38,8 @@ def run_smoke():
 
     # Color helpers: prefer colorama on Windows, fall back to ANSI sequences
     try:
-        from colorama import init as _colorama_init, Fore, Style
+        from colorama import Fore, Style
+        from colorama import init as _colorama_init
 
         _colorama_init()
         GREEN = Fore.GREEN
@@ -61,13 +64,22 @@ def run_smoke():
     with get_session_now() as db:
         # Create a test user
         user_id = str(uuid.uuid4())
-        user = User(id=user_id, email=f"{user_id}@example.com", password_hash="x", name="Smoke Tester")
+        user = User(
+            id=user_id,
+            email=f"{user_id}@example.com",
+            password_hash="x",
+            name="Smoke Tester",
+        )
         db.add(user)
         db.commit()
 
         # --- Task service smoke test ---
         try:
-            payload = {"title": "Smoke Task", "description": "Created by smoke_test_core", "priority": "low"}
+            payload = {
+                "title": "Smoke Task",
+                "description": "Created by smoke_test_core",
+                "priority": "low",
+            }
             created = create_task_service(payload, user_id, db)
             tasks = list_tasks_service(user_id, db)
             if not any(t.get("id") == created.get("id") for t in tasks):
@@ -96,7 +108,10 @@ def run_smoke():
                 if mem.get("id") in ids:
                     print_pass("Memory service create + search")
                 else:
-                    msg = f"Memory service: created memory id {mem.get('id')} not found in search results: {ids}"
+                    msg = (
+                        f"Memory service: created memory id {mem.get('id')} "
+                        f"not found in search results: {ids}"
+                    )
                     print_fail("Memory service create + search", msg)
                     failures.append(("Memory service create + search", msg))
         except Exception as e:
@@ -124,7 +139,9 @@ def run_smoke():
                                 # Try passing a plain dict if the tool expects JSON
                                 try:
                                     payload = (
-                                        args_obj.model_dump() if hasattr(args_obj, "model_dump") else getattr(args_obj, "__dict__", {})
+                                        args_obj.model_dump()
+                                        if hasattr(args_obj, "model_dump")
+                                        else getattr(args_obj, "__dict__", {})
                                     )
                                     return candidate(payload)
                                 except Exception:
@@ -132,13 +149,17 @@ def run_smoke():
                                     pass
 
                     # Last resort: some tools expose `run` that expects strings
-                    if hasattr(tool_obj, "run") and callable(getattr(tool_obj, "run")):
+                    if hasattr(tool_obj, "run") and callable(tool_obj.run):
                         payload = (
-                            args_obj.model_dump() if hasattr(args_obj, "model_dump") else getattr(args_obj, "__dict__", {})
+                            args_obj.model_dump()
+                            if hasattr(args_obj, "model_dump")
+                            else getattr(args_obj, "__dict__", {})
                         )
                         return tool_obj.run(payload)
 
-                    raise TypeError("Tool object is not callable and has no runnable attribute")
+                    raise TypeError(
+                        "Tool object is not callable and has no runnable attribute"
+                    )
 
                 args = RecallArgs(user_id=user_id, query="smoke test query", limit=1)
                 try:
@@ -164,17 +185,23 @@ def run_smoke():
         try:
             # Remove memories
             try:
-                db.query(Memory).filter(Memory.user_id == user_id).delete(synchronize_session=False)
+                db.query(Memory).filter(Memory.user_id == user_id).delete(
+                    synchronize_session=False
+                )
             except Exception:
                 pass
             # Remove tasks
             try:
-                db.query(Task).filter(Task.user_id == user_id).delete(synchronize_session=False)
+                db.query(Task).filter(Task.user_id == user_id).delete(
+                    synchronize_session=False
+                )
             except Exception:
                 pass
             # Remove user
             try:
-                db.query(User).filter(User.id == user_id).delete(synchronize_session=False)
+                db.query(User).filter(User.id == user_id).delete(
+                    synchronize_session=False
+                )
             except Exception:
                 pass
             db.commit()

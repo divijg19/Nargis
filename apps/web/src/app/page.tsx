@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 const ChatPanel = dynamic(() => import("@/components/ui/ChatPanel"), {
   ssr: false,
@@ -44,7 +44,7 @@ const _features = [
 
 export default function Home() {
   const [permissionDenied, setPermissionDenied] = useState(false);
-  const heroRef = useRef<HTMLDivElement | null>(null);
+  const _heroRef = useRef<HTMLDivElement | null>(null);
 
   // Centralized realtime context for recording and AI results
   const { isListening, startListening, stopListening } = useRealtime();
@@ -75,9 +75,7 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-6 gap-x-6 lg:gap-x-8 h-full items-center">
               {/* Center column: Hero mic + ChatPanel */}
               <div className="order-2 lg:order-2 lg:col-span-7 h-full flex items-center justify-center">
-                <div
-                  className="relative p-4 sm:p-6 surface-floating rounded-3xl border border-border/30 w-full max-w-xl sm:max-w-2xl lg:max-w-3xl h-full max-h-full overflow-hidden flex flex-col"
-                >
+                <div className="relative p-4 sm:p-6 surface-floating rounded-3xl border border-border/30 w-full max-w-xl sm:max-w-2xl lg:max-w-3xl h-full max-h-full overflow-hidden flex flex-col">
                   <div className="text-center mb-4 shrink-0">
                     <div className="flex items-center justify-center">
                       <VoiceInputButton

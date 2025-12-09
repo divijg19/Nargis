@@ -1,9 +1,17 @@
 import pytest
 
+from storage.database import init_db
+
 # Import helper functions from the test script to provide a pytest fixture.
 # Importing `test_api` is safe because it only defines functions and guards the
 # script-like runner with `if __name__ == "__main__"`.
-from test_api import register_user, login_user
+from tests.integration.test_api import login_user, register_user
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_database():
+    """Initialize the database before running tests."""
+    init_db()
 
 
 @pytest.fixture(scope="session")

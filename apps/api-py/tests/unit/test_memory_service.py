@@ -1,6 +1,6 @@
+from services.memory_service import create_memory, search_memories
 from storage.database import get_session_now
 from storage.models import User
-from services.memory_service import create_memory, search_memories
 
 
 def ensure_user(db, uid: str):

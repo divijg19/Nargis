@@ -1,31 +1,54 @@
+import json
 import logging
-import sys
 import os
+import sys
 import uuid
-from typing import Optional, List, AsyncGenerator
-from contextvars import ContextVar
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, UploadFile, File, Request, HTTPException
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from contextvars import ContextVar
+
 import httpx
+from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response, StreamingResponse
-import json
-from dotenv import load_dotenv
-from storage.database import init_db, SessionLocal
-from services.idempotency import prune_old_keys
+
+from middleware.idempotency import IdempotencyMiddleware
+from routers import (
+    agent as agent_router,
+)
+from routers import (
+    auth as auth_router,
+)
+from routers import (
+    habits as habits_router,
+)
+from routers import (
+    journal as journal_router,
+)
+from routers import (
+    pomodoro as pomodoro_router,
+)
 
 # Import routers at module top so all imports are at the top-level (fixes E402)
 from routers import (
     tasks as tasks_router,
-    habits as habits_router,
-    pomodoro as pomodoro_router,
-    goals as goals_router,
-    journal as journal_router,
-    auth as auth_router,
 )
+from routers.auth import get_current_user
+from services.agent_service import run_agent_pipeline
+from services.context import get_system_context
+from services.idempotency import prune_old_keys
+from storage.database import SessionLocal, get_db, init_db
+
+try:
+    from langchain_core.messages import HumanMessage, SystemMessage
+except ImportError:
+    HumanMessage = None
+    SystemMessage = None
 
 # Explicitly load the .env file to ensure configuration is always read.
 load_dotenv()
@@ -71,6 +94,7 @@ def _record_factory(*args, **kwargs):
 
 logging.setLogRecordFactory(_record_factory)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: optionally preload STT if configured
@@ -112,19 +136,17 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(CorrelationIdMiddleware)
-from middleware.idempotency import IdempotencyMiddleware
-
 app.add_middleware(IdempotencyMiddleware)
 
+app.include_router(agent_router.router)
 app.include_router(auth_router.router)
 app.include_router(tasks_router.router)
 app.include_router(habits_router.router)
 app.include_router(pomodoro_router.router)
-app.include_router(goals_router.router)
 app.include_router(journal_router.router)
 
 
-def parse_origins(value: Optional[str]) -> List[str]:
+def parse_origins(value: str | None) -> list[str]:
     if not value:
         return ["http://localhost:3000"]
     return [p.strip() for p in value.split(",") if p.strip()] or [
@@ -161,14 +183,25 @@ async def generic_exception_handler(request: Request, exc: Exception):
     logging.exception("Unhandled exception during request")
     return JSONResponse(
         status_code=500,
-        content={"error": {"code": "INTERNAL_SERVER_ERROR", "message": "Internal server error"}},
+        content={
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "Internal server error",
+            }
+        },
     )
+
 
 # AI client implementations live in apps/api-py/services/ai_clients.py
 
 
 @app.post("/api/v1/process-audio")
-async def process_audio_pipeline(request: Request, audio_file: UploadFile = File(...)):
+async def process_audio_pipeline(
+    request: Request,
+    audio_file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """
     Stream agent events and final response as NDJSON lines.
     Protocol:
@@ -178,8 +211,8 @@ async def process_audio_pipeline(request: Request, audio_file: UploadFile = File
       {"type": "error", "content": "..."}
     """
     # Local imports to avoid module-level imports that depend on env/config
-    from services.ai_clients import _get_transcription, _get_llm_response
     from agent import graph as agent_graph
+    from services.ai_clients import _get_llm_response, _get_transcription
 
     audio_bytes = await audio_file.read()
     transcribed_text = await _get_transcription(audio_bytes)
@@ -187,18 +220,40 @@ async def process_audio_pipeline(request: Request, audio_file: UploadFile = File
     if not transcribed_text or not transcribed_text.strip():
         # Immediate short-circuit response as NDJSON (include end marker)
         async def empty_stream() -> AsyncGenerator[bytes, None]:
-            yield (json.dumps({"type": "response", "content": "I didn't catch that."}) + "\n").encode()
+            yield (
+                json.dumps({"type": "response", "content": "I didn't catch that."})
+                + "\n"
+            ).encode()
             yield (json.dumps({"type": "end", "content": "done"}) + "\n").encode()
 
         return StreamingResponse(empty_stream(), media_type="application/x-ndjson")
 
     async def event_stream() -> AsyncGenerator[bytes, None]:
         try:
+            async for chunk in run_agent_pipeline(
+                transcribed_text, current_user["id"], db
+            ):
+                if await request.is_disconnected():
+                    break
+                yield chunk
+        except Exception:
+            logging.exception("Error in event stream")
+            yield (
+                json.dumps({"type": "error", "content": "Something went wrong."}) + "\n"
+            ).encode()
+        return
+
+    async def _unused_old_code():
+        try:
             # Emit an immediate thought after STT to reduce perceived latency
-            yield (json.dumps({"type": "thought", "content": "Processing…"}) + "\n").encode()
+            yield (
+                json.dumps({"type": "thought", "content": "Processing…"}) + "\n"
+            ).encode()
 
             # If agent runtime or streaming API not available, fall back to linear LLM
-            if not getattr(agent_graph, "agent_app", None) or not hasattr(agent_graph.agent_app, "astream_events"):
+            if not getattr(agent_graph, "agent_app", None) or not hasattr(
+                agent_graph.agent_app, "astream_events"
+            ):
                 llm_result = await _get_llm_response(transcribed_text)
                 final_text = (
                     llm_result.get("reply")
@@ -206,19 +261,39 @@ async def process_audio_pipeline(request: Request, audio_file: UploadFile = File
                     or llm_result.get("text")
                     or str(llm_result)
                 )
-                yield (json.dumps({"type": "response", "content": final_text}) + "\n").encode()
+                yield (
+                    json.dumps({"type": "response", "content": final_text}) + "\n"
+                ).encode()
                 yield (json.dumps({"type": "end", "content": "done"}) + "\n").encode()
                 return
 
-            # Stream events from agent.graph.agent_app.astream_events(...) (async generator)
+            # Inject system context
+            context_str = get_system_context(current_user["id"], db)
+            
+            # Prepare input payload
+            if HumanMessage and SystemMessage:
+                messages = [
+                    SystemMessage(content=f"System Context: {context_str}"),
+                    HumanMessage(content=transcribed_text)
+                ]
+                input_payload = {"messages": messages}
+            else:
+                input_payload = {
+                    "input": f"Context: {context_str}\nUser: {transcribed_text}"
+                }
+
+            # Stream events from agent.graph.agent_app.astream_events(...)
+            # (async generator)
             # We use version="v1" to get standard LangChain event shapes
             async for ev in agent_graph.agent_app.astream_events(
-                {"input": transcribed_text}, version="v1"
+                input_payload, version="v1"
             ):
                 # If client disconnected, stop streaming promptly
                 try:
                     if await request.is_disconnected():
-                        yield (json.dumps({"type": "end", "content": "canceled"}) + "\n").encode()
+                        yield (
+                            json.dumps({"type": "end", "content": "canceled"}) + "\n"
+                        ).encode()
                         return
                 except Exception:
                     # If disconnect check fails, continue best-effort
@@ -226,24 +301,35 @@ async def process_audio_pipeline(request: Request, audio_file: UploadFile = File
                 # Normalize event access defensively
                 if ev is None:
                     continue
-                
+
                 kind = ev.get("event")
-                
-                # High-level chain/model starts -> emit lightweight thoughts for transparency
+
+                # High-level chain/model starts -> emit lightweight thoughts
+                # for transparency
                 if kind == "on_chain_start":
                     name = ev.get("name") or "chain"
                     if name and name != "LangGraph":
-                        yield (json.dumps({
-                            "type": "thought",
-                            "content": f"Starting {name}…",
-                        }) + "\n").encode()
+                        yield (
+                            json.dumps(
+                                {
+                                    "type": "thought",
+                                    "content": f"Starting {name}…",
+                                }
+                            )
+                            + "\n"
+                        ).encode()
                         continue
 
                 if kind == "on_chat_model_start":
-                    yield (json.dumps({
-                        "type": "thought",
-                        "content": "Formulating response…",
-                    }) + "\n").encode()
+                    yield (
+                        json.dumps(
+                            {
+                                "type": "thought",
+                                "content": "Formulating response…",
+                            }
+                        )
+                        + "\n"
+                    ).encode()
                     continue
 
                 # Tool Usage -> "tool_use"
@@ -251,11 +337,12 @@ async def process_audio_pipeline(request: Request, audio_file: UploadFile = File
                     tool_name = ev.get("name", "unknown")
                     # data.input might be a dict or string
                     tool_input = str(ev.get("data", {}).get("input", ""))
-                    yield (json.dumps({
-                        "type": "tool_use", 
-                        "tool": tool_name, 
-                        "input": tool_input
-                    }) + "\n").encode()
+                    yield (
+                        json.dumps(
+                            {"type": "tool_use", "tool": tool_name, "input": tool_input}
+                        )
+                        + "\n"
+                    ).encode()
                     continue
 
                 # Tool Result -> "tool_result"
@@ -264,27 +351,37 @@ async def process_audio_pipeline(request: Request, audio_file: UploadFile = File
                     output = ev.get("data", {}).get("output")
                     # Serialize output safely
                     output_str = str(output)
-                    yield (json.dumps({
-                        "type": "tool_result",
-                        "tool": tool_name,
-                        "result": output_str
-                    }) + "\n").encode()
+                    yield (
+                        json.dumps(
+                            {
+                                "type": "tool_result",
+                                "tool": tool_name,
+                                "result": output_str,
+                            }
+                        )
+                        + "\n"
+                    ).encode()
                     continue
 
                 # Chat Model Stream -> Optional thought tokens (omitted to avoid spam)
                 # If desired, we could aggregate tokens and emit periodic thoughts.
 
                 # Final Result -> "response"
-                # LangGraph 'on_chain_end' for the root graph usually contains the final output
+                # LangGraph 'on_chain_end' for the root graph usually contains
+                # the final output
                 if kind == "on_chain_end" and ev.get("name") == "LangGraph":
                     output = ev.get("data", {}).get("output")
                     if output:
                         # Extract the final response from the agent state
-                        # Adjust key based on your graph's output schema (usually 'messages' or 'output')
+                        # Adjust key based on your graph's output schema
+                        # (usually 'messages' or 'output')
                         content = None
                         if isinstance(output, dict):
-                            # If output is a dict with 'messages', get the last AI message
-                            if "messages" in output and isinstance(output["messages"], list):
+                            # If output is a dict with 'messages',
+                            # get the last AI message
+                            if "messages" in output and isinstance(
+                                output["messages"], list
+                            ):
                                 last_msg = output["messages"][-1]
                                 if hasattr(last_msg, "content"):
                                     content = last_msg.content
@@ -295,11 +392,19 @@ async def process_audio_pipeline(request: Request, audio_file: UploadFile = File
                                 content = output.get("output")
                         else:
                             content = str(output)
-                        
+
                         if content:
-                            yield (json.dumps({"type": "response", "content": str(content)}) + "\n").encode()
-                            # Optional: emit an end-of-stream marker for downstream clarity
-                            yield (json.dumps({"type": "end", "content": "done"}) + "\n").encode()
+                            yield (
+                                json.dumps(
+                                    {"type": "response", "content": str(content)}
+                                )
+                                + "\n"
+                            ).encode()
+                            # Optional: emit an end-of-stream marker
+                            # for downstream clarity
+                            yield (
+                                json.dumps({"type": "end", "content": "done"}) + "\n"
+                            ).encode()
 
         except Exception as e:
             logging.exception("Agent streaming error")
@@ -318,12 +423,12 @@ async def health():
 async def ready():
     # Local imports to avoid module-level imports that may depend on env
     from services.ai_clients import (
+        DEEPGRAM_API_KEY,
+        GROQ_API_KEY,
+        LLM_URL,
+        STT_URL,
         ollama_client,
         stt_model,
-        STT_URL,
-        LLM_URL,
-        GROQ_API_KEY,
-        DEEPGRAM_API_KEY,
     )
 
     return {
@@ -363,4 +468,4 @@ async def text_to_speech(req: TTSRequest):
             )
     except Exception as e:
         logging.exception("TTS proxy failed")
-        raise HTTPException(status_code=502, detail=f"TTS service error: {e}")
+        raise HTTPException(status_code=502, detail=f"TTS service error: {e}") from e

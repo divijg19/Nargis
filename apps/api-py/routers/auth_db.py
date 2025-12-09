@@ -9,16 +9,17 @@ Features:
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
-from datetime import datetime, timedelta
-import jwt
-import bcrypt
 import os
 import uuid
+from datetime import datetime, timedelta
+
+import bcrypt
+import jwt
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
+
 from storage.database import get_db
 from storage.models import User
 
@@ -34,7 +35,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 class UserRegister(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=100)
-    name: Optional[str] = Field(None, max_length=100)
+    name: str | None = Field(None, max_length=100)
 
 
 class UserLogin(BaseModel):
@@ -50,13 +51,13 @@ class Token(BaseModel):
 class UserProfile(BaseModel):
     id: str
     email: str
-    name: Optional[str]
+    name: str | None
     createdAt: str
 
 
 class UserProfileUpdate(BaseModel):
-    name: Optional[str] = None
-    email: Optional[EmailStr] = None
+    name: str | None = None
+    email: EmailStr | None = None
 
 
 def hash_password(password: str) -> str:
@@ -98,12 +99,12 @@ async def get_current_user(
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired"
-        )
+        ) from None
     except jwt.JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
-        )
+        ) from None
 
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:

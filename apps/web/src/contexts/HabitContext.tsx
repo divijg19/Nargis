@@ -8,9 +8,14 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useState,
 } from "react";
 import { useToasts } from "@/contexts/ToastContext";
-import { buildEvent, emitDomainEvent, onDomainEvent } from "@/events/dispatcher";
+import {
+  buildEvent,
+  emitDomainEvent,
+  onDomainEvent,
+} from "@/events/dispatcher";
 import {
   createHabit as apiCreateHabit,
   deleteHabit as apiDeleteHabit,
@@ -108,7 +113,7 @@ function habitReducer(state: HabitStore, action: HabitAction): HabitStore {
             const entryDate = new Date(entry.date);
             const daysDiff = Math.floor(
               (currentDate.getTime() - entryDate.getTime()) /
-              (1000 * 60 * 60 * 24),
+                (1000 * 60 * 60 * 24),
             );
 
             if (daysDiff === streak) {
@@ -152,9 +157,15 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(habitReducer, initialState);
   const { push } = useToasts();
 
+  const [today, setToday] = useState("");
+
+  useEffect(() => {
+    setToday(new Date().toISOString().split("T")[0]);
+  }, []);
+
   // Computed values
   const todayProgress = useMemo(() => {
-    const today = new Date().toISOString().split("T")[0];
+    if (!today) return [];
     return state.habits.map((habit) => {
       const todayEntry = habit.history.find((entry) => entry.date === today);
       const progress = todayEntry ? (todayEntry.count / habit.target) * 100 : 0;
@@ -165,7 +176,7 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
         completed: todayEntry?.completed || false,
       };
     });
-  }, [state.habits]);
+  }, [state.habits, today]);
 
   const totalStreaks = useMemo(
     () => state.habits.reduce((total, habit) => total + habit.streak, 0),
@@ -272,7 +283,7 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
 
   // Listen for remote tool completion events to auto-refresh habits
   useEffect(() => {
-    return onDomainEvent((evt) => {
+    const unsubscribe = onDomainEvent((evt) => {
       if (evt.type === "remote.tool_completed") {
         const tool = evt.data.tool as string;
         if (
@@ -286,6 +297,9 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
         }
       }
     });
+    return () => {
+      unsubscribe();
+    };
   }, [loadHabits]);
 
   const contextValue: HabitContextType = {

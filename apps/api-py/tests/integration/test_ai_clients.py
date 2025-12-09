@@ -1,13 +1,15 @@
 import pytest
 
+import services.ai_clients
+
 
 @pytest.mark.asyncio
 async def test_get_transcription_delegates_to_ml_worker(monkeypatch):
     # Arrange: set ML_WORKER_URL and patch httpx.AsyncClient to a dummy client
-    monkeypatch.setenv("ML_WORKER_URL", "http://ml-worker:8001")
+    monkeypatch.setattr(services.ai_clients, "ML_WORKER_URL", "http://ml-worker:8001")
     # Ensure external STT (Deepgram) is not selected during this unit test
-    monkeypatch.setenv("STT_URL", "")
-    monkeypatch.setenv("DEEPGRAM_API_KEY", "")
+    monkeypatch.setattr(services.ai_clients, "STT_URL", "")
+    monkeypatch.setattr(services.ai_clients, "DEEPGRAM_API_KEY", "")
 
     class DummyResp:
         def __init__(self, data):
@@ -51,10 +53,10 @@ async def test_get_transcription_delegates_to_ml_worker(monkeypatch):
 @pytest.mark.asyncio
 async def test_get_llm_delegates_to_ml_worker(monkeypatch):
     # Arrange
-    monkeypatch.setenv("ML_WORKER_URL", "http://ml-worker:8001")
-    # Ensure external STT (Deepgram) is not selected during this unit test
-    monkeypatch.setenv("STT_URL", "")
-    monkeypatch.setenv("DEEPGRAM_API_KEY", "")
+    monkeypatch.setattr(services.ai_clients, "ML_WORKER_URL", "http://ml-worker:8001")
+    # Ensure external LLM is not selected during this unit test
+    monkeypatch.setattr(services.ai_clients, "LLM_URL", "")
+    monkeypatch.setattr(services.ai_clients, "GROQ_API_KEY", "")
 
     class DummyResp:
         def __init__(self, data):

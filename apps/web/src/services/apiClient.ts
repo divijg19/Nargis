@@ -49,7 +49,8 @@ export async function fetchJson<T>(
       else if (b.message) {
         msg = b.message;
       } else if (b.detail) {
-        msg = typeof b.detail === "string" ? b.detail : JSON.stringify(b.detail);
+        msg =
+          typeof b.detail === "string" ? b.detail : JSON.stringify(b.detail);
       }
     }
     throw new ApiError({ status: res.status, message: msg, details: body });

@@ -1,13 +1,11 @@
 import os
 import sys
-from pathlib import Path
 from logging.config import fileConfig
-
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from pathlib import Path
 
 from alembic import context
 from dotenv import load_dotenv
+from sqlalchemy import engine_from_config, pool
 
 # Load environment variables from .env early
 load_dotenv(override=True)
@@ -16,7 +14,7 @@ load_dotenv(override=True)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # Import our database configuration and models
-from storage.database import Base, DATABASE_URL  # noqa: E402
+from storage.database import DATABASE_URL, Base  # noqa: E402
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -75,7 +73,7 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-     # Force Alembic to use the DATABASE_URL from .env
+    # Force Alembic to use the DATABASE_URL from .env
     configuration = config.get_section(config.config_ini_section)
     db_url = os.getenv("DATABASE_URL")
     if db_url:

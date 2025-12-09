@@ -5,10 +5,10 @@ Database configuration for PostgreSQL with SQLAlchemy
 import os
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from sqlalchemy.pool import StaticPool
 from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 # Load .env so local DATABASE_URL is available when this module is imported.
 load_dotenv(override=True)
@@ -20,7 +20,9 @@ DATABASE_URL = os.getenv(
 )
 
 # Use SQLite automatically when running pytest unless explicitly allowed
-if ("PYTEST_CURRENT_TEST" in os.environ) and os.getenv("ALLOW_POSTGRES_IN_TESTS") != "1":
+if ("PYTEST_CURRENT_TEST" in os.environ) and os.getenv(
+    "ALLOW_POSTGRES_IN_TESTS"
+) != "1":
     DATABASE_URL = "sqlite:///./nargis.db"
 
 # For SQLite in-memory/file databases, use specific connection args
@@ -63,6 +65,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Base class for all models
 class Base(DeclarativeBase):
     pass
+
 
 # Eagerly create tables in most environments to simplify dev/tests
 if os.getenv("AUTO_CREATE_DB", "1") == "1":

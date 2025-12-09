@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# @nargis/web
+
+The Next.js 15 frontend for Nargis.
+
+## Features
+- **Real-time Updates**: Uses WebSocket via the Gateway service.
+- **AI Integration**: Voice-to-text and intelligent task management.
+- **Modern Stack**: Next.js 15, Tailwind CSS, Biome, Vitest.
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 20+ or Bun 1.2+
+- Backend services running (API + Gateway)
+
+### Installation
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+cd apps/web
+bun install
+```
+
+### Configuration
+Copy `.env.example` to `.env.local`:
+
+```bash
+cp .env.example .env.local
+```
+
+Ensure `NEXT_PUBLIC_API_PY_URL` points to your Gateway or API (e.g., `http://localhost:8000` or `http://localhost:8080`).
+
+### Development
+
+```bash
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Testing
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+bun test:unit        # Run unit tests
+bun test:e2e         # Run Playwright tests
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Linting & Formatting
 
-## Learn More
+We use [Biome](https://biomejs.dev/) for fast linting and formatting.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+bun lint
+bun format
+```

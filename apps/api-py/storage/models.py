@@ -2,16 +2,18 @@
 SQLAlchemy ORM models for Nargis database
 """
 
-from datetime import datetime, timezone
-from typing import List, Optional
-from sqlalchemy import String, Integer, Boolean, DateTime, Text, JSON, ForeignKey
+from datetime import UTC, datetime
+
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from storage.database import Base
 
 # Safe import of pgvector's Vector type. If it's not installed yet, we
 # fall back to storing embeddings as JSON to keep the app usable.
 try:
     from pgvector.sqlalchemy import Vector
+
     _PGVECTOR_AVAILABLE = True
 except Exception:  # pragma: no cover - optional dependency
     Vector = None
@@ -26,28 +28,25 @@ class User(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
-    name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    name: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(UTC)
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
     )
 
     # Relationships
-    tasks: Mapped[List["Task"]] = relationship(
+    tasks: Mapped[list["Task"]] = relationship(
         "Task", back_populates="user", cascade="all, delete-orphan"
     )
-    habits: Mapped[List["Habit"]] = relationship(
+    habits: Mapped[list["Habit"]] = relationship(
         "Habit", back_populates="user", cascade="all, delete-orphan"
     )
-    goals: Mapped[List["Goal"]] = relationship(
-        "Goal", back_populates="user", cascade="all, delete-orphan"
-    )
-    journal_entries: Mapped[List["JournalEntry"]] = relationship(
+    journal_entries: Mapped[list["JournalEntry"]] = relationship(
         "JournalEntry", back_populates="user", cascade="all, delete-orphan"
     )
-    pomodoro_sessions: Mapped[List["PomodoroSession"]] = relationship(
+    pomodoro_sessions: Mapped[list["PomodoroSession"]] = relationship(
         "PomodoroSession", back_populates="user", cascade="all, delete-orphan"
     )
 
@@ -61,22 +60,32 @@ class Task(Base):
     user_id: Mapped[str] = mapped_column(
         String, ForeignKey("users.id"), nullable=False, index=True
     )
+    parent_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("tasks.id"), nullable=True, index=True
+    )
     title: Mapped[str] = mapped_column(String(300), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(50), default="pending")
-    priority: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    due_date: Mapped[Optional[str]] = mapped_column(
+    priority: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    due_date: Mapped[str | None] = mapped_column(
         String, nullable=True
     )  # ISO date string
+    tags: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(UTC)
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
     )
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="tasks")
+    subtasks: Mapped[list["Task"]] = relationship(
+        "Task", back_populates="parent_task", cascade="all, delete-orphan"
+    )
+    parent_task: Mapped["Task"] = relationship(
+        "Task", back_populates="subtasks", remote_side=[id]
+    )
 
 
 class Habit(Base):
@@ -90,57 +99,22 @@ class Habit(Base):
     )
     name: Mapped[str] = mapped_column(String(140), nullable=False)
     target: Mapped[int] = mapped_column(Integer, default=1)
-    unit: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    frequency: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    color: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    unit: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    frequency: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    color: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    tags: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(UTC)
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
     )
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="habits")
-    entries: Mapped[List["HabitEntry"]] = relationship(
+    entries: Mapped[list["HabitEntry"]] = relationship(
         "HabitEntry", back_populates="habit", cascade="all, delete-orphan"
     )
-
-
-class Goal(Base):
-    """Goal planning model"""
-
-    __tablename__ = "goals"
-
-    id: Mapped[str] = mapped_column(String, primary_key=True)
-    user_id: Mapped[str] = mapped_column(
-        String, ForeignKey("users.id"), nullable=False, index=True
-    )
-    title: Mapped[str] = mapped_column(String(200), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    status: Mapped[str] = mapped_column(String(50), default="planning")
-    progress: Mapped[int] = mapped_column(Integer, default=0)
-    milestones: Mapped[Optional[dict]] = mapped_column(
-        JSON, nullable=True
-    )  # Array of milestone objects
-    linked_task_ids: Mapped[Optional[dict]] = mapped_column(
-        JSON, nullable=True
-    )  # Array of task IDs
-    linked_habit_ids: Mapped[Optional[dict]] = mapped_column(
-        JSON, nullable=True
-    )  # Array of habit IDs
-    ai_suggestions: Mapped[Optional[dict]] = mapped_column(
-        JSON, nullable=True
-    )  # Array of AI suggestions
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
-    )
-
-    # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="goals")
 
 
 class JournalEntry(Base):
@@ -152,22 +126,22 @@ class JournalEntry(Base):
     user_id: Mapped[str] = mapped_column(
         String, ForeignKey("users.id"), nullable=False, index=True
     )
-    title: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    title: Mapped[str | None] = mapped_column(String(200), nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     type: Mapped[str] = mapped_column(String(20), default="text")  # text | voice
-    mood: Mapped[Optional[str]] = mapped_column(
+    mood: Mapped[str | None] = mapped_column(
         String(20), nullable=True
     )  # great | good | neutral | bad | terrible
-    tags: Mapped[Optional[dict]] = mapped_column(
+    tags: Mapped[list[str] | None] = mapped_column(
         JSON, nullable=True
     )  # Array of tag strings
-    audio_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    ai_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    audio_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    ai_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(UTC)
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
     )
 
     # Relationships
@@ -187,10 +161,10 @@ class HabitEntry(Base):
     count: Mapped[int] = mapped_column(Integer, default=0)
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(UTC)
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
     )
 
     habit: Mapped["Habit"] = relationship("Habit", back_populates="entries")
@@ -205,19 +179,19 @@ class PomodoroSession(Base):
     user_id: Mapped[str] = mapped_column(
         String, ForeignKey("users.id"), nullable=False, index=True
     )
-    task_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    task_id: Mapped[str | None] = mapped_column(String, nullable=True)
     type: Mapped[str] = mapped_column(
         String(20), default="work"
     )  # work | short_break | long_break
     duration_minutes: Mapped[int] = mapped_column(Integer, default=25)
     started_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    ended_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(UTC)
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
     )
 
     # Relationships
@@ -236,12 +210,14 @@ class Memory(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     # embedding: use pgvector.Vector when available, otherwise JSON fallback
     if _PGVECTOR_AVAILABLE:
-        embedding: Mapped[Optional[List[float]]] = mapped_column(Vector(1536), nullable=False)
+        embedding: Mapped[list[float] | None] = mapped_column(
+            Vector(1536), nullable=False
+        )
     else:
-        embedding: Mapped[Optional[List[float]]] = mapped_column(JSON, nullable=False)
+        embedding: Mapped[list[float] | None] = mapped_column(JSON, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(UTC)
     )
 
 
@@ -252,12 +228,13 @@ class IdempotencyKey(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     key: Mapped[str] = mapped_column(String, index=True, nullable=False)
-    user_id: Mapped[Optional[str]] = mapped_column(String, ForeignKey("users.id"), nullable=True, index=True)
+    user_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("users.id"), nullable=True, index=True
+    )
     method: Mapped[str] = mapped_column(String(10), nullable=False)
     path: Mapped[str] = mapped_column(String(300), nullable=False)
     status_code: Mapped[int] = mapped_column(Integer, nullable=False)
-    response: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    response: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime, default=lambda: datetime.now(UTC)
     )
-
