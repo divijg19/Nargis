@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { PomodoroSession } from "@/types";
 import { cn } from "@/utils";
 
@@ -10,14 +10,38 @@ interface PomodoroStatsProps {
 }
 
 export function PomodoroStats({ sessions, className }: PomodoroStatsProps) {
+  const [today, setToday] = useState<Date | null>(null);
+
+  useEffect(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    setToday(d);
+  }, []);
+
   const stats = useMemo(() => {
+    if (!today) {
+      return {
+        total: 0,
+        workSessions: 0,
+        todaySessions: 0,
+        todayWorkSessions: 0,
+        todayMinutes: 0,
+        todayHours: 0,
+        weekSessions: 0,
+        weekMinutes: 0,
+        weekHours: 0,
+        totalMinutes: 0,
+        totalHours: 0,
+        avgDuration: 0,
+        dailyBreakdown: [],
+        maxDailyMinutes: 1,
+      };
+    }
+
     const completedSessions = sessions.filter((s) => s.completed);
     const workSessions = completedSessions.filter((s) => s.type === "work");
 
     // Today's stats
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     const todaySessions = completedSessions.filter((s) => {
       const sessionDate = new Date(s.startTime);
       sessionDate.setHours(0, 0, 0, 0);
@@ -53,9 +77,9 @@ export function PomodoroStats({ sessions, className }: PomodoroStatsProps) {
     const avgDuration =
       workSessions.length > 0
         ? Math.round(
-            workSessions.reduce((sum, s) => sum + s.duration, 0) /
-              workSessions.length,
-          )
+          workSessions.reduce((sum, s) => sum + s.duration, 0) /
+          workSessions.length,
+        )
         : 0;
 
     // Calculate daily breakdown for last 7 days

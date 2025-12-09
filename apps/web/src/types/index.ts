@@ -12,6 +12,8 @@ export interface Task {
   updatedAt: Date;
   pomodoroCount: number;
   completed: boolean;
+  parentId?: string;
+  subtasks?: Task[];
 }
 
 export interface Habit {
@@ -191,12 +193,14 @@ export interface CreateTaskRequest {
   priority: Task["priority"];
   dueDate?: Date;
   tags?: string[];
+  parentId?: string;
 }
 
 export interface UpdateTaskRequest extends Partial<CreateTaskRequest> {
   id: string;
   status?: Task["status"];
   completed?: boolean;
+  parentId?: string;
 }
 
 export interface CreateHabitRequest {
@@ -243,7 +247,7 @@ export type AgentEvent =
   | { type: "end"; content?: string };
 
 export interface SuggestedAction {
-  type: "create_task" | "create_habit" | "update_goal" | "set_reminder";
+  type: "create_task" | "create_habit" | "set_reminder";
   title: string;
   data: Record<string, unknown>;
   approved: boolean;
@@ -251,7 +255,6 @@ export interface SuggestedAction {
 
 export interface ConversationContext {
   userId?: string;
-  activeGoals: string[];
   recentTasks: string[];
   currentHabits: string[];
   conversationHistory: ConversationMessage[];

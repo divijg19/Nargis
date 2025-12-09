@@ -28,8 +28,6 @@ If your local Docker daemon is limited or unavailable, use Fly remote build or C
 flyctl deploy --remote-only -a <app-name>
 ```
 
-For self-hosted ML, consider running `apps/ml-worker` which isolates heavy model dependencies from the lightweight API.
-
 Agent & Developer Notes
 -----------------------
 

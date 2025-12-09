@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone
 import uuid
+from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -33,11 +33,11 @@ def _extractive_summary(text: str, max_chars: int = 200) -> str:
     if sentences and sentences[0].strip():
         s = sentences[0].strip()
         if len(s) <= max_chars:
-            return s + ('.' if not s.endswith('.') else '')
+            return s + ("." if not s.endswith(".") else "")
     return (text.strip()[:max_chars]).rstrip()
 
 
-def create_entry_service(payload: Dict[str, Any], user_id: str, db: Session) -> dict:
+def create_entry_service(payload: dict[str, Any], user_id: str, db: Session) -> dict:
     ai_summary = payload.get("aiSummary")
     if not ai_summary:
         ai_summary = _extractive_summary(payload.get("content", ""))
@@ -52,8 +52,8 @@ def create_entry_service(payload: Dict[str, Any], user_id: str, db: Session) -> 
         tags=payload.get("tags") if isinstance(payload.get("tags"), list) else None,
         audio_url=payload.get("audioUrl"),
         ai_summary=ai_summary,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     db.add(entry)
     db.commit()
@@ -65,11 +65,11 @@ def list_entries_service(
     user_id: str,
     db: Session,
     *,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     offset: int = 0,
     sort: str = "created_at",
     order: str = "desc",
-) -> List[dict]:
+) -> list[dict]:
     sort_map = {
         "created_at": JournalEntry.created_at,
         "updated_at": JournalEntry.updated_at,
@@ -88,7 +88,7 @@ def list_entries_service(
     return [entry_to_dict(e) for e in results]
 
 
-def get_entry_service(entry_id: str, user_id: str, db: Session) -> Optional[dict]:
+def get_entry_service(entry_id: str, user_id: str, db: Session) -> dict | None:
     e = db.query(JournalEntry).filter(JournalEntry.id == entry_id).first()
     if not e:
         return None
@@ -98,8 +98,8 @@ def get_entry_service(entry_id: str, user_id: str, db: Session) -> Optional[dict
 
 
 def update_entry_service(
-    entry_id: str, patch: Dict[str, Any], user_id: str, db: Session
-) -> Optional[dict]:
+    entry_id: str, patch: dict[str, Any], user_id: str, db: Session
+) -> dict | None:
     e = db.query(JournalEntry).filter(JournalEntry.id == entry_id).first()
     if not e:
         return None
@@ -123,7 +123,7 @@ def update_entry_service(
         # regenerate summary if content changed and aiSummary not explicitly set
         if "content" in patch:
             e.ai_summary = _extractive_summary(e.content)
-    e.updated_at = datetime.now(timezone.utc)
+    e.updated_at = datetime.now(UTC)
     db.commit()
     db.refresh(e)
     return entry_to_dict(e)
@@ -140,7 +140,7 @@ def delete_entry_service(entry_id: str, user_id: str, db: Session) -> bool:
     return True
 
 
-def generate_summary_service(entry_id: str, user_id: str, db: Session) -> Optional[dict]:
+def generate_summary_service(entry_id: str, user_id: str, db: Session) -> dict | None:
     e = db.query(JournalEntry).filter(JournalEntry.id == entry_id).first()
     if not e:
         return None
@@ -148,7 +148,7 @@ def generate_summary_service(entry_id: str, user_id: str, db: Session) -> Option
         return None
     summary = _extractive_summary(e.content)
     e.ai_summary = summary
-    e.updated_at = datetime.now(timezone.utc)
+    e.updated_at = datetime.now(UTC)
     db.commit()
     db.refresh(e)
     return entry_to_dict(e)

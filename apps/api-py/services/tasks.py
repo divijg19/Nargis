@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone
 import uuid
+from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -13,17 +13,20 @@ def task_to_dict(t: Task) -> dict:
     return {
         "id": t.id,
         "userId": t.user_id,
+        "parentId": t.parent_id,
         "title": t.title,
         "description": t.description,
         "status": t.status,
         "priority": t.priority,
         "dueDate": t.due_date,
+        "tags": t.tags or [],
         "createdAt": t.created_at.isoformat() if t.created_at else None,
         "updatedAt": t.updated_at.isoformat() if t.updated_at else None,
+        "subtasks": [task_to_dict(sub) for sub in t.subtasks] if t.subtasks else [],
     }
 
 
-def create_task_service(payload: Dict[str, Any], user_id: str, db: Session) -> dict:
+def create_task_service(payload: dict[str, Any], user_id: str, db: Session) -> dict:
     """
     Create a Task record from a plain dict or Pydantic model.dict().
 
@@ -38,13 +41,15 @@ def create_task_service(payload: Dict[str, Any], user_id: str, db: Session) -> d
     task = Task(
         id=str(uuid.uuid4()),
         user_id=user_id,
+        parent_id=payload.get("parentId") or payload.get("parent_id"),
         title=payload.get("title"),
         description=payload.get("description"),
         status=payload.get("status", "pending"),
         priority=payload.get("priority"),
         due_date=payload.get("due_date") or payload.get("dueDate"),
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        tags=payload.get("tags", []),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     db.add(task)
     db.commit()
@@ -56,11 +61,11 @@ def list_tasks_service(
     user_id: str,
     db: Session,
     *,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     offset: int = 0,
     sort: str = "created_at",
     order: str = "desc",
-) -> List[dict]:
+) -> list[dict]:
     sort_map = {
         "created_at": Task.created_at,
         "updated_at": Task.updated_at,
@@ -70,7 +75,9 @@ def list_tasks_service(
         "title": Task.title,
     }
     col = sort_map.get(sort, Task.created_at)
-    q = db.query(Task).filter(Task.user_id == user_id)
+    # Only fetch top-level tasks by default to avoid duplication
+    # Subtasks are loaded via relationship in task_to_dict
+    q = db.query(Task).filter(Task.user_id == user_id, Task.parent_id.is_(None))
     q = q.order_by(col.desc() if order.lower() == "desc" else col.asc())
     if offset:
         q = q.offset(int(offset))
@@ -80,7 +87,7 @@ def list_tasks_service(
     return [task_to_dict(t) for t in tasks]
 
 
-def get_task_service(task_id: str, user_id: str, db: Session) -> Optional[dict]:
+def get_task_service(task_id: str, user_id: str, db: Session) -> dict | None:
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         return None
@@ -90,8 +97,8 @@ def get_task_service(task_id: str, user_id: str, db: Session) -> Optional[dict]:
 
 
 def update_task_service(
-    task_id: str, patch: Dict[str, Any], user_id: str, db: Session
-) -> Optional[dict]:
+    task_id: str, patch: dict[str, Any], user_id: str, db: Session
+) -> dict | None:
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         return None
@@ -108,7 +115,11 @@ def update_task_service(
         task.priority = updates["priority"]
     if "due_date" in updates or "dueDate" in updates:
         task.due_date = updates.get("due_date") or updates.get("dueDate")
-    task.updated_at = datetime.now(timezone.utc)
+    if "tags" in updates:
+        task.tags = updates["tags"]
+    if "parentId" in updates or "parent_id" in updates:
+        task.parent_id = updates.get("parentId") or updates.get("parent_id")
+    task.updated_at = datetime.now(UTC)
     db.commit()
     db.refresh(task)
     return task_to_dict(task)
@@ -125,7 +136,7 @@ def delete_task_service(task_id: str, user_id: str, db: Session) -> bool:
     return True
 
 
-def toggle_task_service(task_id: str, user_id: str, db: Session) -> Optional[dict]:
+def toggle_task_service(task_id: str, user_id: str, db: Session) -> dict | None:
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         return None
@@ -134,7 +145,7 @@ def toggle_task_service(task_id: str, user_id: str, db: Session) -> Optional[dic
     # Map: pending/in_progress/done
     next_status = "done" if task.status != "done" else "pending"
     task.status = next_status
-    task.updated_at = datetime.now(timezone.utc)
+    task.updated_at = datetime.now(UTC)
     db.commit()
     db.refresh(task)
     return task_to_dict(task)

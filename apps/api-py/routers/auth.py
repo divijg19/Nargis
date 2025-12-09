@@ -9,16 +9,17 @@ Features:
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, status, Depends, Request, Response
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
-from datetime import datetime, timedelta, timezone
-import jwt
-import bcrypt
 import os
 import uuid
+from datetime import UTC, datetime, timedelta
+
+import bcrypt
+import jwt
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
+
 from storage.database import get_db
 from storage.models import User
 
@@ -34,7 +35,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 class UserRegister(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=100)
-    name: Optional[str] = Field(None, max_length=100)
+    name: str | None = Field(None, max_length=100)
 
 
 class UserLogin(BaseModel):
@@ -50,13 +51,13 @@ class Token(BaseModel):
 class UserProfile(BaseModel):
     id: str
     email: str
-    name: Optional[str]
+    name: str | None
     createdAt: str
 
 
 class UserProfileUpdate(BaseModel):
-    name: Optional[str] = None
-    email: Optional[EmailStr] = None
+    name: str | None = None
+    email: EmailStr | None = None
 
 
 def hash_password(password: str) -> str:
@@ -74,7 +75,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(data: dict) -> str:
     """Create JWT access token"""
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -82,7 +83,7 @@ def create_access_token(data: dict) -> str:
 
 async def get_current_user(
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: Session = Depends(get_db),
 ) -> dict:
     """Dependency to get current authenticated user"""
@@ -110,12 +111,12 @@ async def get_current_user(
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired"
-        )
+        ) from None
     except jwt.PyJWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
-        )
+        ) from None
 
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
@@ -150,8 +151,8 @@ async def register(
         email=user_data.email,
         name=user_data.name,
         password_hash=hash_password(user_data.password),
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     db.add(user)
     db.commit()
@@ -269,7 +270,7 @@ async def update_profile(
             )
         user.email = updates.email
 
-    user.updated_at = datetime.now(timezone.utc)
+    user.updated_at = datetime.now(UTC)
     db.commit()
     db.refresh(user)
 

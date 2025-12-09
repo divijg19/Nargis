@@ -1,15 +1,18 @@
+import asyncio
 import io
 import logging
-import soundfile as sf
-import subprocess
-import asyncio
 import os
-import httpx
-from openai import OpenAI
-from fastapi import HTTPException
+import subprocess
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:  # Help Pylance understand optional dependency without importing it at runtime
+import httpx
+import soundfile as sf
+from fastapi import HTTPException
+from openai import OpenAI
+
+if (
+    TYPE_CHECKING
+):  # Help Pylance understand optional dependency without importing it at runtime
     pass  # type: ignore
 
 # Read configuration from environment variables (defaults preserve previous behavior)
@@ -47,7 +50,7 @@ async def ensure_stt_loaded():
         if stt_model is not None:
             return
         logging.info("Lazy loading Whisper STT model...")
-        from transformers import AutoProcessor, AutoModelForSpeechSeq2Seq
+        from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
 
         stt_processor = AutoProcessor.from_pretrained("openai/whisper-base")
         stt_model = AutoModelForSpeechSeq2Seq.from_pretrained("openai/whisper-base")
@@ -164,7 +167,10 @@ async def _get_llm_response(text: str) -> dict:
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are Nargis, a friendly and concise AI productivity assistant.",
+                    "content": (
+                        "You are Nargis, a friendly and concise "
+                        "AI productivity assistant."
+                    ),
                 },
                 {"role": "user", "content": text},
             ],
@@ -219,11 +225,16 @@ def get_embedding(text: str) -> list[float]:
     except Exception:
         # Fall back to sentence-transformers if available
         try:
-            from sentence_transformers import SentenceTransformer  # type: ignore[import-not-found]
+            from sentence_transformers import (
+                SentenceTransformer,  # type: ignore[import-not-found]
+            )
 
             model_name = os.getenv("SENTENCE_TRANSFORMER_MODEL", "all-MiniLM-L6-v2")
             model = SentenceTransformer(model_name)
             vec = model.encode(text)
             return vec.tolist()
         except Exception:
-            raise RuntimeError("No embedding provider available. Install OpenAI SDK or sentence-transformers.")
+            raise RuntimeError(
+                "No embedding provider available. "
+                "Install OpenAI SDK or sentence-transformers."
+            ) from None

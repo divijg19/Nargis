@@ -1,19 +1,17 @@
 from __future__ import annotations
 
-from typing import List
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from storage.database import get_session_now
-from storage.models import User, Memory
 from services.memory import create_memory, search_memories
-
+from storage.database import get_session_now
+from storage.models import Memory, User
 
 TEST_EMAIL = "memory-test@example.com"
 
 
 def main() -> None:
-    embedding: List[float] = [0.1] * 1536
+    embedding: list[float] = [0.1] * 1536
 
     with get_session_now() as db:
         # Ensure test user
@@ -25,8 +23,8 @@ def main() -> None:
                 email=TEST_EMAIL,
                 password_hash="test",
                 name="Memory Test",
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
             )
             db.add(user)
             db.commit()

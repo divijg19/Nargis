@@ -1,7 +1,7 @@
 import importlib
-import traceback
 import os
 import sys
+import traceback
 
 # Ensure the `apps/api-py` package root is on sys.path so `tests` can be imported
 this_dir = os.path.dirname(__file__)

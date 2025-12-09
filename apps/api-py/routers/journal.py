@@ -1,50 +1,50 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Header, HTTPException, status, Depends
+from typing import Any, Literal
+
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any, Literal
 from sqlalchemy.orm import Session
 
-from storage.database import get_db
-from storage.models import JournalEntry
 from routers.auth import get_current_user
-
 from services.journal import (
     create_entry_service,
-    list_entries_service,
-    get_entry_service,
-    update_entry_service,
     delete_entry_service,
     generate_summary_service,
+    get_entry_service,
+    list_entries_service,
+    update_entry_service,
 )
+from storage.database import get_db
+from storage.models import JournalEntry
 
 router = APIRouter(prefix="/v1/journal", tags=["journal"])
 
 
 class JournalEntryCreate(BaseModel):
-    title: Optional[str] = Field(None, max_length=200)
+    title: str | None = Field(None, max_length=200)
     content: str = Field(..., min_length=1)
     type: Literal["text", "voice"] = Field(default="text")
-    mood: Optional[Literal["great", "good", "neutral", "bad", "terrible"]] = None
-    tags: Optional[List[str]] = Field(default_factory=list)
-    audioUrl: Optional[str] = None
+    mood: Literal["great", "good", "neutral", "bad", "terrible"] | None = None
+    tags: list[str] | None = Field(default_factory=list)
+    audioUrl: str | None = None
 
 
 class JournalEntryUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
-    type: Optional[Literal["text", "voice"]] = None
-    mood: Optional[Literal["great", "good", "neutral", "bad", "terrible"]] = None
-    tags: Optional[List[str]] = None
-    audioUrl: Optional[str] = None
-    aiSummary: Optional[str] = None
+    title: str | None = None
+    content: str | None = None
+    type: Literal["text", "voice"] | None = None
+    mood: Literal["great", "good", "neutral", "bad", "terrible"] | None = None
+    tags: list[str] | None = None
+    audioUrl: str | None = None
+    aiSummary: str | None = None
 
 
-@router.get("", response_model=List[Dict[str, Any]])
+@router.get("", response_model=list[dict[str, Any]])
 async def list_entries(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
-    limit: Optional[int] = None,
+    limit: int | None = None,
     offset: int = 0,
     sort: str = "created_at",
     order: str = "desc",
@@ -63,7 +63,7 @@ async def list_entries(
 async def create_entry(
     payload: JournalEntryCreate,
     current_user: dict = Depends(get_current_user),
-    Idempotency_Key: Optional[str] = Header(default=None, convert_underscores=False),
+    Idempotency_Key: str | None = Header(default=None, convert_underscores=False),
     db: Session = Depends(get_db),
 ):
     entry_data = payload.model_dump()
@@ -71,14 +71,24 @@ async def create_entry(
     from services.idempotency import get_idempotent_response, save_idempotent_response
 
     if Idempotency_Key:
-        saved = get_idempotent_response(db, Idempotency_Key, current_user.get("id"), "POST", "/v1/journal")
+        saved = get_idempotent_response(
+            db, Idempotency_Key, current_user.get("id"), "POST", "/v1/journal"
+        )
         if saved:
             return saved["response"]
 
     created = create_entry_service(entry_data, current_user["id"], db)
 
     if Idempotency_Key:
-        save_idempotent_response(db, Idempotency_Key, current_user.get("id"), "POST", "/v1/journal", 201, created)
+        save_idempotent_response(
+            db,
+            Idempotency_Key,
+            current_user.get("id"),
+            "POST",
+            "/v1/journal",
+            201,
+            created,
+        )
 
     return created
 

@@ -20,10 +20,23 @@ export default function JournalPage() {
   const [viewMode, setViewMode] = useState<"list" | "calendar">("calendar");
   const [rangeMode, setRangeMode] = useState<"day" | "week" | "month">("week");
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    return new Date("2024-01-01T00:00:00");
+  });
+
+  useEffect(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
-    return d;
-  });
+    setSelectedDate(d);
+  }, []);
+
+  const [today, setToday] = useState<Date | null>(null);
+
+  useEffect(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    setToday(d);
+  }, []);
+
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [filterMood, setFilterMood] = useState<FilterMood>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,8 +74,8 @@ export default function JournalPage() {
 
   // Group entries by time period
   const { todayFiltered, weekFiltered, earlierFiltered } = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    if (!today)
+      return { todayFiltered: [], weekFiltered: [], earlierFiltered: [] };
 
     const weekAgo = new Date(today);
     weekAgo.setDate(weekAgo.getDate() - 7);

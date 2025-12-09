@@ -5,15 +5,16 @@ Revises: d1fa08afa045
 Create Date: 2025-11-25 16:25:44.020298
 
 """
-from typing import Sequence, Union
+
+from collections.abc import Sequence
 
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '0e71654220b6'
-down_revision: Union[str, Sequence[str], None] = 'd1fa08afa045'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+revision: str = "0e71654220b6"
+down_revision: str | Sequence[str] | None = "d1fa08afa045"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:

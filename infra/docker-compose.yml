@@ -18,6 +18,7 @@ services:
       - LOG_LEVEL=DEBUG
       - ALLOWED_ORIGINS=http://localhost:3000
       - PRELOAD_STT=false
+      - REDIS_URL=redis://redis:6379
     # The dependencies on Redis and DB are correct for future-proofing.
     depends_on:
       - redis
@@ -35,8 +36,10 @@ services:
       # UPDATED: The gateway now only needs one variable to find the Python service.
       # It points to the 'api-py' service name within Docker's network.
       - ORCHESTRATOR_URL=http://api-py:8000
+      - REDIS_URL=redis://redis:6379
     depends_on:
       - api-py
+      - redis
 
   db:
     image: pgvector/pgvector:pg16
@@ -69,18 +72,6 @@ services:
   #    # ADDED: Explicitly state that the web frontend depends on the gateway.
   #    depends_on:
   #      - gateway
-
-  # The ml-worker is unchanged but we'll add a depends_on for clarity.
-  ml-worker:
-    build:
-      context: ../apps/ml-worker
-    image: nargis-ml-worker:local
-    ports:
-      - "8001:8001"
-    environment:
-      - LOG_LEVEL=DEBUG
-    depends_on:
-      - api-py
 
 networks:
   default:

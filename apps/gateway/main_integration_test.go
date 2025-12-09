@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/divijg19/Nargis/gateway/internal/auth"
 	"github.com/gorilla/websocket"
 )
 
@@ -69,7 +70,7 @@ func TestGatewayCookieWSAuthIntegration(t *testing.T) {
 			return
 		}
 		defer ws.Close()
-		uid, err := verifyJWT(r)
+		uid, err := auth.VerifyJWTFromRequest(r)
 		if err != nil {
 			_ = ws.WriteMessage(websocket.TextMessage, []byte(`{"error":"unauth"}`))
 			return

@@ -1,11 +1,11 @@
-from typing import Any, Dict
+from typing import Any
 
 
-def error_envelope(code: str, message: str) -> Dict[str, Any]:
+def error_envelope(code: str, message: str) -> dict[str, Any]:
     return {"error": {"code": code, "message": message}}
 
 
-def make_error_from_detail(detail: Any, default_code: str = "ERROR") -> Dict[str, Any]:
+def make_error_from_detail(detail: Any, default_code: str = "ERROR") -> dict[str, Any]:
     """Normalize various detail shapes (str or dict) into the standard envelope."""
     if isinstance(detail, dict):
         # If already in our envelope shape, return as-is

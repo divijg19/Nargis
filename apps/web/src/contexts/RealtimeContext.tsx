@@ -41,12 +41,12 @@ function isTranscriptLLM(
 // Define the shape of the data that the context will provide to the UI.
 interface RealtimeContextValue {
   connectionStatus:
-  | "idle"
-  | "connecting"
-  | "open"
-  | "closed"
-  | "error"
-  | "retrying";
+    | "idle"
+    | "connecting"
+    | "open"
+    | "closed"
+    | "error"
+    | "retrying";
   isListening: boolean;
   startListening: () => void;
   stopListening: () => void;
@@ -494,7 +494,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
             settled = true;
             try {
               unsub();
-            } catch { }
+            } catch {}
             resolve(true);
           }
         });
@@ -502,7 +502,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
           if (!settled) {
             try {
               unsub();
-            } catch { }
+            } catch {}
             resolve(false);
           }
         }, 4000);

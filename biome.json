@@ -13,7 +13,6 @@
       "packages/**/*",
       "tools/**/*",
       "apps/gateway/**/*",
-      "apps/ml-worker/**/*",
       "apps/api-py/**/*",
       ".github/**/*",
       "package.json",

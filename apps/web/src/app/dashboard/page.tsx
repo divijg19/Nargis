@@ -50,12 +50,14 @@ export default function DashboardPage() {
     (completedToday / Math.max(todayTasks.length, 1)) * 100,
   );
 
-  const getGreeting = () => {
+  const [greeting, setGreeting] = useState("Good morning");
+
+  useEffect(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-  };
+    if (hour < 12) setGreeting("Good morning");
+    else if (hour < 18) setGreeting("Good afternoon");
+    else setGreeting("Good evening");
+  }, []);
 
   return (
     <div className="h-screen overflow-hidden flex flex-col pt-8 md:pt-12 bg-app-light transition-all duration-500">
@@ -190,7 +192,7 @@ export default function DashboardPage() {
                 <div className="w-full flex flex-col gap-0 items-center">
                   <div className="w-full flex items-start justify-center">
                     <div className="w-full max-w-sm sm:max-w-md mt-0">
-                      <DashboardHero greeting={getGreeting()} />
+                      <DashboardHero greeting={greeting} />
                     </div>
                   </div>
 

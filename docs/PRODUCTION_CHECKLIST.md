@@ -55,7 +55,7 @@ Use this checklist before deploying Nargis to production.
 
 ### Security
 - [ ] API URL not hardcoded
-- [ ] JWT tokens stored securely (localStorage)
+- [ ] JWT tokens stored securely (HttpOnly Cookies)
 - [ ] Tokens removed on logout
 - [ ] Auto-logout on 401/403 responses
 - [ ] No sensitive data in client-side code

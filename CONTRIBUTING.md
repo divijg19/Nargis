@@ -44,24 +44,21 @@ cd Nargis
 # 2. Install dependencies
 bun install
 
-#  (Python backend) create venv and install deps using `uv` (recommended)
+# 3. Backend Setup (Python)
 cd apps/api-py
 
-# Ensure you're running the required Python version (3.12)
-python -c "import sys
-sys.exit(0 if sys.version_info[:3]==(3,12) else 1)" || (Write-Host 'Please use Python 3.12 (pyenv or system)'; exit 1)
+# Install uv (if not already installed)
+# Mac/Linux: curl -LsSf https://astral.sh/uv/install.sh | sh
+# Windows: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
 
-python -m venv .venv
-.\.venv\Scripts\Activate  # or `source .venv/bin/activate` on POSIX
+# Sync dependencies (creates virtualenv and installs deps automatically)
+uv sync --all-extras
 
-# Bootstrap `uv` (this is the only pip usage required to install `uv` itself)
-python -m pip install --upgrade pip
-python -m pip install --no-cache-dir "uv==0.9.11"
+# Run the server
+uv run uvicorn main:app --reload
+```
 
-# Install runtime + dev deps using `uv` exclusively
-uv pip install --no-cache-dir '.[dev]'
-
-# 3. Configure environment files
+### 4. Configure environment files
 Copy the example env for the frontend and adjust values if needed:
 
 ```bash

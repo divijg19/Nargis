@@ -1,22 +1,22 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, status, Depends, Header
+from typing import Any
+
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 
-from storage.database import get_db
-from storage.models import Habit
 from routers.auth import get_current_user
-
 from services.habits import (
     create_habit_service,
-    list_habits_service,
-    get_habit_service,
-    update_habit_service,
     delete_habit_service,
+    get_habit_service,
+    list_habits_service,
     update_habit_count_service,
+    update_habit_service,
 )
+from storage.database import get_db
+from storage.models import Habit
 
 router = APIRouter(prefix="/v1/habits", tags=["habits"])
 
@@ -24,30 +24,30 @@ router = APIRouter(prefix="/v1/habits", tags=["habits"])
 class HabitCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=140)
     target: int = Field(default=1, ge=1)
-    unit: Optional[str] = None
-    frequency: Optional[str] = None
-    color: Optional[str] = None
+    unit: str | None = None
+    frequency: str | None = None
+    color: str | None = None
 
 
 class HabitUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=140)
-    target: Optional[int] = Field(None, ge=1)
-    unit: Optional[str] = None
-    frequency: Optional[str] = None
-    color: Optional[str] = None
+    name: str | None = Field(None, min_length=1, max_length=140)
+    target: int | None = Field(None, ge=1)
+    unit: str | None = None
+    frequency: str | None = None
+    color: str | None = None
 
 
 class HabitCountUpdate(BaseModel):
     # Either set absolute count or apply a delta (one of them required)
-    count: Optional[int] = Field(None, ge=0)
-    delta: Optional[int] = None
+    count: int | None = Field(None, ge=0)
+    delta: int | None = None
 
 
-@router.get("", response_model=List[Dict[str, Any]])
+@router.get("", response_model=list[dict[str, Any]])
 async def list_habits(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
-    limit: Optional[int] = None,
+    limit: int | None = None,
     offset: int = 0,
     sort: str = "created_at",
     order: str = "desc",
@@ -67,20 +67,30 @@ async def create_habit(
     payload: HabitCreate,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
-    Idempotency_Key: Optional[str] = Header(default=None, convert_underscores=False),
+    Idempotency_Key: str | None = Header(default=None, convert_underscores=False),
 ):
     from services.idempotency import get_idempotent_response, save_idempotent_response
 
     data = payload.model_dump()
     if Idempotency_Key:
-        saved = get_idempotent_response(db, Idempotency_Key, current_user.get("id"), "POST", "/v1/habits")
+        saved = get_idempotent_response(
+            db, Idempotency_Key, current_user.get("id"), "POST", "/v1/habits"
+        )
         if saved:
             return saved["response"]
 
     created = create_habit_service(data, current_user["id"], db)
 
     if Idempotency_Key:
-        save_idempotent_response(db, Idempotency_Key, current_user.get("id"), "POST", "/v1/habits", 201, created)
+        save_idempotent_response(
+            db,
+            Idempotency_Key,
+            current_user.get("id"),
+            "POST",
+            "/v1/habits",
+            201,
+            created,
+        )
 
     return created
 

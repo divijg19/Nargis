@@ -7,36 +7,37 @@ Persistence: Ephemeral (resets on restart).
 
 from __future__ import annotations
 
-import uuid
-from typing import Dict, Optional, Any, List
-from datetime import datetime, timezone
+import builtins
 import threading
+import uuid
+from datetime import UTC, datetime
+from typing import Any
 
 
 class InMemoryRepo:
     def __init__(self):
-        self._items: Dict[str, Dict[str, Any]] = {}
+        self._items: dict[str, dict[str, Any]] = {}
         self._lock = threading.Lock()
 
-    async def list(self) -> List[Dict[str, Any]]:
+    async def list(self) -> builtins.list[dict[str, Any]]:
         """Async-compatible list method for router compatibility"""
         with self._lock:
             return list(self._items.values())
 
-    def list_all(self) -> List[Dict[str, Any]]:
+    def list_all(self) -> builtins.list[dict[str, Any]]:
         """Sync list method (legacy)"""
         with self._lock:
             return list(self._items.values())
 
-    async def get(self, item_id: str) -> Optional[Dict[str, Any]]:
+    async def get(self, item_id: str) -> dict[str, Any] | None:
         """Async-compatible get method"""
         with self._lock:
             return self._items.get(item_id)
 
-    async def create(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    async def create(self, data: dict[str, Any]) -> dict[str, Any]:
         """Async-compatible create method"""
         with self._lock:
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             item_id = data.get("id") or str(uuid.uuid4())
             record = {
                 **data,
@@ -48,15 +49,15 @@ class InMemoryRepo:
             return record
 
     async def update(
-        self, item_id: str, patch: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, item_id: str, patch: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Async-compatible update method"""
         with self._lock:
             if item_id not in self._items:
                 return None
             current = self._items[item_id]
             current.update({k: v for k, v in patch.items() if v is not None})
-            current["updatedAt"] = datetime.now(timezone.utc).isoformat()
+            current["updatedAt"] = datetime.now(UTC).isoformat()
             return current
 
     async def delete(self, item_id: str) -> bool:
@@ -75,12 +76,15 @@ users_repo = InMemoryRepo()  # User authentication
 
 
 # Idempotency support for POST requests
-_idempotency_cache: Dict[str, Dict[str, Any]] = {}
+_idempotency_cache: dict[str, dict[str, Any]] = {}
 _idempotency_lock = threading.Lock()
 
 
 async def idempotent_post(key: str, coro):
-    """Simple idempotency: if key exists, return cached result instead of executing coro."""
+    """
+    Simple idempotency: if key exists, return cached result
+    instead of executing coro.
+    """
     with _idempotency_lock:
         if key in _idempotency_cache:
             return _idempotency_cache[key], True  # (record, replay=True)

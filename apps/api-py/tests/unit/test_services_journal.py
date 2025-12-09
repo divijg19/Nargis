@@ -3,15 +3,16 @@ from __future__ import annotations
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from storage.models import Base, User
 from services.journal import (
     create_entry_service,
-    list_entries_service,
-    get_entry_service,
-    update_entry_service,
     delete_entry_service,
     generate_summary_service,
+    get_entry_service,
+    list_entries_service,
+    update_entry_service,
 )
+from storage.models import Base, User
+
 
 def setup_inmemory_db():
     engine = create_engine(

@@ -19,9 +19,9 @@ def test_cookie_auth_register_and_logout_flow():
         assert resp.status_code == 201, resp.text
 
         # Server should set httpOnly cookie `access_token` (TestClient stores cookies)
-        assert (
-            "access_token" in client.cookies
-        ), f"access_token cookie missing, cookies={client.cookies}"
+        assert "access_token" in client.cookies, (
+            f"access_token cookie missing, cookies={client.cookies}"
+        )
 
         # Some environments may not populate cookie exactly as returned in body,
         # so ensure the exact token value is present in the cookie before calling /me.
@@ -43,7 +43,8 @@ def test_cookie_auth_register_and_logout_flow():
         set_cookie = lo.headers.get("set-cookie", "")
         assert "access_token=" in set_cookie
 
-        # TestClient should clear the cookie automatically, but ensure client state is cleared
+        # TestClient should clear the cookie automatically,
+        # but ensure client state is cleared
         if "access_token" in client.cookies:
             del client.cookies["access_token"]
 

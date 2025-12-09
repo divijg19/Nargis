@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import List, Dict, Any
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
@@ -17,23 +17,28 @@ except Exception:
 # proper pgvector values when inserting/searching. This is optional.
 try:
     from pgvector import Vector as PgVector  # type: ignore
+
     PGVECTOR_VALUE_AVAILABLE = True
 except Exception:
     PgVector = None
     PGVECTOR_VALUE_AVAILABLE = False
 
 
-def _mem_to_dict(m: Memory) -> Dict[str, Any]:
+def _mem_to_dict(m: Memory) -> dict[str, Any]:
     return {
         "id": m.id,
         "user_id": m.user_id,
         "content": m.content,
-        "created_at": m.created_at.isoformat() if getattr(m, "created_at", None) else None,
+        "created_at": m.created_at.isoformat()
+        if getattr(m, "created_at", None)
+        else None,
     }
 
 
-def create_memory(db: Session, user_id: str, content: str, embedding_vector: List[float]) -> Dict[str, Any]:
-    m = Memory(user_id=user_id, content=content, created_at=datetime.now(timezone.utc))
+def create_memory(
+    db: Session, user_id: str, content: str, embedding_vector: list[float]
+) -> dict[str, Any]:
+    m = Memory(user_id=user_id, content=content, created_at=datetime.now(UTC))
     # Prefer using the pgvector runtime wrapper when available so the DB
     # receives a properly-typed parameter. If that's not possible we leave
     # the plain list which may map to JSON or trigger the fallback path.
@@ -56,23 +61,32 @@ def create_memory(db: Session, user_id: str, content: str, embedding_vector: Lis
         db.rollback()
         vec_literal = "[" + ",".join([str(float(x)) for x in embedding_vector]) + "]"
         sql = text(
-            f"INSERT INTO memories (user_id, content, embedding, created_at) VALUES (:user_id, :content, '{vec_literal}'::vector, :created_at) RETURNING id, created_at"
+            "INSERT INTO memories (user_id, content, embedding, created_at) "
+            f"VALUES (:user_id, :content, '{vec_literal}'::vector, :created_at) "
+            "RETURNING id, created_at"
         )
         params = {
             "user_id": user_id,
             "content": content,
-            "created_at": datetime.now(timezone.utc),
+            "created_at": datetime.now(UTC),
         }
         result = db.execute(sql, params)
         row = result.fetchone()
         db.commit()
         if row:
-            return {"id": row[0], "user_id": user_id, "content": content, "created_at": row[1].isoformat()}
+            return {
+                "id": row[0],
+                "user_id": user_id,
+                "content": content,
+                "created_at": row[1].isoformat(),
+            }
         # If that also fails, raise to surface the error
         raise
 
 
-def search_memories(db: Session, user_id: str, query_vector: List[float], limit: int = 3) -> List[Dict[str, Any]]:
+def search_memories(
+    db: Session, user_id: str, query_vector: list[float], limit: int = 3
+) -> list[dict[str, Any]]:
     if PGVECTOR_AVAILABLE:
         # Use SQLAlchemy + pgvector integration so the driver binds the vector
         # parameter with the correct type (avoids `vector <-> numeric[]` errors).
@@ -86,9 +100,12 @@ def search_memories(db: Session, user_id: str, query_vector: List[float], limit:
                 except Exception:
                     qparam = query_vector
 
-            stmt = select(Memory).where(Memory.user_id == user_id).order_by(
-                Memory.embedding.l2_distance(qparam)
-            ).limit(limit)
+            stmt = (
+                select(Memory)
+                .where(Memory.user_id == user_id)
+                .order_by(Memory.embedding.l2_distance(qparam))
+                .limit(limit)
+            )
             rows = db.scalars(stmt).all()
             return [_mem_to_dict(r) for r in rows]
         except Exception:
@@ -96,6 +113,11 @@ def search_memories(db: Session, user_id: str, query_vector: List[float], limit:
             pass
 
     # Fallback: simple recency-based selection when pgvector unavailable
-    stmt = select(Memory).where(Memory.user_id == user_id).order_by(Memory.created_at.desc()).limit(limit)
+    stmt = (
+        select(Memory)
+        .where(Memory.user_id == user_id)
+        .order_by(Memory.created_at.desc())
+        .limit(limit)
+    )
     rows = db.scalars(stmt).all()
     return [_mem_to_dict(r) for r in rows]

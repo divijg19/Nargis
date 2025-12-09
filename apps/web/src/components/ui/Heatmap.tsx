@@ -51,9 +51,15 @@ export default function Heatmap({ habits, weeks = 12 }: HeatmapProps) {
     return map;
   }, [habits]);
 
+  const [today, setToday] = React.useState<Date | null>(null);
+
+  React.useEffect(() => {
+    setToday(new Date());
+  }, []);
+
   // Build array of dates per week columns (7 rows) — ensure consistent 7 entries per column
   const weeksArray = React.useMemo(() => {
-    const today = new Date();
+    if (!today) return [];
     const start = startOfWeek(subDays(today, weeks * 7 - 1), {
       weekStartsOn: 0,
     });

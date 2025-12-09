@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone
 import uuid
+from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -26,7 +26,7 @@ def goal_to_dict(g: Goal) -> dict:
     }
 
 
-def create_goal_service(payload: Dict[str, Any], user_id: str, db: Session) -> dict:
+def create_goal_service(payload: dict[str, Any], user_id: str, db: Session) -> dict:
     goal = Goal(
         id=str(uuid.uuid4()),
         user_id=user_id,
@@ -38,8 +38,8 @@ def create_goal_service(payload: Dict[str, Any], user_id: str, db: Session) -> d
         linked_task_ids=payload.get("linkedTaskIds") or [],
         linked_habit_ids=payload.get("linkedHabitIds") or [],
         ai_suggestions=payload.get("aiSuggestions") or [],
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     db.add(goal)
     db.commit()
@@ -51,11 +51,11 @@ def list_goals_service(
     user_id: str,
     db: Session,
     *,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     offset: int = 0,
     sort: str = "created_at",
     order: str = "desc",
-) -> List[dict]:
+) -> list[dict]:
     sort_map = {
         "created_at": Goal.created_at,
         "updated_at": Goal.updated_at,
@@ -74,7 +74,7 @@ def list_goals_service(
     return [goal_to_dict(g) for g in items]
 
 
-def get_goal_service(goal_id: str, user_id: str, db: Session) -> Optional[dict]:
+def get_goal_service(goal_id: str, user_id: str, db: Session) -> dict | None:
     g = db.query(Goal).filter(Goal.id == goal_id).first()
     if not g:
         return None
@@ -83,7 +83,9 @@ def get_goal_service(goal_id: str, user_id: str, db: Session) -> Optional[dict]:
     return goal_to_dict(g)
 
 
-def update_goal_service(goal_id: str, patch: Dict[str, Any], user_id: str, db: Session) -> Optional[dict]:
+def update_goal_service(
+    goal_id: str, patch: dict[str, Any], user_id: str, db: Session
+) -> dict | None:
     g = db.query(Goal).filter(Goal.id == goal_id).first()
     if not g:
         return None
@@ -102,7 +104,7 @@ def update_goal_service(goal_id: str, patch: Dict[str, Any], user_id: str, db: S
         g.linked_habit_ids = patch["linkedHabitIds"]
     if "aiSuggestions" in patch and patch["aiSuggestions"] is not None:
         g.ai_suggestions = patch["aiSuggestions"]
-    g.updated_at = datetime.now(timezone.utc)
+    g.updated_at = datetime.now(UTC)
     db.commit()
     db.refresh(g)
     return goal_to_dict(g)

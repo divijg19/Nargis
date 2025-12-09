@@ -7,9 +7,14 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useState,
 } from "react";
 import { useToasts } from "@/contexts/ToastContext";
-import { buildEvent, emitDomainEvent, onDomainEvent } from "@/events/dispatcher";
+import {
+  buildEvent,
+  emitDomainEvent,
+  onDomainEvent,
+} from "@/events/dispatcher";
 import {
   createJournalEntry,
   deleteJournalEntry,
@@ -31,9 +36,9 @@ type JournalAction =
   | { type: "SET_ENTRIES"; payload: JournalEntry[] }
   | { type: "ADD_ENTRY"; payload: JournalEntry }
   | {
-    type: "UPDATE_ENTRY";
-    payload: { id: string; updates: Partial<JournalEntry> };
-  }
+      type: "UPDATE_ENTRY";
+      payload: { id: string; updates: Partial<JournalEntry> };
+    }
   | { type: "DELETE_ENTRY"; payload: string };
 
 // Initial state
@@ -100,6 +105,12 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(journalReducer, initialState);
   const { push } = useToasts();
 
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setNow(new Date());
+  }, []);
+
   // Computed values
   const todayEntries = useMemo(
     () => state.entries.filter((entry) => isToday(entry.createdAt)),
@@ -107,12 +118,13 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
   );
 
   const weekEntries = useMemo(() => {
-    const weekAgo = new Date();
+    if (!now) return [];
+    const weekAgo = new Date(now);
     weekAgo.setDate(weekAgo.getDate() - 7);
     return state.entries.filter(
       (entry) => new Date(entry.createdAt) >= weekAgo,
     );
-  }, [state.entries]);
+  }, [state.entries, now]);
 
   // Actions
   const addEntry = useCallback(
@@ -215,7 +227,7 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
 
   // Listen for remote tool completion events to auto-refresh journal
   useEffect(() => {
-    return onDomainEvent((evt) => {
+    const unsubscribe = onDomainEvent((evt) => {
       if (evt.type === "remote.tool_completed") {
         const tool = evt.data.tool as string;
         if (
@@ -223,11 +235,16 @@ export function JournalProvider({ children }: { children: React.ReactNode }) {
           tool === "update_journal" ||
           tool === "delete_journal"
         ) {
-          console.debug("[JournalContext] Remote change detected, reloading...");
+          console.debug(
+            "[JournalContext] Remote change detected, reloading...",
+          );
           loadEntries();
         }
       }
     });
+    return () => {
+      unsubscribe();
+    };
   }, [loadEntries]);
 
   const getSummary = useCallback(async (content: string): Promise<string> => {

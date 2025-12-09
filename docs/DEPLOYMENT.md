@@ -55,7 +55,10 @@ fly postgres create --name nargis-db --region sjc
 Create `apps/api-py/Dockerfile`:
 
 ```dockerfile
-FROM python:3.11-slim
+FROM python:3.12-slim
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
@@ -67,15 +70,10 @@ RUN apt-get update && apt-get install -y \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy dependency files
-COPY pyproject.toml ./
-COPY uv.lock ./
+COPY pyproject.toml uv.lock ./
 
-# Bootstrap uv (pinned) then use it for deterministic installs
-RUN python -m pip install --upgrade pip && \
-  python -m pip install --no-cache-dir "uv==0.9.11"
-
-# Install dependencies using uv (reads pyproject + uv.lock)
-RUN uv pip install --system -r pyproject.toml
+# Install dependencies using uv sync
+RUN uv sync --frozen --no-dev
 
 # Copy application code
 COPY . .
@@ -84,7 +82,7 @@ COPY . .
 EXPOSE 8080
 
 # Run database migrations and start server
-CMD alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8080
+CMD ["uv", "run", "sh", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8080"]
 ```
 
 ### 5. Create fly.toml Configuration

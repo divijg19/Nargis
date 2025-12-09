@@ -2,8 +2,9 @@
 Test script for Nargis API endpoints
 """
 
-from fastapi.testclient import TestClient
 import requests
+from fastapi.testclient import TestClient
+
 from main import app
 
 # Use in-process TestClient so tests run without a separate server process.
@@ -66,7 +67,10 @@ def test_journal_create(token):
     headers = {"Authorization": f"Bearer {token}"}
     journal_data = {
         "title": "Test Entry",
-        "content": "This is a test journal entry to verify the API is working correctly. It should generate an AI summary.",
+        "content": (
+            "This is a test journal entry to verify the API is working correctly. "
+            "It should generate an AI summary."
+        ),
         "type": "text",
         "mood": "great",
         "tags": ["test", "api"],

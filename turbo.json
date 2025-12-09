@@ -15,8 +15,15 @@
 			"cache": false,
 			"persistent": true
 		},
-		"lint": {},
-		"type-check": {},
+		"lint": {
+			"outputs": []
+		},
+		"type-check": {
+			"outputs": []
+		},
+		"test:unit": {
+			"outputs": []
+		},
 		"clean": {
 			"cache": false
 		}

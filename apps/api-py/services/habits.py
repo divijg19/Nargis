@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timezone, date as date_cls
 import uuid
+from datetime import UTC, datetime
+from datetime import date as date_cls
+from typing import Any
 
 from sqlalchemy.orm import Session
 
 from storage.models import Habit, HabitEntry
 
 
-def _compute_streaks(entries: List[HabitEntry]) -> Dict[str, int]:
+def _compute_streaks(entries: list[HabitEntry]) -> dict[str, int]:
     if not entries:
         return {"currentStreak": 0, "bestStreak": 0}
 
@@ -27,8 +28,9 @@ def _compute_streaks(entries: List[HabitEntry]) -> Dict[str, int]:
     if not completed_dates:
         return {"currentStreak": 0, "bestStreak": 0}
 
-    # Use UTC date to avoid server local time issues, though ideally this should be user-local
-    today = datetime.now(timezone.utc).date()
+    # Use UTC date to avoid server local time issues,
+    # though ideally this should be user-local
+    today = datetime.now(UTC).date()
 
     # Current Streak
     current_streak = 0
@@ -73,7 +75,7 @@ def _compute_streaks(entries: List[HabitEntry]) -> Dict[str, int]:
 def habit_to_dict(h: Habit) -> dict:
     # Build history from related entries if loaded/available
     try:
-        entries: List[HabitEntry] = list(getattr(h, "entries", []) or [])
+        entries: list[HabitEntry] = list(getattr(h, "entries", []) or [])
     except Exception:
         entries = []
     history = [
@@ -98,7 +100,7 @@ def habit_to_dict(h: Habit) -> dict:
     }
 
 
-def create_habit_service(payload: Dict[str, Any], user_id: str, db: Session) -> dict:
+def create_habit_service(payload: dict[str, Any], user_id: str, db: Session) -> dict:
     habit = Habit(
         id=str(uuid.uuid4()),
         user_id=user_id,
@@ -107,8 +109,8 @@ def create_habit_service(payload: Dict[str, Any], user_id: str, db: Session) -> 
         unit=payload.get("unit"),
         frequency=payload.get("frequency"),
         color=payload.get("color"),
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     db.add(habit)
     db.commit()
@@ -120,11 +122,11 @@ def list_habits_service(
     user_id: str,
     db: Session,
     *,
-    limit: Optional[int] = None,
+    limit: int | None = None,
     offset: int = 0,
     sort: str = "created_at",
     order: str = "desc",
-) -> List[dict]:
+) -> list[dict]:
     sort_map = {
         "created_at": Habit.created_at,
         "updated_at": Habit.updated_at,
@@ -142,7 +144,7 @@ def list_habits_service(
     return [habit_to_dict(h) for h in results]
 
 
-def get_habit_service(habit_id: str, user_id: str, db: Session) -> Optional[dict]:
+def get_habit_service(habit_id: str, user_id: str, db: Session) -> dict | None:
     h = db.query(Habit).filter(Habit.id == habit_id).first()
     if not h:
         return None
@@ -152,8 +154,8 @@ def get_habit_service(habit_id: str, user_id: str, db: Session) -> Optional[dict
 
 
 def update_habit_service(
-    habit_id: str, patch: Dict[str, Any], user_id: str, db: Session
-) -> Optional[dict]:
+    habit_id: str, patch: dict[str, Any], user_id: str, db: Session
+) -> dict | None:
     h = db.query(Habit).filter(Habit.id == habit_id).first()
     if not h:
         return None
@@ -169,7 +171,7 @@ def update_habit_service(
         h.frequency = patch["frequency"]
     if "color" in patch:
         h.color = patch["color"]
-    h.updated_at = datetime.now(timezone.utc)
+    h.updated_at = datetime.now(UTC)
     db.commit()
     db.refresh(h)
     return habit_to_dict(h)
@@ -187,8 +189,8 @@ def delete_habit_service(habit_id: str, user_id: str, db: Session) -> bool:
 
 
 def update_habit_count_service(
-    habit_id: str, payload: Dict[str, Any], user_id: str, db: Session
-) -> Optional[dict]:
+    habit_id: str, payload: dict[str, Any], user_id: str, db: Session
+) -> dict | None:
     h = db.query(Habit).filter(Habit.id == habit_id).first()
     if not h:
         return None
@@ -215,8 +217,8 @@ def update_habit_count_service(
         entry.completed = bool((entry.count or 0) >= int(h.target or 1))
     except Exception:
         entry.completed = bool((entry.count or 0) > 0)
-    entry.updated_at = datetime.now(timezone.utc)
-    h.updated_at = datetime.now(timezone.utc)
+    entry.updated_at = datetime.now(UTC)
+    h.updated_at = datetime.now(UTC)
     db.commit()
     db.refresh(h)
     return habit_to_dict(h)
