@@ -98,7 +98,7 @@ jobs:
           version: "latest"
 
       - name: Install Dependencies
-        run: uv sync --all-extras
+        run: uv sync --upgrade --all-extras
 
       - name: Lint (Ruff)
         run: uv run ruff check . --fix
@@ -112,6 +112,9 @@ jobs:
         env:
           DATABASE_URL: postgresql://nargis:nargis@localhost:5433/nargis
           ALLOW_POSTGRES_IN_TESTS: "1"
+          GROQ_API_KEY: "dummy"
+          DEEPGRAM_API_KEY: "dummy"
+          OPENAI_API_KEY: "dummy"
         run: uv run pytest -q tests
 
   # ------------------------------------------------------------------

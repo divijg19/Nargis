@@ -1,4 +1,11 @@
+import os
+
 import pytest
+
+# Set dummy API keys for tests to prevent import errors in CI/CD without keys
+os.environ.setdefault("GROQ_API_KEY", "dummy")
+os.environ.setdefault("DEEPGRAM_API_KEY", "dummy")
+os.environ.setdefault("OPENAI_API_KEY", "dummy")
 
 from storage.database import init_db
 
