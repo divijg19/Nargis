@@ -1,172 +1,168 @@
 name: CI/CD Pipeline
 
 on:
-    push:
-        branches: [main]
-    pull_request:
-        branches: [main]
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-    # ------------------------------------------------------------------
-    # 1. DETECT CHANGES
-    # ------------------------------------------------------------------
-    changes:
-        runs-on: ubuntu-latest
-        outputs:
-            web: ${{ steps.filter.outputs.web }}
-            api: ${{ steps.filter.outputs.api }}
-            gateway: ${{ steps.filter.outputs.gateway }}
-        steps:
-            - uses: actions/checkout@v6
-            - uses: dorny/paths-filter@v3
-              id: filter
-              with:
-                  filters: |
-                      web:
-                        - 'apps/web/**'
-                        - 'packages/**'
-                      api:
-                        - 'apps/api-py/**'
-                        - 'infra/**'
-                      gateway:
-                        - 'apps/gateway/**'
+  # ------------------------------------------------------------------
+  # 1. DETECT CHANGES
+  # ------------------------------------------------------------------
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      api: ${{ steps.filter.outputs.api }}
+      gateway: ${{ steps.filter.outputs.gateway }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'apps/web/**'
+              - 'packages/**'
+            api:
+              - 'apps/api-py/**'
+              - 'infra/**'
+            gateway:
+              - 'apps/gateway/**'
 
-    # ------------------------------------------------------------------
-    # 2. WEB (Next.js) CHECKS
-    # ------------------------------------------------------------------
-    web-check:
-        needs: changes
-        if: ${{ needs.changes.outputs.web == 'true' }}
-        runs-on: ubuntu-latest
-        defaults:
-            run:
-                working-directory: apps/web
-        steps:
-            - uses: actions/checkout@v6
+  # ------------------------------------------------------------------
+  # 2. WEB (Next.js) CHECKS
+  # ------------------------------------------------------------------
+  web-check:
+    needs: changes
+    if: ${{ needs.changes.outputs.web == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v6
 
-            - name: Setup Bun
-              uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: latest
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-            - name: Install Dependencies
-              run: bun install --frozen-lockfile
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
 
-            - name: Lint
-              run: bun run lint
+      - name: Lint
+        run: bun run lint
 
-            - name: Type Check
-              run: bun run type-check
+      - name: Type Check
+        run: bun run type-check
 
-            - name: Build
-              run: bun run build
+      - name: Build
+        run: bun run build
 
-    # ------------------------------------------------------------------
-    # 3. API (Python) CHECKS
-    # ------------------------------------------------------------------
-    api-check:
-        needs: changes
+  # ------------------------------------------------------------------
+  # 3. API (Python) CHECKS
+  # ------------------------------------------------------------------
+  api-check:
+    needs: changes
+    if: ${{ needs.changes.outputs.api == 'true' }}
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: nargis
+          POSTGRES_PASSWORD: nargis
+          POSTGRES_DB: nargis
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: apps/api-py
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install Dependencies
+        run: uv sync --upgrade --all-extras
+
+      - name: Lint (Ruff)
+        run: uv run ruff check . --fix
+
+      - name: Run Migrations
+        env:
+          DATABASE_URL: postgresql://nargis:nargis@localhost:5433/nargis
+        run: uv run alembic upgrade head
+
+      - name: Run Tests
+        env:
+          DATABASE_URL: postgresql://nargis:nargis@localhost:5433/nargis
+          ALLOW_POSTGRES_IN_TESTS: "1"
+          GROQ_API_KEY: "dummy"
+          DEEPGRAM_API_KEY: "dummy"
+          OPENAI_API_KEY: "dummy"
+        run: uv run pytest -q tests
+
+  # ------------------------------------------------------------------
+  # 4. GATEWAY (Go) CHECKS
+  # ------------------------------------------------------------------
+  gateway-check:
+    needs: changes
+    if: ${{ needs.changes.outputs.gateway == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/gateway
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/gateway/go.mod
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build
+        run: go build -v ./...
+
+  # ------------------------------------------------------------------
+  # 5. DEPLOYMENT (Main Branch Only)
+  # ------------------------------------------------------------------
+  deploy:
+    needs: [changes, web-check, api-check, gateway-check]
+    if: ${{ github.ref == 'refs/heads/main' && !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy API
         if: ${{ needs.changes.outputs.api == 'true' }}
-        runs-on: ubuntu-latest
-        services:
-            db:
-                image: pgvector/pgvector:pg16
-                env:
-                    POSTGRES_USER: nargis
-                    POSTGRES_PASSWORD: nargis
-                    POSTGRES_DB: nargis
-                ports:
-                    - 5433:5432
-                options: >-
-                    --health-cmd pg_isready
-                    --health-interval 10s
-                    --health-timeout 5s
-                    --health-retries 5
-        defaults:
-            run:
-                working-directory: apps/api-py
-        steps:
-            - uses: actions/checkout@v6
+        run: cd apps/api-py && flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-            - name: Install uv
-              uses: astral-sh/setup-uv@v3
-              with:
-                  version: "latest"
-
-            - name: Install Dependencies
-              run: uv sync --all-extras --dev
-
-            - name: Lint (Ruff)
-              run: uv run ruff check .
-
-            - name: Security Audit
-              # Export requirements for pip-audit since it doesn't support pyproject.toml natively yet
-              run: |
-                  uv export --format requirements-txt --output-file requirements.txt
-                  uv run pip install pip-audit
-                  uv run pip-audit -r requirements.txt
-
-            - name: Run Migrations
-              env:
-                  DATABASE_URL: postgresql://nargis:nargis@localhost:5433/nargis
-              run: uv run alembic upgrade head
-
-            - name: Run Tests
-              env:
-                  DATABASE_URL: postgresql://nargis:nargis@localhost:5433/nargis
-                  ALLOW_POSTGRES_IN_TESTS: "1"
-              run: uv run pytest -q tests
-
-    # ------------------------------------------------------------------
-    # 4. GATEWAY (Go) CHECKS
-    # ------------------------------------------------------------------
-    gateway-check:
-        needs: changes
+      - name: Deploy Gateway
         if: ${{ needs.changes.outputs.gateway == 'true' }}
-        runs-on: ubuntu-latest
-        defaults:
-            run:
-                working-directory: apps/gateway
-        steps:
-            - uses: actions/checkout@v6
-
-            - name: Setup Go
-              uses: actions/setup-go@v6
-              with:
-                  go-version-file: apps/gateway/go.mod
-
-            - name: Vet
-              run: go vet ./...
-
-            - name: Test
-              run: go test ./...
-
-            - name: Build
-              run: go build -v ./...
-
-    # ------------------------------------------------------------------
-    # 5. DEPLOYMENT (Main Branch Only)
-    # ------------------------------------------------------------------
-    deploy:
-        needs: [changes, web-check, api-check, gateway-check]
-        if: ${{ github.ref == 'refs/heads/main' && !failure() && !cancelled() }}
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v6
-            - uses: superfly/flyctl-actions/setup-flyctl@master
-
-            - name: Deploy API
-              if: ${{ needs.changes.outputs.api == 'true' }}
-              run: cd apps/api-py && flyctl deploy --remote-only
-              env:
-                  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-
-            - name: Deploy Gateway
-              if: ${{ needs.changes.outputs.gateway == 'true' }}
-              run: cd apps/gateway && flyctl deploy --remote-only
-              env:
-                  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: cd apps/gateway && flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

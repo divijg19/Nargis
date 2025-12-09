@@ -77,9 +77,9 @@ export function PomodoroStats({ sessions, className }: PomodoroStatsProps) {
     const avgDuration =
       workSessions.length > 0
         ? Math.round(
-          workSessions.reduce((sum, s) => sum + s.duration, 0) /
-          workSessions.length,
-        )
+            workSessions.reduce((sum, s) => sum + s.duration, 0) /
+              workSessions.length,
+          )
         : 0;
 
     // Calculate daily breakdown for last 7 days
@@ -123,7 +123,7 @@ export function PomodoroStats({ sessions, className }: PomodoroStatsProps) {
       dailyBreakdown,
       maxDailyMinutes,
     };
-  }, [sessions]);
+  }, [sessions, today]);
 
   return (
     <div className={cn("space-y-6", className)}>

@@ -93,11 +93,11 @@ export function TaskPreview({
                   className={cn(
                     "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
                     task.priority === "high" &&
-                    "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+                      "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
                     task.priority === "medium" &&
-                    "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+                      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
                     task.priority === "low" &&
-                    "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+                      "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
                   )}
                 >
                   {task.priority}

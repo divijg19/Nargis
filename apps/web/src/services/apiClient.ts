@@ -40,7 +40,11 @@ export async function fetchJson<T>(
     }
     let msg = res.statusText;
     if (typeof body === "object" && body !== null) {
-      const b = body as any;
+      const b = body as {
+        error?: { message?: string };
+        message?: string;
+        detail?: string | { msg?: string }[];
+      };
       // Handle standard error envelope { error: { code, message } }
       if (b.error && typeof b.error === "object" && b.error.message) {
         msg = b.error.message;

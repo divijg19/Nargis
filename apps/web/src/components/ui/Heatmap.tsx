@@ -69,7 +69,7 @@ export default function Heatmap({ habits, weeks = 12 }: HeatmapProps) {
     );
 
     return cols;
-  }, [weeks]);
+  }, [weeks, today]);
 
   // Find max count to normalize color scale
   const maxCount = React.useMemo(() => {
