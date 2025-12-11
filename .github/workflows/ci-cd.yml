@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [main]
 
+  workflow_dispatch:
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -25,22 +27,27 @@ jobs:
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          # If the CI file changes, we treat it as if EVERYTHING changed
+          # to ensure the pipeline is valid.
           filters: |
             web:
               - 'apps/web/**'
               - 'packages/**'
+              - '.github/workflows/**'
             api:
               - 'apps/api-py/**'
               - 'infra/**'
+              - '.github/workflows/**'
             gateway:
               - 'apps/gateway/**'
+              - '.github/workflows/**'
 
   # ------------------------------------------------------------------
   # 2. WEB (Next.js) CHECKS
   # ------------------------------------------------------------------
   web-check:
     needs: changes
-    if: ${{ needs.changes.outputs.web == 'true' }}
+    if: ${{ needs.changes.outputs.web == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -56,11 +63,11 @@ jobs:
       - name: Install Dependencies
         run: bun install --frozen-lockfile
 
-      - name: Lint
-        run: bun run lint
+      - name: Lint & Typecheck
+        run: bun run lint && bun run type-check
 
-      - name: Type Check
-        run: bun run type-check
+      - name: Format
+        run: bun run format
 
       - name: Build
         run: bun run build
@@ -70,7 +77,7 @@ jobs:
   # ------------------------------------------------------------------
   api-check:
     needs: changes
-    if: ${{ needs.changes.outputs.api == 'true' }}
+    if: ${{ needs.changes.outputs.api == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     services:
       db:
@@ -122,7 +129,7 @@ jobs:
   # ------------------------------------------------------------------
   gateway-check:
     needs: changes
-    if: ${{ needs.changes.outputs.gateway == 'true' }}
+    if: ${{ needs.changes.outputs.gateway == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -145,11 +152,11 @@ jobs:
         run: go build -v ./...
 
   # ------------------------------------------------------------------
-  # 5. DEPLOYMENT (Main Branch Only)
+  # 5. DEPLOYMENT (Manual Git Push Strategy)
   # ------------------------------------------------------------------
   deploy:
     needs: [changes, web-check, api-check, gateway-check]
-    if: ${{ github.ref == 'refs/heads/main' && !failure() && !cancelled() }}
+    if: ${{ (github.ref == 'refs/heads/main' && !failure() && !cancelled()) || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -161,7 +168,8 @@ jobs:
       # DEPLOY PYTHON API
       # ---------------------------------------------------------
       - name: Deploy API (nargis-py)
-        if: ${{ needs.changes.outputs.api == 'true' }}
+        # Run if API changed OR if manual trigger
+        if: ${{ needs.changes.outputs.api == 'true' || github.event_name == 'workflow_dispatch' }}
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_USERNAME: ${{ secrets.HF_USERNAME }}
@@ -171,13 +179,13 @@ jobs:
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
 
-          # Clone the Target Space
+          # Clone
           git clone https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$SPACE_NAME target_py
 
-          # Clean the Target (Delete old files)
+          # Clean
           find target_py -mindepth 1 -maxdepth 1 -not -name '.git' -not -name '.gitattributes' -exec rm -rf {} +
 
-          # Copy content from SUBFOLDER to ROOT
+          # Copy
           cp -a apps/api-py/. target_py/
 
           # Push
@@ -190,7 +198,8 @@ jobs:
       # DEPLOY GO GATEWAY
       # ---------------------------------------------------------
       - name: Deploy Gateway (nargis-go)
-        if: ${{ needs.changes.outputs.gateway == 'true' }}
+        # Run if Gateway changed OR if manual trigger
+        if: ${{ needs.changes.outputs.gateway == 'true' || github.event_name == 'workflow_dispatch' }}
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_USERNAME: ${{ secrets.HF_USERNAME }}
