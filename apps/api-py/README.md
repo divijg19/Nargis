@@ -1,3 +1,17 @@
+---
+title: Nargis Python API
+emoji: 🧠
+colorFrom: purple
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
+# Nargis Python API
+This is the AI Orchestrator service for Nargis.
+
+
 # api-py — Nargis Python API
 
 This service provides STT/LLM/TTS endpoints and now includes an agent orchestration layer (LangGraph) and a dedicated service layer for domain logic.
