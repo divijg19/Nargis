@@ -153,16 +153,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+        with:
+          fetch-depth: 0
+          lfs: true
 
-      - name: Deploy API
+      # Deploy Python Service
+      - name: Deploy API (nargis-py)
         if: ${{ needs.changes.outputs.api == 'true' }}
-        run: cd apps/api-py && flyctl deploy --remote-only
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        uses: nateraw/huggingface-sync-action@v0.0.5
+        with:
+          github_repo_id: ${{ github.repository }}
+          huggingface_repo_id: ${{ secrets.HF_USERNAME }}/nargis-py
+          repo_type: space
+          space_sdk: docker
+          hf_token: ${{ secrets.HF_TOKEN }}
+          subdirectory: apps/api-py
 
-      - name: Deploy Gateway
+      # Deploy Gateway Service
+      - name: Deploy Gateway (nargis-go)
         if: ${{ needs.changes.outputs.gateway == 'true' }}
-        run: cd apps/gateway && flyctl deploy --remote-only
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        uses: nateraw/huggingface-sync-action@v0.0.5
+        with:
+          github_repo_id: ${{ github.repository }}
+          huggingface_repo_id: ${{ secrets.HF_USERNAME }}/nargis-go
+          repo_type: space
+          space_sdk: docker
+          hf_token: ${{ secrets.HF_TOKEN }}
+          subdirectory: apps/gateway

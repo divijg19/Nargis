@@ -64,7 +64,7 @@ func fakeOrchestrator(w http.ResponseWriter, r *http.Request) {
 func TestGatewayCookieWSAuthIntegration(t *testing.T) {
 	// Simpler WS test: verify gateway accepts cookie on upgrade and we can echo the resolved user id.
 	secret := "test-hmac-secret"
-	os.Setenv("JWT_HMAC_SECRET", secret)
+	os.Setenv("JWT_SECRET_KEY", secret)
 
 	upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return true },
@@ -112,7 +112,7 @@ func TestGatewayCookieWSAuthIntegration(t *testing.T) {
 
 func TestGatewayProxyCookieAuthIntegration(t *testing.T) {
 	secret := "test-hmac-secret"
-	os.Setenv("JWT_HMAC_SECRET", secret)
+	os.Setenv("JWT_SECRET_KEY", secret)
 
 	// fake orchestrator as above
 	orch := httptest.NewServer(http.HandlerFunc(fakeOrchestrator))
@@ -168,7 +168,7 @@ func TestGatewayProxyCookieAuthIntegration(t *testing.T) {
 // Full streaming test: exercise the gateway streaming path
 func TestGatewayFullStreaming(t *testing.T) {
 	secret := "test-hmac-secret"
-	os.Setenv("JWT_HMAC_SECRET", secret)
+	os.Setenv("JWT_SECRET_KEY", secret)
 
 	// Start fake orchestrator server that emits NDJSON
 	orch := httptest.NewServer(http.HandlerFunc(fakeOrchestrator))

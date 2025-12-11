@@ -37,10 +37,14 @@ func CheckOrigin(r *http.Request) bool {
 	return false
 }
 
-// VerifyJWTToken validates a JWT string using HS256 when JWT_HMAC_SECRET is set.
+// VerifyJWTToken validates a JWT string using HS256 when JWT_SECRET_KEY is set.
 // Returns the resolved user id (sub/user_id/uid) or empty string if unverifiable/absent.
 func VerifyJWTToken(token string) (string, error) {
-	secret := os.Getenv("JWT_HMAC_SECRET")
+	secret := os.Getenv("JWT_SECRET_KEY")
+	if strings.TrimSpace(secret) == "" {
+		// Backwards-compatible fallback for older env name
+		secret = os.Getenv("JWT_HMAC_SECRET")
+	}
 	if strings.TrimSpace(secret) == "" {
 		// JWT validation not enabled
 		return "", nil
@@ -85,7 +89,7 @@ func VerifyJWTToken(token string) (string, error) {
 	return "", nil
 }
 
-// VerifyJWTFromRequest optionally validates a JWT from header or query param when JWT_HMAC_SECRET is set.
+// VerifyJWTFromRequest optionally validates a JWT from header or query param when JWT_SECRET_KEY is set.
 // If no secret is configured, JWT validation is a no-op and returns ("", nil).
 // On success it returns the resolved user id to propagate downstream (sub/user_id/uid).
 func VerifyJWTFromRequest(r *http.Request) (string, error) {
@@ -110,11 +114,11 @@ func VerifyJWTFromRequest(r *http.Request) (string, error) {
 }
 
 // ParseJWTClaims verifies the Authorization: Bearer <token> header (if present)
-// using the same HS256 secret and returns the decoded claims map. If no
+// using the same HS256 secret (`JWT_SECRET_KEY`) and returns the decoded claims map. If no
 // token or secret is configured this returns (nil, nil). On verification
 // error an error is returned.
 func ParseJWTClaims(r *http.Request) (map[string]interface{}, error) {
-	secret := os.Getenv("JWT_HMAC_SECRET")
+	secret := os.Getenv("JWT_SECRET_KEY")
 	if strings.TrimSpace(secret) == "" {
 		return nil, nil
 	}
