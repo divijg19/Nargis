@@ -1,7 +1,7 @@
 ---
 title: Nargis Gateway
-emoji: 🚪
-colorFrom: orange
+emoji: ⚡
+colorFrom: blue
 colorTo: red
 sdk: docker
 app_port: 7860
