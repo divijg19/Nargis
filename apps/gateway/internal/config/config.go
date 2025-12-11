@@ -16,8 +16,8 @@ type Config struct {
 
 func Load() *Config {
 	return &Config{
-		Port:             getEnv("PORT", "8080"),
-		OrchestratorURL:  getEnv("ORCHESTRATOR_URL", "http://localhost:8000"),
+		Port:             os.Getenv("PORT"),
+		OrchestratorURL:  getEnv("ORCHESTRATOR_URL", "PORT"),
 		RedisURL:         getEnv("REDIS_URL", "redis://localhost:6379"),
 		WSAllowedOrigins: getEnv("WS_ALLOWED_ORIGINS", "*"),
 		ReadTimeout:      10 * time.Second,

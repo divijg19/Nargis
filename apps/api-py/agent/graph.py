@@ -4,6 +4,7 @@ This file creates a simple StateGraph, attaches a chat LLM node and a ToolNode
 that exposes the service-backed tools. The `agent_app` is the compiled runtime
 that the FastAPI pipeline can invoke.
 """
+
 from __future__ import annotations
 
 import warnings
@@ -50,24 +51,28 @@ def _build_agent_app():
         create_journal_tool = None
         start_focus_tool = None
 
-    chat_model = ChatGroq(name="chat", model="llama-3.1-70b-versatile", temperature=0.2)
-    tools = [
-        t
-        for t in (
-            create_task_tool,
-            create_plan_tool,
-            get_task_details_tool,
-            list_tasks_tool,
-            recall_memory_tool,
-            create_habit_tool,
-            track_habit_tool,
-            create_journal_tool,
-            start_focus_tool,
+    def lazy_agent():
+        chat_model = ChatGroq(
+            name="chat", model="llama-3.1-70b-versatile", temperature=0.2
         )
-        if t
-    ]
+        tools = [
+            t
+            for t in (
+                create_task_tool,
+                create_plan_tool,
+                get_task_details_tool,
+                list_tasks_tool,
+                recall_memory_tool,
+                create_habit_tool,
+                track_habit_tool,
+                create_journal_tool,
+                start_focus_tool,
+            )
+            if t
+        ]
+        return create_react_agent(chat_model, tools)
 
-    return create_react_agent(chat_model, tools)
+    return lazy_agent()
 
 
 agent_app = _build_agent_app()

@@ -28,6 +28,7 @@ var (
 	busClient  *bus.Client
 	vadProc    *vad.Processor
 	upgrader   websocket.Upgrader
+	audioSem   chan struct{}
 )
 
 func main() {
@@ -45,13 +46,22 @@ func main() {
 	// Initialize VAD
 	vadProc = vad.NewProcessor(vad.DefaultConfig())
 
+	// Initialize semaphore for audio concurrency (limit 4)
+	audioSem = make(chan struct{}, 4)
+
 	var err error
-	busClient, err = bus.NewClient(cfg.RedisURL)
-	if err != nil {
-		slog.Warn("Failed to connect to Redis, real-time events disabled", "error", err)
+	if cfg.RedisURL == "" {
+		slog.Warn("REDIS_URL not set, running in degraded mode (no events)")
+		busClient = nil
 	} else {
-		defer busClient.Close()
-		slog.Info("Connected to Redis")
+		busClient, err = bus.NewClient(cfg.RedisURL)
+		if err != nil {
+			slog.Warn("Failed to connect to Redis, real-time events disabled", "error", err)
+			busClient = nil
+		} else {
+			defer busClient.Close()
+			slog.Info("Connected to Redis")
+		}
 	}
 
 	resilience.StartIPCacheEvictor()
@@ -101,7 +111,22 @@ func healthHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Write([]byte(`{"status":"ok"}`))
 }
 
+// safeSend writes to the send channel but recovers from a panic if the
+// channel has been closed concurrently (prevents test/runtime races).
+func safeSend(send chan<- []byte, msg []byte) {
+	defer func() {
+		if r := recover(); r != nil {
+			// ignore send on closed channel
+		}
+	}()
+	send <- msg
+}
+
 func handleConnections(w http.ResponseWriter, r *http.Request) {
+	// Ensure semaphore is initialized (tests may not call main())
+	if audioSem == nil {
+		audioSem = make(chan struct{}, 4)
+	}
 	// Auth check
 	uid, err := auth.VerifyJWTFromRequest(r)
 	if err != nil && os.Getenv("WS_REQUIRE_AUTH") == "1" {
@@ -144,12 +169,17 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			slog.Error("Failed to subscribe to user events", "uid", uid, "error", err)
 		} else {
 			go func() {
-				for event := range events {
-					metrics.EventBusMessages.Inc()
+				for {
 					select {
-					case send <- []byte(event):
 					case <-ctx.Done():
 						return
+					case event, ok := <-events:
+						if !ok {
+							return
+						}
+						metrics.EventBusMessages.Inc()
+						// best-effort delivery; safeSend will recover if channel closed
+						safeSend(send, []byte(event))
 					}
 				}
 			}()
@@ -166,37 +196,40 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		isSpeech, _ := vadProc.Process(msg)
 		if !isSpeech {
 			metrics.AudioFramesProcessed.WithLabelValues("dropped").Inc()
-			// Optional: Log debug if needed, but mostly just skip
 			continue
 		}
 		metrics.AudioFramesProcessed.WithLabelValues("forwarded").Inc()
 
-		// Process audio using the new client
-		reqID := uuid.New().String()
-		slog.Info("Processing audio", "req_id", reqID, "user_id", uid)
-
-		start := time.Now()
-		// Use ProcessAudioBuffer as defined in client.go
-		stream, err := orchClient.ProcessAudioBuffer(context.Background(), msg, reqID)
-		metrics.OrchestratorLatency.Observe(time.Since(start).Seconds())
-		
-		if err != nil {
-			slog.Error("Orchestrator failed", "error", err, "req_id", reqID)
-			send <- []byte(`{"type": "error", "content": "AI service unavailable"}`)
+		// Concurrency limit: try to acquire semaphore
+		select {
+		case audioSem <- struct{}{}:
+			// Acquired slot
+		default:
+			// Pool full, reject request
+			safeSend(send, []byte(`{"type": "error", "content": "Too many requests, try again later."}`))
 			continue
 		}
 
-		// Stream response back to WS
-		// Reading all for simplicity in this refactor step, but streaming copy is better for large responses
-		respBytes, err := io.ReadAll(stream)
-		stream.Close() // Close immediately after reading
-
-		if err != nil {
-			slog.Error("Failed to read response", "error", err, "req_id", reqID)
-			continue
-		}
-
-		send <- respBytes
+		go func(msg []byte, send chan<- []byte, uid string) {
+			defer func() { <-audioSem }()
+			reqID := uuid.New().String()
+			slog.Info("Processing audio", "req_id", reqID, "user_id", uid)
+			start := time.Now()
+			stream, err := orchClient.ProcessAudioBuffer(context.Background(), msg, reqID)
+			metrics.OrchestratorLatency.Observe(time.Since(start).Seconds())
+			if err != nil {
+				slog.Error("Orchestrator failed", "error", err, "req_id", reqID)
+				safeSend(send, []byte(`{"type": "error", "content": "AI service unavailable"}`))
+				return
+			}
+			respBytes, err := io.ReadAll(stream)
+			stream.Close()
+			if err != nil {
+				slog.Error("Failed to read response", "error", err, "req_id", reqID)
+				return
+			}
+			safeSend(send, respBytes)
+		}(msg, send, uid)
 	}
 }
 

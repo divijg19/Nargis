@@ -19,7 +19,7 @@ func NewClient(url string) *Client {
 	return &Client{
 		baseURL: url,
 		httpClient: &http.Client{
-			Timeout: 30 * time.Second, // Long timeout for AI processing
+			Timeout: 120 * time.Second, // Long timeout for AI processing
 		},
 	}
 }
