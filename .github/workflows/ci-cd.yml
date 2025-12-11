@@ -93,7 +93,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v7
         with:
           version: "latest"
 
@@ -157,26 +157,60 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      # Deploy Python Service
+      # ---------------------------------------------------------
+      # DEPLOY PYTHON API
+      # ---------------------------------------------------------
       - name: Deploy API (nargis-py)
         if: ${{ needs.changes.outputs.api == 'true' }}
-        uses: nateraw/huggingface-sync-action@v0.0.5
-        with:
-          github_repo_id: ${{ github.repository }}
-          huggingface_repo_id: ${{ secrets.HF_USERNAME }}/nargis-py
-          repo_type: space
-          space_sdk: docker
-          hf_token: ${{ secrets.HF_TOKEN }}
-          subdirectory: apps/api-py
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USERNAME: ${{ secrets.HF_USERNAME }}
+          SPACE_NAME: nargis-py
+        run: |
+          echo "Deploying to Hugging Face Space: $SPACE_NAME"
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
 
-      # Deploy Gateway Service
+          # Clone the Target Space
+          git clone https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$SPACE_NAME target_py
+
+          # Clean the Target (Delete old files)
+          find target_py -mindepth 1 -maxdepth 1 -not -name '.git' -not -name '.gitattributes' -exec rm -rf {} +
+
+          # Copy content from SUBFOLDER to ROOT
+          cp -a apps/api-py/. target_py/
+
+          # Push
+          cd target_py
+          git add .
+          git commit -m "Deploy from GitHub: ${{ github.sha }}" || echo "No changes to commit"
+          git push
+
+      # ---------------------------------------------------------
+      # DEPLOY GO GATEWAY
+      # ---------------------------------------------------------
       - name: Deploy Gateway (nargis-go)
         if: ${{ needs.changes.outputs.gateway == 'true' }}
-        uses: nateraw/huggingface-sync-action@v0.0.5
-        with:
-          github_repo_id: ${{ github.repository }}
-          huggingface_repo_id: ${{ secrets.HF_USERNAME }}/nargis-go
-          repo_type: space
-          space_sdk: docker
-          hf_token: ${{ secrets.HF_TOKEN }}
-          subdirectory: apps/gateway
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_USERNAME: ${{ secrets.HF_USERNAME }}
+          SPACE_NAME: nargis-go
+        run: |
+          echo "Deploying to Hugging Face Space: $SPACE_NAME"
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+
+          # Clone
+          git clone https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$SPACE_NAME target_go
+
+          # Clean
+          find target_go -mindepth 1 -maxdepth 1 -not -name '.git' -not -name '.gitattributes' -exec rm -rf {} +
+
+          # Copy
+          cp -a apps/gateway/. target_go/
+
+          # Push
+          cd target_go
+          git add .
+          git commit -m "Deploy from GitHub: ${{ github.sha }}" || echo "No changes to commit"
+          git push
