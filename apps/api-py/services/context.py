@@ -11,22 +11,20 @@ def get_system_context(user_id: str, db: Session) -> str:
     Aggregates system state into a natural language string for the AI agent.
     """
     context_parts = []
-    
+
     # 1. Overdue Tasks
     now_iso = datetime.now(UTC).isoformat()
     overdue_tasks = db.scalars(
         select(Task).where(
-            Task.user_id == user_id,
-            Task.status != "done",
-            Task.due_date < now_iso
+            Task.user_id == user_id, Task.status != "done", Task.due_date < now_iso
         )
     ).all()
-    
+
     if overdue_tasks:
         titles = ", ".join([f"'{t.title}'" for t in overdue_tasks[:3]])
         count = len(overdue_tasks)
         context_parts.append(f"User has {count} overdue tasks (e.g., {titles}).")
-        
+
     # 2. Habits for Today
     today_str = datetime.now(UTC).strftime("%Y-%m-%d")
     habits = db.scalars(select(Habit).where(Habit.user_id == user_id)).all()
@@ -35,13 +33,12 @@ def get_system_context(user_id: str, db: Session) -> str:
         # Check if entry exists for today
         entry = db.scalar(
             select(HabitEntry).where(
-                HabitEntry.habit_id == h.id,
-                HabitEntry.date == today_str
+                HabitEntry.habit_id == h.id, HabitEntry.date == today_str
             )
         )
         if not entry or not entry.completed:
             pending_habits.append(h.name)
-            
+
     if pending_habits:
         habits_str = ", ".join(pending_habits[:5])
         context_parts.append(f"Pending habits for today: {habits_str}.")

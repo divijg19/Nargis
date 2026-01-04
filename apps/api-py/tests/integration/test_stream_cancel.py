@@ -27,10 +27,8 @@ async def test_process_audio_stream_basic(monkeypatch, token):
                 "event": "on_chain_end",
                 "name": "LangGraph",
                 "data": {
-                    "output": {
-                        "messages": [{"content": "Hello there", "type": "ai"}]
-                    }
-                }
+                    "output": {"messages": [{"content": "Hello there", "type": "ai"}]}
+                },
             }
 
     monkeypatch.setattr(agent.graph, "agent_app", MockAgentApp())
@@ -69,10 +67,8 @@ async def test_process_audio_stream_end_marker_present(monkeypatch, token):
                 "event": "on_chain_end",
                 "name": "LangGraph",
                 "data": {
-                    "output": {
-                        "messages": [{"content": "Hello there", "type": "ai"}]
-                    }
-                }
+                    "output": {"messages": [{"content": "Hello there", "type": "ai"}]}
+                },
             }
 
     monkeypatch.setattr(agent.graph, "agent_app", MockAgentApp())
