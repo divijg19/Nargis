@@ -9,8 +9,10 @@ from storage.database import get_db
 
 router = APIRouter(prefix="/v1/agent", tags=["agent"])
 
+
 class TriggerRequest(BaseModel):
-    trigger_type: str # "morning_briefing", "evening_review"
+    trigger_type: str  # "morning_briefing", "evening_review"
+
 
 @router.post("/trigger")
 async def trigger_agent(

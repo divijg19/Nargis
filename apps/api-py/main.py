@@ -269,12 +269,12 @@ async def process_audio_pipeline(
 
             # Inject system context
             context_str = get_system_context(current_user["id"], db)
-            
+
             # Prepare input payload
             if HumanMessage and SystemMessage:
                 messages = [
                     SystemMessage(content=f"System Context: {context_str}"),
-                    HumanMessage(content=transcribed_text)
+                    HumanMessage(content=transcribed_text),
                 ]
                 input_payload = {"messages": messages}
             else:

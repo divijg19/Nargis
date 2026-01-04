@@ -10,10 +10,7 @@ from services.context import get_system_context
 
 
 async def run_agent_pipeline(
-    user_input: str,
-    user_id: str,
-    db: Session,
-    stream_events: bool = True
+    user_input: str, user_id: str, db: Session, stream_events: bool = True
 ) -> AsyncGenerator[bytes, None]:
     """
     Runs the agent pipeline with system context injection.
@@ -40,21 +37,19 @@ async def run_agent_pipeline(
 
     # Inject context
     context_str = get_system_context(user_id, db)
-    
+
     # Prepare payload
     if HumanMessage and SystemMessage:
         messages = [
             SystemMessage(content=f"System Context: {context_str}"),
-            HumanMessage(content=user_input)
+            HumanMessage(content=user_input),
         ]
         input_payload = {"messages": messages}
     else:
         input_payload = {"input": f"Context: {context_str}\nUser: {user_input}"}
 
     # Stream events
-    async for ev in agent_graph.agent_app.astream_events(
-        input_payload, version="v1"
-    ):
+    async for ev in agent_graph.agent_app.astream_events(input_payload, version="v1"):
         if ev is None:
             continue
 
