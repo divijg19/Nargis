@@ -24,6 +24,8 @@ func NewClient(url string) *Client {
 	}
 }
 
+const processAudioPath = "/api/v1/process-audio"
+
 // ProcessAudioBuffer sends a complete audio buffer to the backend.
 // Used for retries and buffered fallback.
 func (c *Client) ProcessAudioBuffer(ctx context.Context, audioData []byte, requestID string) (io.ReadCloser, error) {
@@ -39,7 +41,7 @@ func (c *Client) ProcessAudioBuffer(ctx context.Context, audioData []byte, reque
 	}
 	writer.Close()
 
-	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/v1/audio/process-stream", body)
+	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+processAudioPath, body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -51,13 +53,18 @@ func (c *Client) ProcessAudioBuffer(ctx context.Context, audioData []byte, reque
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		defer resp.Body.Close()
+		preview, _ := io.ReadAll(io.LimitReader(resp.Body, 8*1024))
+		return nil, fmt.Errorf("orchestrator returned %s: %s", resp.Status, string(preview))
+	}
 
 	return resp.Body, nil
 }
 
 // ForwardRequest forwards a request body directly to the orchestrator.
 func (c *Client) ForwardRequest(ctx context.Context, body io.Reader, contentType string, requestID, userID, claims string) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+"/v1/audio/process-stream", body)
+	req, err := http.NewRequestWithContext(ctx, "POST", c.baseURL+processAudioPath, body)
 	if err != nil {
 		return nil, err
 	}
@@ -72,5 +79,14 @@ func (c *Client) ForwardRequest(ctx context.Context, body io.Reader, contentType
 		req.Header.Set("X-User-Claims", claims)
 	}
 
-	return c.httpClient.Do(req)
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		preview, _ := io.ReadAll(io.LimitReader(resp.Body, 8*1024))
+		resp.Body.Close()
+		return nil, fmt.Errorf("orchestrator returned %s: %s", resp.Status, string(preview))
+	}
+	return resp, nil
 }

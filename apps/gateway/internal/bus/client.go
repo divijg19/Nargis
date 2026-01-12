@@ -31,6 +31,10 @@ func (c *Client) Close() error {
 	return c.rdb.Close()
 }
 
+func (c *Client) Ping(ctx context.Context) error {
+	return c.rdb.Ping(ctx).Err()
+}
+
 // SubscribeToUserEvents subscribes to a Redis channel specific to a user.
 // It returns a Go channel that receives raw message payloads (strings).
 func (c *Client) SubscribeToUserEvents(ctx context.Context, userID string) (<-chan string, error) {

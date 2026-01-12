@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -56,6 +57,27 @@ func fakeOrchestrator(w http.ResponseWriter, r *http.Request) {
 		flusher.Flush()
 	} else {
 		// fallback if response does not support flush
+		fmt.Fprintln(w, `{"type":"response","content":"ok from orchestrator"}`)
+		fmt.Fprintln(w, `{"type":"end","content":"done"}`)
+	}
+}
+
+func fakeOrchestratorCounting(counter *atomic.Int64) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		counter.Add(1)
+		fakeOrchestrator(w, r)
+	}
+}
+
+func fakeOrchestratorBlocking(started chan<- struct{}, release <-chan struct{}) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.Copy(io.Discard, r.Body)
+		select {
+		case started <- struct{}{}:
+		default:
+		}
+		<-release
+		w.Header().Set("Content-Type", "application/x-ndjson")
 		fmt.Fprintln(w, `{"type":"response","content":"ok from orchestrator"}`)
 		fmt.Fprintln(w, `{"type":"end","content":"done"}`)
 	}
@@ -241,4 +263,171 @@ func TestGatewayFullStreaming(t *testing.T) {
 	if !gotEnd {
 		t.Fatalf("did not receive end marker")
 	}
+}
+
+func TestGatewayWSRejectsMissingOriginWhenAllowlistSet(t *testing.T) {
+	os.Setenv("WS_ALLOWED_ORIGINS", "https://nargis.vercel.app")
+	defer os.Unsetenv("WS_ALLOWED_ORIGINS")
+
+	upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return auth.CheckOrigin(r) },
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		ws, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		ws.Close()
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws"
+	// Missing Origin header should fail because allowlist is set.
+	_, resp, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err == nil {
+		t.Fatalf("expected dial to fail")
+	}
+	if resp == nil {
+		t.Fatalf("expected non-nil HTTP response")
+	}
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d", resp.StatusCode)
+	}
+}
+
+func TestGatewayWSRequiresAuthWhenEnabled(t *testing.T) {
+	secret := "test-hmac-secret"
+	os.Setenv("JWT_SECRET_KEY", secret)
+	os.Setenv("WS_REQUIRE_AUTH", "1")
+	defer os.Unsetenv("WS_REQUIRE_AUTH")
+
+	// Minimal deps for handler
+	orch := httptest.NewServer(http.HandlerFunc(fakeOrchestrator))
+	defer orch.Close()
+	orchClient = orchestrator.NewClient(orch.URL)
+	vCfg := vad.DefaultConfig()
+	vCfg.EnergyThreshold = 0.0
+	vadProc = vad.NewProcessor(vCfg)
+	audioSem = make(chan struct{}, 4)
+
+	upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ws", handleConnections)
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws"
+	_, resp, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err == nil {
+		t.Fatalf("expected unauthorized dial to fail")
+	}
+	if resp == nil {
+		t.Fatalf("expected HTTP response")
+	}
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", resp.StatusCode)
+	}
+}
+
+func TestGatewayWSEOSNotForwardedToOrchestrator(t *testing.T) {
+	secret := "test-hmac-secret"
+	os.Setenv("JWT_SECRET_KEY", secret)
+
+	var calls atomic.Int64
+	orch := httptest.NewServer(http.HandlerFunc(fakeOrchestratorCounting(&calls)))
+	defer orch.Close()
+	orchClient = orchestrator.NewClient(orch.URL)
+
+	vCfg := vad.DefaultConfig()
+	vCfg.EnergyThreshold = 0.0
+	vadProc = vad.NewProcessor(vCfg)
+	audioSem = make(chan struct{}, 4)
+
+	upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ws", handleConnections)
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws"
+	header := http.Header{}
+	header.Add("Cookie", "access_token="+makeToken(secret, "stream-user-2"))
+
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, header)
+	if err != nil {
+		t.Fatalf("dial failed: %v resp=%v", err, resp)
+	}
+	defer conn.Close()
+
+	if err := conn.WriteMessage(websocket.TextMessage, []byte("EOS")); err != nil {
+		t.Fatalf("write EOS failed: %v", err)
+	}
+	// Give the server a moment to potentially mis-forward.
+	time.Sleep(50 * time.Millisecond)
+	if got := calls.Load(); got != 0 {
+		t.Fatalf("expected 0 orchestrator calls, got %d", got)
+	}
+}
+
+func TestGatewayWSConcurrencyLimitReturnsError(t *testing.T) {
+	secret := "test-hmac-secret"
+	os.Setenv("JWT_SECRET_KEY", secret)
+
+	started := make(chan struct{}, 1)
+	release := make(chan struct{})
+	orch := httptest.NewServer(http.HandlerFunc(fakeOrchestratorBlocking(started, release)))
+	defer orch.Close()
+	orchClient = orchestrator.NewClient(orch.URL)
+
+	// Disable VAD for container-ish payloads; keep deterministic.
+	os.Setenv("VAD_MODE", "off")
+	defer os.Unsetenv("VAD_MODE")
+	vadProc = vad.NewProcessor(vad.DefaultConfig())
+
+	// Force small concurrency so we can reliably exceed it.
+	audioSem = make(chan struct{}, 1)
+
+	upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ws", handleConnections)
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws"
+	header := http.Header{}
+	header.Add("Cookie", "access_token="+makeToken(secret, "stream-user-3"))
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, header)
+	if err != nil {
+		t.Fatalf("dial failed: %v resp=%v", err, resp)
+	}
+	defer conn.Close()
+
+	// First binary message will grab the only semaphore slot and block in orchestrator.
+	if err := conn.WriteMessage(websocket.BinaryMessage, []byte("RIFF....WAVE")); err != nil {
+		t.Fatalf("write 1 failed: %v", err)
+	}
+	select {
+	case <-started:
+	case <-time.After(2 * time.Second):
+		t.Fatalf("orchestrator did not start")
+	}
+
+	// Second message should be rejected immediately with an error.
+	if err := conn.WriteMessage(websocket.BinaryMessage, []byte("RIFF....WAVE")); err != nil {
+		t.Fatalf("write 2 failed: %v", err)
+	}
+
+	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	_, msg, err := conn.ReadMessage()
+	if err != nil {
+		t.Fatalf("read failed: %v", err)
+	}
+	if !strings.Contains(string(msg), "Too many requests") {
+		t.Fatalf("expected concurrency error, got: %s", string(msg))
+	}
+
+	close(release)
 }

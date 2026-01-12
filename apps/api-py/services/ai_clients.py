@@ -10,10 +10,8 @@ import soundfile as sf
 from fastapi import HTTPException
 from openai import OpenAI
 
-if (
-    TYPE_CHECKING
-):  # Help Pylance understand optional dependency without importing it at runtime
-    pass  # type: ignore
+if TYPE_CHECKING:
+    pass
 
 # Read configuration from environment variables (defaults preserve previous behavior)
 STT_URL = os.getenv("STT_URL", "")
@@ -213,21 +211,20 @@ def get_embedding(text: str) -> list[float]:
     """
     # Try OpenAI (synchronous client usage)
     try:
-        import openai as _openai
+        from openai import OpenAI
 
         api_key = os.getenv("OPENAI_API_KEY")
-        if api_key:
-            _openai.api_key = api_key
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY not set")
+
+        client = OpenAI(api_key=api_key)
         model = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
-        resp = _openai.Embedding.create(input=text, model=model)
-        emb = resp["data"][0]["embedding"]
-        return emb
+        resp = client.embeddings.create(model=model, input=text)
+        return list(resp.data[0].embedding)
     except Exception:
         # Fall back to sentence-transformers if available
         try:
-            from sentence_transformers import (
-                SentenceTransformer,  # type: ignore[import-not-found]
-            )
+            from sentence_transformers import SentenceTransformer
 
             model_name = os.getenv("SENTENCE_TRANSFORMER_MODEL", "all-MiniLM-L6-v2")
             model = SentenceTransformer(model_name)

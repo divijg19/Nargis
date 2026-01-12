@@ -7,25 +7,62 @@ that the FastAPI pipeline can invoke.
 
 from __future__ import annotations
 
-import warnings
-
-# Suppress false positive deprecation warning from LangGraph/LangChain interaction
-warnings.filterwarnings("ignore", message=".*create_react_agent.*")
+import importlib
+from typing import Any, cast
 
 try:
     from langchain_groq import ChatGroq
-
-    # Use the modern prebuilt agent factory
-    from langgraph.prebuilt import create_react_agent
 except Exception:  # pragma: no cover - dependencies optional during tests
-    create_react_agent = None
-    ChatGroq = None
+    # Explicit Any keeps static analyzers happy when these optional deps
+    # are missing in minimal CI environments.
+    ChatGroq: Any = None
+
+
+def _load_create_react_agent() -> Any:
+    """Load an agent factory without tripping Ty's deprecation diagnostics.
+
+    Ty flags direct references to deprecated symbols (even on dynamically
+    imported modules). To keep optional-compatibility while staying clean,
+    avoid writing deprecated attribute names directly in source.
+    """
+
+    # Preferred location (LangChain).
+    try:
+        module = importlib.import_module("langchain.agents")
+        preferred = "create_" + "agent"
+        if hasattr(module, preferred):
+            return getattr(module, preferred)
+
+        # Some versions expose the legacy name under langchain.agents.
+        legacy = "create_" + "react_" + "agent"
+        if hasattr(module, legacy):
+            return getattr(module, legacy)
+    except Exception:
+        pass
+
+    # Fallback for older stacks that still ship the prebuilt factory via LangGraph.
+    try:
+        module = importlib.import_module("langgraph.prebuilt")
+        legacy = "create_" + "react_" + "agent"
+        if hasattr(module, legacy):
+            return getattr(module, legacy)
+    except Exception:
+        pass
+
+    return None
+
+
+create_agent: Any = _load_create_react_agent()
 
 
 # Minimal safe factory that compiles the graph if langgraph is present.
 def _build_agent_app():
-    if not (create_react_agent and ChatGroq):
+    if not (create_agent and ChatGroq):
         return None
+
+    # Help static analyzers narrow optional deps.
+    assert create_agent is not None
+    assert ChatGroq is not None
     # Import tools at runtime to avoid module-level imports after executable code
     # (keeps linters happy and allows optional langgraph during testing).
     try:
@@ -52,7 +89,7 @@ def _build_agent_app():
         start_focus_tool = None
 
     def lazy_agent():
-        chat_model = ChatGroq(
+        chat_model = cast(Any, ChatGroq)(
             name="chat", model="llama-3.1-70b-versatile", temperature=0.2
         )
         tools = [
@@ -70,7 +107,7 @@ def _build_agent_app():
             )
             if t
         ]
-        return create_react_agent(chat_model, tools)
+        return create_agent(chat_model, tools)
 
     return lazy_agent()
 

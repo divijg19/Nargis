@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
@@ -16,11 +16,11 @@ except Exception:
 # Try to import the runtime/value wrapper for pgvector so we can bind
 # proper pgvector values when inserting/searching. This is optional.
 try:
-    from pgvector import Vector as PgVector  # type: ignore
+    from pgvector import Vector as PgVector
 
     PGVECTOR_VALUE_AVAILABLE = True
 except Exception:
-    PgVector = None
+    PgVector: Any = None
     PGVECTOR_VALUE_AVAILABLE = False
 
 
@@ -39,16 +39,17 @@ def create_memory(
     db: Session, user_id: str, content: str, embedding_vector: list[float]
 ) -> dict[str, Any]:
     m = Memory(user_id=user_id, content=content, created_at=datetime.now(UTC))
+    m_any = cast(Any, m)
     # Prefer using the pgvector runtime wrapper when available so the DB
     # receives a properly-typed parameter. If that's not possible we leave
     # the plain list which may map to JSON or trigger the fallback path.
     if PGVECTOR_VALUE_AVAILABLE and PGVECTOR_AVAILABLE:
         try:
-            m.embedding = PgVector(embedding_vector)
+            m_any.embedding = cast(Any, PgVector)(embedding_vector)
         except Exception:
-            m.embedding = embedding_vector
+            m_any.embedding = embedding_vector
     else:
-        m.embedding = embedding_vector
+        m_any.embedding = embedding_vector
     db.add(m)
     try:
         db.commit()
@@ -96,7 +97,7 @@ def search_memories(
             qparam = query_vector
             if PGVECTOR_VALUE_AVAILABLE:
                 try:
-                    qparam = PgVector(query_vector)
+                    qparam = cast(Any, PgVector)(query_vector)
                 except Exception:
                     qparam = query_vector
 
