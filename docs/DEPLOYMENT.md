@@ -6,6 +6,7 @@ This guide covers deploying Nargis to production with PostgreSQL database and se
 
 - [Prerequisites](#prerequisites)
 - [Backend Deployment (Fly.io)](#backend-deployment-flyio)
+- [Backend Deployment (Hugging Face Spaces)](#backend-deployment-hugging-face-spaces)
 - [Frontend Deployment (Vercel)](#frontend-deployment-vercel)
 - [Database Setup](#database-setup)
 - [Environment Variables](#environment-variables)
@@ -162,6 +163,47 @@ fly apps list
 # Your backend URL will be: https://nargis-api.fly.dev
 ```
 
+## Backend Deployment (Hugging Face Spaces)
+
+This repo supports deploying the **Gateway** and **api-py** as separate public Docker Spaces.
+
+### Required Space Variables
+
+Gateway Space (Go):
+
+- `PORT=7860`
+- `ORCHESTRATOR_URL=https://<your-api-py-host>`
+- Recommended security:
+  - `WS_REQUIRE_AUTH=1`
+  - `WS_ALLOWED_ORIGINS=https://<your-vercel-domain>`
+  - `JWT_SECRET_KEY=<same value as api-py>`
+
+api-py Space (FastAPI):
+
+- `ALLOWED_ORIGINS=https://<your-vercel-domain>`
+- `JWT_SECRET_KEY=<same value as gateway>`
+- Optional (recommended on Spaces): `DATABASE_URL=sqlite:////tmp/nargis.db`
+
+Example (your current public URLs):
+
+- `NEXT_PUBLIC_API_URL=https://divijg19-nargis-go.hf.space`
+- `NEXT_PUBLIC_API_PY_URL=https://divijg19-nargis-py.hf.space`
+- `NEXT_PUBLIC_WS_URL=wss://divijg19-nargis-go.hf.space/ws`
+
+### Health endpoints
+
+- Gateway: `GET /health`
+- Gateway readiness (checks api-py): `GET /ready`
+- api-py: `GET /` and `GET /health`
+
+### Quick production smoke check
+
+From repo root:
+
+```bash
+./tools/smoke/prod_smoke.sh
+```
+
 ## Frontend Deployment (Vercel)
 
 ### 1. Install Vercel CLI (optional)
@@ -178,13 +220,22 @@ npm install -g vercel
 4. Configure project:
    - Framework Preset: **Next.js**
    - Root Directory: **apps/web**
-   - Build Command: `npm run build`
+  - Build Command: `npm run build` (Vercel default)
    - Output Directory: `.next`
    
 5. Set Environment Variables:
-   ```
-   NEXT_PUBLIC_API_URL=https://nargis-api.fly.dev
-   ```
+
+  The frontend reads multiple public URLs:
+  ```
+  # HTTP base for auth + agent routes (Gateway)
+  NEXT_PUBLIC_API_URL=https://<your-gateway-host>
+
+  # HTTP base for direct api-py calls (required by apps/web/src/services/apiClient.ts)
+  NEXT_PUBLIC_API_PY_URL=https://<your-api-py-host>
+
+  # WebSocket endpoint for realtime (Gateway)
+  NEXT_PUBLIC_WS_URL=wss://<your-gateway-host>/ws
+  ```
 
 6. Click "Deploy"
 
@@ -199,9 +250,10 @@ vercel login
 # Deploy
 vercel --prod
 
-# Set environment variable
+# Set environment variables
 vercel env add NEXT_PUBLIC_API_URL production
-# Enter: https://nargis-api.fly.dev
+vercel env add NEXT_PUBLIC_API_PY_URL production
+vercel env add NEXT_PUBLIC_WS_URL production
 ```
 
 ## Database Setup

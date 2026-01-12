@@ -16,7 +16,9 @@ try:
 
     _PGVECTOR_AVAILABLE = True
 except Exception:  # pragma: no cover - optional dependency
-    Vector = None
+    from typing import Any
+
+    Vector: Any = None
     _PGVECTOR_AVAILABLE = False
 
 
@@ -210,8 +212,10 @@ class Memory(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     # embedding: use pgvector.Vector when available, otherwise JSON fallback
     if _PGVECTOR_AVAILABLE:
+        from typing import Any, cast
+
         embedding: Mapped[list[float] | None] = mapped_column(
-            Vector(1536), nullable=False
+            cast(Any, Vector)(1536), nullable=False
         )
     else:
         embedding: Mapped[list[float] | None] = mapped_column(JSON, nullable=False)

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 import jwt
@@ -75,7 +75,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(data: dict) -> str:
     """Create JWT access token"""
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -100,7 +100,7 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired"
         ) from None
-    except jwt.JWTError:
+    except jwt.InvalidTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -137,8 +137,8 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
         email=user_data.email,
         name=user_data.name,
         password_hash=hash_password(user_data.password),
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     db.add(user)
     db.commit()
@@ -206,7 +206,7 @@ async def update_profile(
             )
         user.email = updates.email
 
-    user.updated_at = datetime.utcnow()
+    user.updated_at = datetime.now(UTC)
     db.commit()
     db.refresh(user)
 

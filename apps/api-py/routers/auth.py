@@ -135,7 +135,9 @@ async def get_current_user(
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 async def register(
-    user_data: UserRegister, db: Session = Depends(get_db), response: Response = None
+    user_data: UserRegister,
+    response: Response,
+    db: Session = Depends(get_db),
 ):
     """Register a new user"""
     # Check if email already exists
@@ -165,16 +167,15 @@ async def register(
     try:
         secure_cookie = os.getenv("JWT_COOKIE_SECURE", "1") == "1"
         max_age = ACCESS_TOKEN_EXPIRE_MINUTES * 60
-        if response is not None:
-            response.set_cookie(
-                key="access_token",
-                value=access_token,
-                httponly=True,
-                secure=secure_cookie,
-                samesite="lax",
-                max_age=max_age,
-                path="/",
-            )
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=secure_cookie,
+            samesite="lax",
+            max_age=max_age,
+            path="/",
+        )
     except Exception:
         # If cookie can't be set (unlikely), fall back to returning token in body only
         pass
@@ -184,7 +185,9 @@ async def register(
 
 @router.post("/login", response_model=Token)
 async def login(
-    credentials: UserLogin, db: Session = Depends(get_db), response: Response = None
+    credentials: UserLogin,
+    response: Response,
+    db: Session = Depends(get_db),
 ):
     """Login user and return JWT token"""
     # Find user by email
@@ -203,16 +206,15 @@ async def login(
     try:
         secure_cookie = os.getenv("JWT_COOKIE_SECURE", "1") == "1"
         max_age = ACCESS_TOKEN_EXPIRE_MINUTES * 60
-        if response is not None:
-            response.set_cookie(
-                key="access_token",
-                value=access_token,
-                httponly=True,
-                secure=secure_cookie,
-                samesite="lax",
-                max_age=max_age,
-                path="/",
-            )
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            httponly=True,
+            secure=secure_cookie,
+            samesite="lax",
+            max_age=max_age,
+            path="/",
+        )
     except Exception:
         pass
 

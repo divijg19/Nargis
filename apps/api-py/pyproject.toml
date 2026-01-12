@@ -47,7 +47,7 @@ dev = [
     "requests>=2.31.0",
     "colorama>=0.4.6",
     "ruff>=0.14.8",
-    "mypy>=1.19.0",
+    "ty",
 ]
 
 [tool.ruff]
@@ -58,10 +58,31 @@ target-version = "py312"
 select = ["E", "F", "I", "B", "UP"]
 ignore = ["B008"]
 
-[tool.mypy]
-python_version = "3.12"
-strict = true
-ignore_missing_imports = true
+
+[tool.ty]
+# Start permissive; tighten over time.
+# Run locally with: `uv run ty check .`
+# NOTE: `environment.python` expects a path to a Python executable, not a version.
+# Leave it unset so `uv run ty check .` uses the current environment interpreter.
+
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.ty.src]
+# Keep `ty check .` practical: exclude generated artifacts, migrations, and
+# ad-hoc scripts that are not part of runtime code paths.
+exclude = [
+    "tests/",
+    "migrations/",
+    "**/__pycache__/**",
+    "build/",
+    "api_py.egg-info/",
+    "run_test_ai_clients.py",
+    "smoke_test_core.py",
+    "services/goals.py",
+]
+
+
 
 [build-system]
 requires = ["setuptools"]

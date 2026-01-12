@@ -6,6 +6,7 @@ import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
+from typing import Any, cast
 
 import httpx
 from dotenv import load_dotenv
@@ -47,17 +48,21 @@ from storage.database import SessionLocal, get_db, init_db
 try:
     from langchain_core.messages import HumanMessage, SystemMessage
 except ImportError:
-    HumanMessage = None
-    SystemMessage = None
+    HumanMessage: Any = None
+    SystemMessage: Any = None
 
 # Explicitly load the .env file to ensure configuration is always read.
 load_dotenv()
 
 # Force all output streams to use UTF-8 encoding.
 if sys.stdout.encoding != "utf-8":
-    sys.stdout.reconfigure(encoding="utf-8")
+    _reconf = getattr(sys.stdout, "reconfigure", None)
+    if callable(_reconf):
+        _reconf(encoding="utf-8")
 if sys.stderr.encoding != "utf-8":
-    sys.stderr.reconfigure(encoding="utf-8")
+    _reconf = getattr(sys.stderr, "reconfigure", None)
+    if callable(_reconf):
+        _reconf(encoding="utf-8")
 
 request_id_ctx: ContextVar[str] = ContextVar("request_id", default="-")
 
@@ -135,8 +140,8 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
         return response
 
 
-app.add_middleware(CorrelationIdMiddleware)
-app.add_middleware(IdempotencyMiddleware)
+app.add_middleware(cast(Any, CorrelationIdMiddleware))
+app.add_middleware(cast(Any, IdempotencyMiddleware))
 
 app.include_router(agent_router.router)
 app.include_router(auth_router.router)
@@ -157,12 +162,17 @@ def parse_origins(value: str | None) -> list[str]:
 allowed_origins = parse_origins(os.getenv("ALLOWED_ORIGINS"))
 logging.info(f"CORS allow_origins={allowed_origins}")
 app.add_middleware(
-    CORSMiddleware,
+    cast(Any, CORSMiddleware),
     allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/")
+async def root():
+    return {"status": "ok", "service": "nargis-api", "health": "/health"}
 
 
 @app.exception_handler(HTTPException)

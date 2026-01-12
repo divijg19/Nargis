@@ -27,7 +27,13 @@ Copy `.env.example` to `.env.local`:
 cp .env.example .env.local
 ```
 
-Ensure `NEXT_PUBLIC_API_PY_URL` points to your Gateway or API (e.g., `http://localhost:8000` or `http://localhost:8080`).
+Set the public URLs the browser should use:
+
+- `NEXT_PUBLIC_API_URL` (HTTP) → the **Gateway** base URL (dev default `http://localhost:8080`)
+- `NEXT_PUBLIC_WS_URL` (WebSocket) → the **Gateway** WS endpoint (dev default `ws://localhost:8080/ws`)
+- `NEXT_PUBLIC_API_PY_URL` (HTTP) → the **api-py** base URL (dev default `http://localhost:8000`)
+
+In production, use `https://` + `wss://`.
 
 ### Development
 

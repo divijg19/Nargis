@@ -117,3 +117,28 @@ Notes
 - Commit `uv.lock` when you create it if you want fully reproducible builds in CI or when building Docker images.
 - If agent dependencies are not present, the API falls back to the previous LLM path. Add agent packages (LangGraph, LangChain, etc.) to the project extras if you need agent behaviors.
 
+Linting & Types
+--------------
+
+We use:
+- `ruff` for linting/formatting
+- `ty` for type checking
+
+POSIX / macOS:
+
+```bash
+cd apps/api-py
+uv run ruff check .
+uv run ruff format .
+uv run ty check .
+```
+
+PowerShell (Windows):
+
+```pwsh
+cd apps/api-py
+uv run ruff check .
+uv run ruff format .
+uv run ty check .
+```
+

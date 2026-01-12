@@ -9,8 +9,10 @@ from pydantic import BaseModel, Field
 # so the module can import across LangChain versions in CI/dev.
 try:
     from langchain.tools import tool as _lc_tool
+
+    _lc_tool_impl: Any = _lc_tool
 except Exception:  # pragma: no cover - runtime may not have langchain during CI
-    _lc_tool = None
+    _lc_tool_impl = None
 from services.ai_clients import get_embedding
 from services.habits import (
     create_habit_service,
@@ -39,22 +41,22 @@ def safe_tool(**dec_kwargs):
         def foo_tool(...):
             ...
     """
-    if _lc_tool is None:
+    if _lc_tool_impl is None:
         return _fallback_noop_decorator(**dec_kwargs)
 
     # Try calling the langchain tool factory with provided kwargs.
     try:
-        return _lc_tool(**dec_kwargs)
+        return _lc_tool_impl(**dec_kwargs)
     except TypeError:
         # Some versions don't accept `name` or `return_direct` as kwargs.
         # Try removing `name` first, then fall back to bare decorator.
         try:
             kw = dict(dec_kwargs)
             kw.pop("name", None)
-            return _lc_tool(**kw)
+            return _lc_tool_impl(**kw)
         except TypeError:
             try:
-                return _lc_tool
+                return _lc_tool_impl
             except Exception:
                 return _fallback_noop_decorator(**dec_kwargs)
 
