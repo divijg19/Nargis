@@ -10,7 +10,7 @@ from typing import Any, cast
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -39,17 +39,10 @@ from routers import (
 from routers import (
     tasks as tasks_router,
 )
-from routers.auth import get_current_user
+from routers.auth import get_optional_user
 from services.agent_service import run_agent_pipeline
-from services.context import get_system_context
 from services.idempotency import prune_old_keys
 from storage.database import SessionLocal, get_db, init_db
-
-try:
-    from langchain_core.messages import HumanMessage, SystemMessage
-except ImportError:
-    HumanMessage: Any = None
-    SystemMessage: Any = None
 
 # Explicitly load the .env file to ensure configuration is always read.
 load_dotenv()
@@ -209,7 +202,8 @@ async def generic_exception_handler(request: Request, exc: Exception):
 async def process_audio_pipeline(
     request: Request,
     audio_file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user),
+    mode: str = Query("chat", description="chat (default) or agent"),
+    current_user: dict | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -221,8 +215,19 @@ async def process_audio_pipeline(
       {"type": "error", "content": "..."}
     """
     # Local imports to avoid module-level imports that depend on env/config
-    from agent import graph as agent_graph
     from services.ai_clients import _get_llm_response, _get_transcription
+
+    mode_norm = (mode or "chat").strip().lower()
+    if mode_norm not in {"chat", "agent"}:
+        raise HTTPException(status_code=400, detail="Invalid mode")
+    if mode_norm == "agent" and current_user is None:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    user_id: str | None = None
+    if mode_norm == "agent":
+        # Capture outside the nested generator so type narrowing is preserved.
+        user = cast(dict[str, Any], current_user)
+        user_id = str(user["id"])
 
     audio_bytes = await audio_file.read()
     transcribed_text = await _get_transcription(audio_bytes)
@@ -240,30 +245,24 @@ async def process_audio_pipeline(
 
     async def event_stream() -> AsyncGenerator[bytes, None]:
         try:
-            async for chunk in run_agent_pipeline(
-                transcribed_text, current_user["id"], db
-            ):
-                if await request.is_disconnected():
-                    break
-                yield chunk
-        except Exception:
-            logging.exception("Error in event stream")
+            # Always emit transcript first so clients can show what was heard.
             yield (
-                json.dumps({"type": "error", "content": "Something went wrong."}) + "\n"
-            ).encode()
-        return
-
-    async def _unused_old_code():
-        try:
-            # Emit an immediate thought after STT to reduce perceived latency
-            yield (
-                json.dumps({"type": "thought", "content": "Processing…"}) + "\n"
+                json.dumps({"type": "transcript", "content": transcribed_text}) + "\n"
             ).encode()
 
-            # If agent runtime or streaming API not available, fall back to linear LLM
-            if not getattr(agent_graph, "agent_app", None) or not hasattr(
-                agent_graph.agent_app, "astream_events"
-            ):
+            # Default: chat mode (no tools, no DB context) even if authenticated.
+            if mode_norm == "chat":
+                if current_user is None:
+                    yield (
+                        json.dumps(
+                            {
+                                "type": "thought",
+                                "content": "Guest mode — sign in to save history.",
+                            }
+                        )
+                        + "\n"
+                    ).encode()
+
                 llm_result = await _get_llm_response(transcribed_text)
                 final_text = (
                     llm_result.get("reply")
@@ -277,149 +276,19 @@ async def process_audio_pipeline(
                 yield (json.dumps({"type": "end", "content": "done"}) + "\n").encode()
                 return
 
-            # Inject system context
-            context_str = get_system_context(current_user["id"], db)
-
-            # Prepare input payload
-            if HumanMessage and SystemMessage:
-                messages = [
-                    SystemMessage(content=f"System Context: {context_str}"),
-                    HumanMessage(content=transcribed_text),
-                ]
-                input_payload = {"messages": messages}
-            else:
-                input_payload = {
-                    "input": f"Context: {context_str}\nUser: {transcribed_text}"
-                }
-
-            # Stream events from agent.graph.agent_app.astream_events(...)
-            # (async generator)
-            # We use version="v1" to get standard LangChain event shapes
-            async for ev in agent_graph.agent_app.astream_events(
-                input_payload, version="v1"
-            ):
-                # If client disconnected, stop streaming promptly
-                try:
-                    if await request.is_disconnected():
-                        yield (
-                            json.dumps({"type": "end", "content": "canceled"}) + "\n"
-                        ).encode()
-                        return
-                except Exception:
-                    # If disconnect check fails, continue best-effort
-                    pass
-                # Normalize event access defensively
-                if ev is None:
-                    continue
-
-                kind = ev.get("event")
-
-                # High-level chain/model starts -> emit lightweight thoughts
-                # for transparency
-                if kind == "on_chain_start":
-                    name = ev.get("name") or "chain"
-                    if name and name != "LangGraph":
-                        yield (
-                            json.dumps(
-                                {
-                                    "type": "thought",
-                                    "content": f"Starting {name}…",
-                                }
-                            )
-                            + "\n"
-                        ).encode()
-                        continue
-
-                if kind == "on_chat_model_start":
-                    yield (
-                        json.dumps(
-                            {
-                                "type": "thought",
-                                "content": "Formulating response…",
-                            }
-                        )
-                        + "\n"
-                    ).encode()
-                    continue
-
-                # Tool Usage -> "tool_use"
-                if kind == "on_tool_start":
-                    tool_name = ev.get("name", "unknown")
-                    # data.input might be a dict or string
-                    tool_input = str(ev.get("data", {}).get("input", ""))
-                    yield (
-                        json.dumps(
-                            {"type": "tool_use", "tool": tool_name, "input": tool_input}
-                        )
-                        + "\n"
-                    ).encode()
-                    continue
-
-                # Tool Result -> "tool_result"
-                if kind == "on_tool_end":
-                    tool_name = ev.get("name", "unknown")
-                    output = ev.get("data", {}).get("output")
-                    # Serialize output safely
-                    output_str = str(output)
-                    yield (
-                        json.dumps(
-                            {
-                                "type": "tool_result",
-                                "tool": tool_name,
-                                "result": output_str,
-                            }
-                        )
-                        + "\n"
-                    ).encode()
-                    continue
-
-                # Chat Model Stream -> Optional thought tokens (omitted to avoid spam)
-                # If desired, we could aggregate tokens and emit periodic thoughts.
-
-                # Final Result -> "response"
-                # LangGraph 'on_chain_end' for the root graph usually contains
-                # the final output
-                if kind == "on_chain_end" and ev.get("name") == "LangGraph":
-                    output = ev.get("data", {}).get("output")
-                    if output:
-                        # Extract the final response from the agent state
-                        # Adjust key based on your graph's output schema
-                        # (usually 'messages' or 'output')
-                        content = None
-                        if isinstance(output, dict):
-                            # If output is a dict with 'messages',
-                            # get the last AI message
-                            if "messages" in output and isinstance(
-                                output["messages"], list
-                            ):
-                                last_msg = output["messages"][-1]
-                                if hasattr(last_msg, "content"):
-                                    content = last_msg.content
-                                elif isinstance(last_msg, dict):
-                                    content = last_msg.get("content")
-                            # Fallback: check for 'output' key
-                            if not content:
-                                content = output.get("output")
-                        else:
-                            content = str(output)
-
-                        if content:
-                            yield (
-                                json.dumps(
-                                    {"type": "response", "content": str(content)}
-                                )
-                                + "\n"
-                            ).encode()
-                            # Optional: emit an end-of-stream marker
-                            # for downstream clarity
-                            yield (
-                                json.dumps({"type": "end", "content": "done"}) + "\n"
-                            ).encode()
-
-        except Exception as e:
-            logging.exception("Agent streaming error")
-            err_line = json.dumps({"type": "error", "content": str(e)}) + "\n"
-            yield err_line.encode()
+            # Agent mode: authenticated only.
+            assert user_id is not None
+            async for chunk in run_agent_pipeline(transcribed_text, user_id, db):
+                if await request.is_disconnected():
+                    break
+                yield chunk
+        except Exception:
+            logging.exception("Error in event stream")
+            yield (
+                json.dumps({"type": "error", "content": "Something went wrong."}) + "\n"
+            ).encode()
+            yield (json.dumps({"type": "end", "content": "done"}) + "\n").encode()
+        return
 
     return StreamingResponse(event_stream(), media_type="application/x-ndjson")
 

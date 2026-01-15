@@ -125,12 +125,28 @@ def run_smoke():
                 # StructuredTool object rather than a plain callable. Try a few
                 # invocation patterns so this smoke test works across versions.
                 def _call_tool(tool_obj, args_obj):
-                    # Direct call if it's a function
+                    payload = (
+                        args_obj.model_dump()
+                        if hasattr(args_obj, "model_dump")
+                        else getattr(args_obj, "__dict__", {})
+                    )
+
+                    # Prefer StructuredTool-style APIs when available.
+                    if hasattr(tool_obj, "invoke") and callable(tool_obj.invoke):
+                        return tool_obj.invoke(payload)
+
+                    if hasattr(tool_obj, "run") and callable(tool_obj.run):
+                        return tool_obj.run(payload)
+
+                    # Direct call if it's a function (try kwargs first).
                     if callable(tool_obj):
-                        return tool_obj(args_obj)
+                        try:
+                            return tool_obj(**payload)
+                        except TypeError:
+                            return tool_obj(payload)
 
                     # Try common attributes on StructuredTool-like objects
-                    for attr in ("func", "run", "_run"):
+                    for attr in ("func", "_run"):
                         candidate = getattr(tool_obj, attr, None)
                         if callable(candidate):
                             try:
@@ -138,24 +154,10 @@ def run_smoke():
                             except TypeError:
                                 # Try passing a plain dict if the tool expects JSON
                                 try:
-                                    payload = (
-                                        args_obj.model_dump()
-                                        if hasattr(args_obj, "model_dump")
-                                        else getattr(args_obj, "__dict__", {})
-                                    )
                                     return candidate(payload)
                                 except Exception:
                                     # ignore and continue
                                     pass
-
-                    # Last resort: some tools expose `run` that expects strings
-                    if hasattr(tool_obj, "run") and callable(tool_obj.run):
-                        payload = (
-                            args_obj.model_dump()
-                            if hasattr(args_obj, "model_dump")
-                            else getattr(args_obj, "__dict__", {})
-                        )
-                        return tool_obj.run(payload)
 
                     raise TypeError(
                         "Tool object is not callable and has no runnable attribute"

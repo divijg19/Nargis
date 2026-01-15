@@ -104,7 +104,11 @@ def search_memories(
             stmt = (
                 select(Memory)
                 .where(Memory.user_id == user_id)
-                .order_by(Memory.embedding.l2_distance(qparam))
+                .order_by(
+                    Memory.embedding.l2_distance(qparam),
+                    Memory.created_at.desc(),
+                    Memory.id.desc(),
+                )
                 .limit(limit)
             )
             rows = db.scalars(stmt).all()

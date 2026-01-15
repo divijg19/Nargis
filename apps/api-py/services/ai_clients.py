@@ -118,14 +118,17 @@ async def _get_transcription(audio_bytes: bytes) -> str:
     # Prefer external STT provider if configured
     if STT_URL and DEEPGRAM_API_KEY:
         logging.info("Using external STT provider: Deepgram")
-        async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-            files = {"file": ("audio.webm", audio_bytes, "audio/webm")}
-            headers = {"Authorization": f"Token {DEEPGRAM_API_KEY}"}
-            resp = await client.post(STT_URL, headers=headers, files=files)
-            resp.raise_for_status()
-            return resp.json()["results"]["channels"][0]["alternatives"][0][
-                "transcript"
-            ]
+        try:
+            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+                files = {"file": ("audio.webm", audio_bytes, "audio/webm")}
+                headers = {"Authorization": f"Token {DEEPGRAM_API_KEY}"}
+                resp = await client.post(STT_URL, headers=headers, files=files)
+                resp.raise_for_status()
+                return resp.json()["results"]["channels"][0]["alternatives"][0][
+                    "transcript"
+                ]
+        except Exception as e:
+            logging.exception(f"Deepgram STT failed; falling back. Error: {e}")
 
     # If an ML worker is available, prefer delegating to it (isolates heavy deps)
     if ML_WORKER_URL:

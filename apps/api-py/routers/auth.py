@@ -133,6 +133,28 @@ async def get_current_user(
     }
 
 
+async def get_optional_user(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    db: Session = Depends(get_db),
+) -> dict | None:
+    """Return the current user if authenticated, else None.
+
+    If credentials are provided but invalid/expired, raise 401. We do not
+    silently downgrade invalid auth to anonymous.
+    """
+
+    token = None
+    if credentials and getattr(credentials, "credentials", None):
+        token = credentials.credentials
+    if not token:
+        token = request.cookies.get("access_token")
+    if not token:
+        return None
+
+    return await get_current_user(request=request, credentials=credentials, db=db)
+
+
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 async def register(
     user_data: UserRegister,
