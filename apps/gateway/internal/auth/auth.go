@@ -10,12 +10,14 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 // CheckOrigin consults WS_ALLOWED_ORIGINS (comma-separated). If empty, allow all.
 func CheckOrigin(r *http.Request) bool {
 	allowed := os.Getenv("WS_ALLOWED_ORIGINS")
-	if strings.TrimSpace(allowed) == "" {
+	allowed = strings.TrimSpace(allowed)
+	if allowed == "" || allowed == "*" {
 		// No restriction configured; allow (but log in debug scenarios)
 		return true
 	}
@@ -74,6 +76,31 @@ func VerifyJWTToken(token string) (string, error) {
 	var claims map[string]interface{}
 	if err := json.Unmarshal(payload, &claims); err != nil {
 		return "", fmt.Errorf("invalid payload json: %w", err)
+	}
+
+	// If `exp` claim is present, enforce it.
+	// We accept numeric unix seconds (common JWT encoding).
+	if expRaw, ok := claims["exp"]; ok {
+		switch v := expRaw.(type) {
+		case float64:
+			if time.Now().Unix() >= int64(v) {
+				return "", errors.New("token expired")
+			}
+		case int64:
+			if time.Now().Unix() >= v {
+				return "", errors.New("token expired")
+			}
+		case int:
+			if time.Now().Unix() >= int64(v) {
+				return "", errors.New("token expired")
+			}
+		case json.Number:
+			if n, err := v.Int64(); err == nil {
+				if time.Now().Unix() >= n {
+					return "", errors.New("token expired")
+				}
+			}
+		}
 	}
 
 	// Prefer standard `sub`, then `user_id`, then `uid`.

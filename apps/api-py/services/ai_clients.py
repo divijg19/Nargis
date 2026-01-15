@@ -22,6 +22,7 @@ HTTP_TIMEOUT = int(os.getenv("HTTP_TIMEOUT_SECONDS", "60"))
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "phi-3-mini")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 ML_WORKER_URL = os.getenv("ML_WORKER_URL", "")
+DISABLE_LOCAL_STT = os.getenv("DISABLE_LOCAL_STT", "0")
 
 # Local STT model state
 device = "cpu"
@@ -115,6 +116,12 @@ def run_llm_sync(text: str) -> dict:
 
 
 async def _get_transcription(audio_bytes: bytes) -> str:
+    # E2E/dev safety valve: avoid heavy local model downloads/loads.
+    # When enabled, transcription is intentionally empty to allow the API
+    # to short-circuit with a deterministic response.
+    if str(DISABLE_LOCAL_STT).strip() in {"1", "true", "yes", "on"}:
+        return ""
+
     # Prefer external STT provider if configured
     if STT_URL and DEEPGRAM_API_KEY:
         logging.info("Using external STT provider: Deepgram")

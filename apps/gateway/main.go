@@ -6,6 +6,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -102,6 +104,9 @@ func main() {
 	mux.HandleFunc("/health", healthHandler)
 	mux.HandleFunc("/ready", readyHandler)
 	mux.HandleFunc("/proxy/process-audio", proxyProcessAudioHandler)
+	// Proxy auth routes so the browser can set a cookie on the gateway origin.
+	// This enables cookie-based WS auth without query-string tokens.
+	mux.HandleFunc("/v1/auth/", withCORS(proxyAuthHandler))
 
 	server := &http.Server{
 		Addr:         ":" + cfg.Port,
@@ -130,6 +135,113 @@ func main() {
 		slog.Error("Server forced to shutdown", "error", err)
 	}
 	slog.Info("Server exited gracefully")
+}
+
+func getOrchestratorBaseURL() string {
+	if cfg != nil {
+		if u := strings.TrimSpace(cfg.OrchestratorURL); u != "" {
+			return u
+		}
+	}
+	if u := strings.TrimSpace(os.Getenv("ORCHESTRATOR_URL")); u != "" {
+		return u
+	}
+	return "http://localhost:8000"
+}
+
+func isAllowedHTTPOrigin(origin string) bool {
+	origin = strings.TrimSpace(origin)
+	if origin == "" {
+		return false
+	}
+	allowed := strings.TrimSpace(os.Getenv("WS_ALLOWED_ORIGINS"))
+	if allowed == "" || allowed == "*" {
+		return true
+	}
+	for _, o := range strings.Split(allowed, ",") {
+		if strings.EqualFold(strings.TrimSpace(o), origin) {
+			return true
+		}
+	}
+	return false
+}
+
+func withCORS(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions {
+			origin := r.Header.Get("Origin")
+			if origin != "" && isAllowedHTTPOrigin(origin) {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Vary", "Origin")
+				w.Header().Set("Access-Control-Allow-Credentials", "true")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
+			}
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		h(w, r)
+	}
+}
+
+func proxyAuthHandler(w http.ResponseWriter, r *http.Request) {
+	base := getOrchestratorBaseURL()
+	target, err := url.Parse(base)
+	if err != nil {
+		http.Error(w, "Bad orchestrator url", http.StatusInternalServerError)
+		return
+	}
+
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	origDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		origDirector(req)
+		// Ensure we preserve the request path (/v1/auth/...) and query.
+		req.URL.Scheme = target.Scheme
+		req.URL.Host = target.Host
+		req.Host = target.Host
+	}
+	proxy.ModifyResponse = func(resp *http.Response) error {
+		origin := ""
+		if resp != nil && resp.Request != nil {
+			origin = resp.Request.Header.Get("Origin")
+		}
+		// Normalize CORS headers to a single canonical value to avoid browsers
+		// rejecting comma-joined duplicates when both gateway and upstream set them.
+		resp.Header.Del("Access-Control-Allow-Origin")
+		resp.Header.Del("Access-Control-Allow-Credentials")
+		resp.Header.Del("Access-Control-Allow-Headers")
+		resp.Header.Del("Access-Control-Allow-Methods")
+		if origin != "" && isAllowedHTTPOrigin(origin) {
+			resp.Header.Set("Access-Control-Allow-Origin", origin)
+			resp.Header.Set("Access-Control-Allow-Credentials", "true")
+			// Keep preflight allowances aligned with withCORS.
+			resp.Header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			resp.Header.Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
+			// Ensure Vary includes Origin
+			vary := resp.Header.Values("Vary")
+			hasOrigin := false
+			for _, v := range vary {
+				for _, part := range strings.Split(v, ",") {
+					if strings.EqualFold(strings.TrimSpace(part), "Origin") {
+						hasOrigin = true
+						break
+					}
+				}
+			}
+			if !hasOrigin {
+				resp.Header.Add("Vary", "Origin")
+			}
+		}
+		return nil
+	}
+	proxy.ErrorHandler = func(rw http.ResponseWriter, _ *http.Request, e error) {
+		slog.Error("auth proxy failed", "error", e)
+		http.Error(rw, "Auth service unavailable", http.StatusBadGateway)
+	}
+
+	proxy.ServeHTTP(w, r)
 }
 
 func healthHandler(w http.ResponseWriter, _ *http.Request) {
@@ -271,6 +383,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 	state := &orchState{mode: "chat"}
 	audioQueue := make(chan []byte)
+	workerReady := make(chan struct{})
 	defer close(audioQueue)
 
 	// Writer Goroutine
@@ -286,6 +399,10 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	// Orchestrator worker goroutine
 	go func() {
+		// Signal that the worker goroutine is running before we start
+		// consuming WS frames; avoids a scheduling race where the first
+		// audio frame could be rejected spuriously.
+		close(workerReady)
 		for payload := range audioQueue {
 			// Concurrency limit across all connections
 			select {
@@ -315,6 +432,16 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			metrics.OrchestratorLatency.Observe(time.Since(start).Seconds())
 			if err != nil {
 				slog.Error("Orchestrator failed", "error", err, "req_id", reqID)
+				// If the request was canceled (e.g. STOP), prefer a clean end marker.
+				if ctx.Err() == context.Canceled {
+					safeSend(send, []byte(`{"type": "end", "content": "canceled"}`))
+					cancel()
+					state.mu.Lock()
+					state.cancel = nil
+					state.mu.Unlock()
+					<-audioSem
+					continue
+				}
 				if se, ok := err.(*orchestrator.StatusError); ok {
 					if se.StatusCode == http.StatusUnauthorized || se.StatusCode == http.StatusForbidden {
 						safeSend(send, []byte(`{"type":"error","content":"Login required for execute mode."}`))
@@ -374,6 +501,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			<-audioSem
 		}
 	}()
+	<-workerReady
 
 	// Redis Subscriber Goroutine
 	if busClient != nil && uid != "" {

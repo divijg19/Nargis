@@ -81,12 +81,16 @@ async def run_agent_pipeline(
             if tool_output is not None:
                 if isinstance(tool_output, (dict, list)):
                     tool_output = json.dumps(tool_output)
+                result_text = str(tool_output)[:2000]
                 yield (
                     json.dumps(
                         {
                             "type": "tool_result",
                             "tool": tool_name,
-                            "output": str(tool_output)[:2000],
+                            # Canonical key expected by the web app.
+                            "result": result_text,
+                            # Backwards-compatible alias.
+                            "output": result_text,
                         }
                     )
                     + "\n"

@@ -242,7 +242,14 @@ export type AgentEvent =
   | { type: "transcript"; content: string }
   | { type: "thought"; content: string }
   | { type: "tool_use"; tool: string; input: string }
-  | { type: "tool_result"; tool: string; result: string }
+  | {
+      type: "tool_result";
+      tool: string;
+      // Canonical key (preferred)
+      result?: string;
+      // Legacy key (kept for backwards compatibility)
+      output?: string;
+    }
   | { type: "response"; content: string }
   | { type: "error"; content: string }
   | { type: "end"; content?: string };

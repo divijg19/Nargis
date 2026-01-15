@@ -185,11 +185,17 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
             case "tool_result": {
               // Emit domain event so other contexts can refresh data
               const toolName = evt.tool;
+              const toolResult =
+                typeof evt.result === "string"
+                  ? evt.result
+                  : typeof evt.output === "string"
+                    ? evt.output
+                    : "";
               console.debug("[Realtime] Tool completed:", toolName);
               emitDomainEvent(
                 buildEvent("remote.tool_completed", {
                   tool: toolName,
-                  result: evt.result,
+                  result: toolResult,
                 }),
               );
               return;
