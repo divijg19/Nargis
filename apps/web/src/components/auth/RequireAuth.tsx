@@ -1,8 +1,8 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function RequireAuth({
@@ -14,19 +14,16 @@ export function RequireAuth({
 }) {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  const next = useMemo(() => {
-    const qs = searchParams?.toString();
-    return qs ? `${pathname}?${qs}` : pathname;
-  }, [pathname, searchParams]);
 
   useEffect(() => {
     if (loading) return;
     if (isAuthenticated) return;
+    // Avoid Next's prerender "blocking-route" warning by not depending on
+    // useSearchParams()/usePathname() here. We can safely compute next from
+    // window.location at runtime.
+    const next = `${window.location.pathname}${window.location.search}`;
     router.replace(`/login?next=${encodeURIComponent(next)}`);
-  }, [isAuthenticated, loading, next, router]);
+  }, [isAuthenticated, loading, router]);
 
   if (loading) {
     return fallback ?? null;
