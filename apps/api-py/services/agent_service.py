@@ -49,7 +49,11 @@ async def run_agent_pipeline(
         input_payload = {"input": f"Context: {context_str}\nUser: {user_input}"}
 
     # Stream events
+    # Use a reasonable size limit to prevent unbounded memory growth
+    MAX_RESPONSE_LENGTH = 50000  # ~50KB of text
     response_parts: list[str] = []
+    total_response_length = 0
+    
     async for ev in agent_graph.agent_app.astream_events(input_payload, version="v1"):
         if ev is None:
             continue
@@ -98,7 +102,12 @@ async def run_agent_pipeline(
         elif kind == "on_chat_model_stream":
             content = ev.get("data", {}).get("chunk", {}).get("content")
             if content:
-                response_parts.append(content)
+                # Apply size limit to prevent unbounded memory accumulation
+                content_len = len(content)
+                if total_response_length + content_len <= MAX_RESPONSE_LENGTH:
+                    response_parts.append(content)
+                    total_response_length += content_len
+                # Silently drop content exceeding the limit
 
     if response_parts:
         yield (
