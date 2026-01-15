@@ -22,6 +22,7 @@ HTTP_TIMEOUT = int(os.getenv("HTTP_TIMEOUT_SECONDS", "60"))
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "phi-3-mini")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 ML_WORKER_URL = os.getenv("ML_WORKER_URL", "")
+DISABLE_LOCAL_STT = os.getenv("DISABLE_LOCAL_STT", "0")
 
 # Local STT model state
 device = "cpu"
@@ -115,17 +116,26 @@ def run_llm_sync(text: str) -> dict:
 
 
 async def _get_transcription(audio_bytes: bytes) -> str:
+    # E2E/dev safety valve: avoid heavy local model downloads/loads.
+    # When enabled, transcription is intentionally empty to allow the API
+    # to short-circuit with a deterministic response.
+    if str(DISABLE_LOCAL_STT).strip() in {"1", "true", "yes", "on"}:
+        return ""
+
     # Prefer external STT provider if configured
     if STT_URL and DEEPGRAM_API_KEY:
         logging.info("Using external STT provider: Deepgram")
-        async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-            files = {"file": ("audio.webm", audio_bytes, "audio/webm")}
-            headers = {"Authorization": f"Token {DEEPGRAM_API_KEY}"}
-            resp = await client.post(STT_URL, headers=headers, files=files)
-            resp.raise_for_status()
-            return resp.json()["results"]["channels"][0]["alternatives"][0][
-                "transcript"
-            ]
+        try:
+            async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+                files = {"file": ("audio.webm", audio_bytes, "audio/webm")}
+                headers = {"Authorization": f"Token {DEEPGRAM_API_KEY}"}
+                resp = await client.post(STT_URL, headers=headers, files=files)
+                resp.raise_for_status()
+                return resp.json()["results"]["channels"][0]["alternatives"][0][
+                    "transcript"
+                ]
+        except Exception as e:
+            logging.exception(f"Deepgram STT failed; falling back. Error: {e}")
 
     # If an ML worker is available, prefer delegating to it (isolates heavy deps)
     if ML_WORKER_URL:

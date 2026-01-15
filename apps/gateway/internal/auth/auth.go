@@ -10,12 +10,14 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 // CheckOrigin consults WS_ALLOWED_ORIGINS (comma-separated). If empty, allow all.
 func CheckOrigin(r *http.Request) bool {
 	allowed := os.Getenv("WS_ALLOWED_ORIGINS")
-	if strings.TrimSpace(allowed) == "" {
+	allowed = strings.TrimSpace(allowed)
+	if allowed == "" || allowed == "*" {
 		// No restriction configured; allow (but log in debug scenarios)
 		return true
 	}
@@ -76,6 +78,31 @@ func VerifyJWTToken(token string) (string, error) {
 		return "", fmt.Errorf("invalid payload json: %w", err)
 	}
 
+	// If `exp` claim is present, enforce it.
+	// We accept numeric unix seconds (common JWT encoding).
+	if expRaw, ok := claims["exp"]; ok {
+		switch v := expRaw.(type) {
+		case float64:
+			if time.Now().Unix() >= int64(v) {
+				return "", errors.New("token expired")
+			}
+		case int64:
+			if time.Now().Unix() >= v {
+				return "", errors.New("token expired")
+			}
+		case int:
+			if time.Now().Unix() >= int64(v) {
+				return "", errors.New("token expired")
+			}
+		case json.Number:
+			if n, err := v.Int64(); err == nil {
+				if time.Now().Unix() >= n {
+					return "", errors.New("token expired")
+				}
+			}
+		}
+	}
+
 	// Prefer standard `sub`, then `user_id`, then `uid`.
 	if sub, ok := claims["sub"].(string); ok && sub != "" {
 		return sub, nil
@@ -99,9 +126,12 @@ func VerifyJWTFromRequest(r *http.Request) (string, error) {
 		tok := strings.TrimPrefix(auth, "Bearer ")
 		return VerifyJWTToken(tok)
 	}
-	// Fallback to query param `token` for browser WS clients
-	if tok := r.URL.Query().Get("token"); strings.TrimSpace(tok) != "" {
-		return VerifyJWTToken(tok)
+	// Avoid query-string tokens by default (they can leak via logs/history).
+	// If you must support them for tooling, set WS_ALLOW_QUERY_TOKEN=1.
+	if os.Getenv("WS_ALLOW_QUERY_TOKEN") == "1" {
+		if tok := r.URL.Query().Get("token"); strings.TrimSpace(tok) != "" {
+			return VerifyJWTToken(tok)
+		}
 	}
 	// Fallback to cookie `access_token` for browser clients
 	if c, err := r.Cookie("access_token"); err == nil {

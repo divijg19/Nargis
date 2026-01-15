@@ -11,6 +11,14 @@
     "dev:web": "cd apps/web && bun run dev",
     "dev:py": "cd apps/api-py && uv run uvicorn main:app --reload",
     "dev:go": "cd apps/gateway && cross-env ORCHESTRATOR_URL=http://localhost:8000 air",
+    "//--- E2E (FULL STACK) ---": "",
+    "serve:py": "cd apps/api-py && cross-env ALLOWED_ORIGINS=http://localhost:3000 JWT_COOKIE_SECURE=0 DISABLE_LOCAL_STT=1 JWT_SECRET_KEY=dev-secret-key-change-in-production uv run uvicorn main:app --host 127.0.0.1 --port 8000",
+    "serve:go": "cd apps/gateway && cross-env ORCHESTRATOR_URL=http://127.0.0.1:8000 WS_ALLOWED_ORIGINS=http://localhost:3000 JWT_SECRET_KEY=dev-secret-key-change-in-production PORT=8080 go run .",
+    "dev:e2e": "concurrently --kill-others --names \"WEB,API-PY,API-GO\" --prefix-colors \"blue,green,magenta\" \"bun run dev:web\" \"bun run serve:py\" \"bun run serve:go\"",
+    "//--- API-PY QUALITY GATES ---": "",
+    "api-py:ruff": "cd apps/api-py && uv run ruff check . && uv run ruff format --check .",
+    "api-py:ty": "cd apps/api-py && uv run ty check .",
+    "api-py:test": "cd apps/api-py && uv run pytest",
     "//--- HYBRID DEVELOPMENT (Docker Backend) ---": "",
     "dev:hybrid": "concurrently --kill-others --names \"WEB,DOCKER\" --prefix-colors \"blue,yellow\" \"bun run dev:web\" \"bun run dev:docker:up\"",
     "dev:docker:up": "cd infra && docker-compose up --build",
@@ -23,7 +31,8 @@
     "format": "biome format . --write",
     "type-check": "turbo type-check",
     "test": "bun run --filter @nargis/web test:unit:run",
-    "smoke:ws": "node ./tools/smoke/ws_client.js"
+    "smoke:ws": "node ./tools/smoke/ws_client.js",
+    "smoke:local-realtime": "bash ./tools/smoke/local_realtime_e2e.sh"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.11",

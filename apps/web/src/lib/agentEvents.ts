@@ -26,6 +26,19 @@ export function accumulateAgentEvents(
         thoughts.push(t);
         break;
       }
+      case "tool_result": {
+        const raw =
+          typeof evt.result === "string"
+            ? evt.result
+            : typeof evt.output === "string"
+              ? evt.output
+              : "";
+        const t = raw.trim();
+        thoughts.push(
+          t ? `Result from ${evt.tool}: ${t}` : `Result from ${evt.tool}`,
+        );
+        break;
+      }
       case "response": {
         response = evt.content;
         break;

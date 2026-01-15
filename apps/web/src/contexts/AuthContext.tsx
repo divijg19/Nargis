@@ -25,12 +25,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for existing session on mount
     const initAuth = async () => {
       try {
-        if (authService.isAuthenticated()) {
-          const userData = await authService.getProfile();
-          setUser(userData);
-        }
-      } catch (error) {
-        console.error("Failed to initialize auth:", error);
+        // Prefer server session discovery (httpOnly cookie), falling back to legacy local token.
+        // `getProfile()` already includes credentials and will attach the token if present.
+        const userData = await authService.getProfile();
+        setUser(userData);
+      } catch {
+        // Not logged in (or session expired). Avoid noisy console errors on first load.
         authService.removeToken();
       } finally {
         setLoading(false);

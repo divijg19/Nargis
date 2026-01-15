@@ -41,6 +41,23 @@ func makeToken(secret, sub string) string {
 	return fmt.Sprintf("%s.%s", signing, sigb)
 }
 
+func makeExpiredToken(secret, sub string) string {
+	head := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"HS256","typ":"JWT"}`))
+
+	payloadMap := map[string]interface{}{
+		"sub": sub,
+		"exp": time.Now().Add(-1 * time.Hour).Unix(),
+	}
+	pb, _ := json.Marshal(payloadMap)
+	payload := base64.RawURLEncoding.EncodeToString(pb)
+	signing := fmt.Sprintf("%s.%s", head, payload)
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(signing))
+	sig := mac.Sum(nil)
+	sigb := base64.RawURLEncoding.EncodeToString(sig)
+	return fmt.Sprintf("%s.%s", signing, sigb)
+}
+
 // fakeOrchestrator streams a few NDJSON lines and then closes.
 func fakeOrchestrator(w http.ResponseWriter, r *http.Request) {
 	// Drain the request body to prevent blocking upstream pipes
@@ -76,10 +93,165 @@ func fakeOrchestratorBlocking(started chan<- struct{}, release <-chan struct{}) 
 		case started <- struct{}{}:
 		default:
 		}
-		<-release
+		select {
+		case <-release:
+			// proceed
+		case <-r.Context().Done():
+			// client canceled; exit without writing
+			return
+		}
 		w.Header().Set("Content-Type", "application/x-ndjson")
 		fmt.Fprintln(w, `{"type":"response","content":"ok from orchestrator"}`)
 		fmt.Fprintln(w, `{"type":"end","content":"done"}`)
+	}
+}
+
+func TestGatewayStopCancelsInFlightOrchestrator(t *testing.T) {
+	secret := "test-hmac-secret"
+	os.Setenv("JWT_SECRET_KEY", secret)
+	os.Setenv("VAD_MODE", "off")
+
+	started := make(chan struct{}, 1)
+	release := make(chan struct{})
+
+	orch := httptest.NewServer(http.HandlerFunc(fakeOrchestratorBlocking(started, release)))
+	defer orch.Close()
+	os.Setenv("ORCHESTRATOR_URL", orch.URL)
+
+	// Initialize globals
+	orchClient = orchestrator.NewClient(orch.URL)
+	upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	vCfg := vad.DefaultConfig()
+	vCfg.EnergyThreshold = 0.0
+	vadProc = vad.NewProcessor(vCfg)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ws", handleConnections)
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws"
+	// Auth cookie present so MODE:agent isn't blocked if client switches.
+	header := http.Header{}
+	header.Add("Cookie", "access_token="+makeToken(secret, "stop-user"))
+
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, header)
+	if err != nil {
+		t.Fatalf("dial failed: %v resp=%v", err, resp)
+	}
+	defer conn.Close()
+
+	// Send a binary chunk to start orchestration.
+	if err := conn.WriteMessage(websocket.BinaryMessage, []byte{0x1a, 0x45, 0xdf, 0xa3}); err != nil {
+		t.Fatalf("write chunk failed: %v", err)
+	}
+
+	select {
+	case <-started:
+		// orchestrator request began
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timeout waiting for orchestrator to start")
+	}
+
+	// Issue STOP; should cancel and yield end:canceled quickly.
+	if err := conn.WriteMessage(websocket.TextMessage, []byte("STOP")); err != nil {
+		t.Fatalf("write STOP failed: %v", err)
+	}
+
+	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	_, msg, err := conn.ReadMessage()
+	if err != nil {
+		t.Fatalf("read failed: %v", err)
+	}
+	s := strings.TrimSpace(string(msg))
+	if !strings.Contains(s, `"type"`) || !strings.Contains(s, `end`) || !strings.Contains(strings.ToLower(s), "canceled") {
+		t.Fatalf("expected canceled end event, got: %s", s)
+	}
+}
+
+func fakeOrchestratorAuth(w http.ResponseWriter, r *http.Request) {
+	// minimal auth endpoint imitation for gateway proxy tests
+	if r.Method == http.MethodPost && r.URL.Path == "/v1/auth/login" {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Add("Set-Cookie", "access_token=test.jwt.token; Path=/; HttpOnly; SameSite=Lax")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"access_token":"test.jwt.token","token_type":"bearer"}`))
+		return
+	}
+	if r.Method == http.MethodGet && r.URL.Path == "/v1/auth/me" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"id":"u1","email":"u1@example.com","name":"U1","createdAt":"now"}`))
+		return
+	}
+	w.WriteHeader(http.StatusNotFound)
+}
+
+func TestGatewayAuthProxyCORSAndCookie(t *testing.T) {
+	orch := httptest.NewServer(http.HandlerFunc(fakeOrchestratorAuth))
+	defer orch.Close()
+	os.Setenv("ORCHESTRATOR_URL", orch.URL)
+	os.Setenv("WS_ALLOWED_ORIGINS", "http://localhost:3000")
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/auth/", withCORS(proxyAuthHandler))
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	client := &http.Client{Timeout: 3 * time.Second}
+
+	// Preflight
+	pre, err := http.NewRequest(http.MethodOptions, srv.URL+"/v1/auth/login", nil)
+	if err != nil {
+		t.Fatalf("failed create preflight: %v", err)
+	}
+	pre.Header.Set("Origin", "http://localhost:3000")
+	pre.Header.Set("Access-Control-Request-Method", "POST")
+	pre.Header.Set("Access-Control-Request-Headers", "content-type")
+	preResp, err := client.Do(pre)
+	if err != nil {
+		t.Fatalf("preflight failed: %v", err)
+	}
+	_ = preResp.Body.Close()
+	if preResp.StatusCode != http.StatusNoContent {
+		t.Fatalf("unexpected preflight status: %d", preResp.StatusCode)
+	}
+	if got := preResp.Header.Get("Access-Control-Allow-Origin"); got != "http://localhost:3000" {
+		t.Fatalf("missing/incorrect allow-origin: %q", got)
+	}
+	if got := preResp.Header.Get("Access-Control-Allow-Credentials"); got != "true" {
+		t.Fatalf("missing allow-credentials: %q", got)
+	}
+
+	// Actual login
+	req, err := http.NewRequest(http.MethodPost, srv.URL+"/v1/auth/login", strings.NewReader(`{"email":"a@b.com","password":"pw"}`))
+	if err != nil {
+		t.Fatalf("failed create req: %v", err)
+	}
+	req.Header.Set("Origin", "http://localhost:3000")
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("login request failed: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		t.Fatalf("unexpected status: %d body=%s", resp.StatusCode, string(b))
+	}
+	if got := resp.Header.Get("Access-Control-Allow-Origin"); got != "http://localhost:3000" {
+		t.Fatalf("missing/incorrect allow-origin: %q", got)
+	}
+	setCookie := resp.Header.Values("Set-Cookie")
+	found := false
+	for _, sc := range setCookie {
+		if strings.Contains(sc, "access_token=") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected access_token Set-Cookie, got: %v", setCookie)
 	}
 }
 
@@ -129,6 +301,20 @@ func TestGatewayCookieWSAuthIntegration(t *testing.T) {
 	}
 	if !strings.Contains(string(msg), "ws-user-42") {
 		t.Fatalf("unexpected message: %s", string(msg))
+	}
+}
+
+func TestGatewayExpiredCookieJWTRejected(t *testing.T) {
+	secret := "test-hmac-secret"
+	os.Setenv("JWT_SECRET_KEY", secret)
+
+	token := makeExpiredToken(secret, "expired-user")
+	req := httptest.NewRequest(http.MethodGet, "http://example/ws", nil)
+	req.Header.Set("Cookie", "access_token="+token)
+
+	uid, err := auth.VerifyJWTFromRequest(req)
+	if err == nil {
+		t.Fatalf("expected error for expired token, got uid=%q", uid)
 	}
 }
 
@@ -415,7 +601,8 @@ func TestGatewayWSConcurrencyLimitReturnsError(t *testing.T) {
 		t.Fatalf("orchestrator did not start")
 	}
 
-	// Second message should be rejected immediately with an error.
+	// Second message should be rejected immediately with an error because this
+	// connection is already processing an audio request.
 	if err := conn.WriteMessage(websocket.BinaryMessage, []byte("RIFF....WAVE")); err != nil {
 		t.Fatalf("write 2 failed: %v", err)
 	}
@@ -425,8 +612,8 @@ func TestGatewayWSConcurrencyLimitReturnsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read failed: %v", err)
 	}
-	if !strings.Contains(string(msg), "Too many requests") {
-		t.Fatalf("expected concurrency error, got: %s", string(msg))
+	if !strings.Contains(string(msg), "Already processing") {
+		t.Fatalf("expected already-processing error, got: %s", string(msg))
 	}
 
 	close(release)

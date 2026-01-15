@@ -27,11 +27,11 @@ function InlineVoice() {
 }
 
 const navigationItems = [
-  { href: "/dashboard", label: "Dashboard", icon: "📊" },
-  { href: "/journal", label: "Journal", icon: "📔" },
-  { href: "/tasks", label: "Tasks", icon: "✓" },
-  { href: "/habits", label: "Habits", icon: "🔥" },
-  { href: "/pomodoro", label: "Focus", icon: "🍅" },
+  { href: "/dashboard", label: "Dashboard", icon: "📊", requiresAuth: true },
+  { href: "/journal", label: "Journal", icon: "📔", requiresAuth: true },
+  { href: "/tasks", label: "Tasks", icon: "✓", requiresAuth: true },
+  { href: "/habits", label: "Habits", icon: "🔥", requiresAuth: true },
+  { href: "/pomodoro", label: "Focus", icon: "🍅", requiresAuth: true },
 ];
 
 type NavBarProps = {
@@ -129,11 +129,16 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
                 <div className="hidden md:flex items-center space-x-2">
                   {navigationItems.map((item) => {
                     const isActive = pathname === item.href;
+                    const isLocked = item.requiresAuth && !isAuthenticated;
+                    const targetHref = isLocked
+                      ? `/login?next=${encodeURIComponent(item.href)}`
+                      : item.href;
                     return (
                       <Link
                         key={item.href}
-                        href={item.href}
+                        href={targetHref}
                         aria-current={isActive ? "page" : undefined}
+                        title={isLocked ? "Sign in to access" : undefined}
                         className={`relative px-3 py-1 rounded-lg text-sm font-semibold transition-all duration-200 group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background
 						  ${isActive ? "text-primary bg-primary-subtle shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-hover/40"}`}
                       >
@@ -144,6 +149,14 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
                           {item.icon}
                         </span>
                         {item.label}
+                        {isLocked && (
+                          <span
+                            className="ml-2 text-xs text-muted-foreground"
+                            aria-hidden
+                          >
+                            🔒
+                          </span>
+                        )}
                         {isActive && (
                           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
                         )}
@@ -233,12 +246,17 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
                   <div className="space-y-1">
                     {navigationItems.map((item) => {
                       const isActive = pathname === item.href;
+                      const isLocked = item.requiresAuth && !isAuthenticated;
+                      const targetHref = isLocked
+                        ? `/login?next=${encodeURIComponent(item.href)}`
+                        : item.href;
                       return (
                         <Link
                           key={item.href}
-                          href={item.href}
+                          href={targetHref}
                           onClick={() => setMobileMenuOpen(false)}
                           aria-current={isActive ? "page" : undefined}
+                          title={isLocked ? "Sign in to access" : undefined}
                           className={`block px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background
 							  ${isActive ? "bg-primary-subtle text-primary" : "text-muted-foreground hover:text-foreground hover:bg-hover/40"}
 							`}
@@ -247,6 +265,14 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
                             {item.icon}
                           </span>
                           <span className="align-middle">{item.label}</span>
+                          {isLocked && (
+                            <span
+                              className="ml-2 text-xs text-muted-foreground"
+                              aria-hidden
+                            >
+                              🔒
+                            </span>
+                          )}
                         </Link>
                       );
                     })}

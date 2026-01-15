@@ -49,6 +49,7 @@ async def run_agent_pipeline(
         input_payload = {"input": f"Context: {context_str}\nUser: {user_input}"}
 
     # Stream events
+    response_parts: list[str] = []
     async for ev in agent_graph.agent_app.astream_events(input_payload, version="v1"):
         if ev is None:
             continue
@@ -75,13 +76,33 @@ async def run_agent_pipeline(
                 + "\n"
             ).encode()
         elif kind == "on_tool_end":
-            # We don't always show tool output to user, but we could
-            pass
+            tool_name = ev.get("name")
+            tool_output = ev.get("data", {}).get("output")
+            if tool_output is not None:
+                if isinstance(tool_output, (dict, list)):
+                    tool_output = json.dumps(tool_output)
+                result_text = str(tool_output)[:2000]
+                yield (
+                    json.dumps(
+                        {
+                            "type": "tool_result",
+                            "tool": tool_name,
+                            # Canonical key expected by the web app.
+                            "result": result_text,
+                            # Backwards-compatible alias.
+                            "output": result_text,
+                        }
+                    )
+                    + "\n"
+                ).encode()
         elif kind == "on_chat_model_stream":
             content = ev.get("data", {}).get("chunk", {}).get("content")
             if content:
-                yield (
-                    json.dumps({"type": "response", "content": content}) + "\n"
-                ).encode()
+                response_parts.append(content)
+
+    if response_parts:
+        yield (
+            json.dumps({"type": "response", "content": "".join(response_parts)}) + "\n"
+        ).encode()
 
     yield (json.dumps({"type": "end", "content": "done"}) + "\n").encode()

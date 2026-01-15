@@ -17,15 +17,17 @@ function writeNdjson(res, obj) {
 
 const server = http.createServer((req, res) => {
   const { method, url } = req;
+  const parsedUrl = new URL(url || "/", `http://${req.headers.host || "127.0.0.1"}`);
+  const path = parsedUrl.pathname;
 
-  if (method === "GET" && url === "/health") {
+  if (method === "GET" && path === "/health") {
     res.statusCode = 200;
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({ status: "ok", service: "mock-orchestrator" }));
     return;
   }
 
-  if (method === "POST" && url === "/api/v1/process-audio") {
+  if (method === "POST" && path === "/api/v1/process-audio") {
     // Drain request body so client uploads don't stall.
     req.on("data", () => {});
     req.on("end", () => {
@@ -34,7 +36,11 @@ const server = http.createServer((req, res) => {
       // Flush headers early if possible
       if (typeof res.flushHeaders === "function") res.flushHeaders();
 
-      writeNdjson(res, { type: "response", content: "ok from mock orchestrator" });
+      const mode = parsedUrl.searchParams.get("mode") || "chat";
+      writeNdjson(res, {
+        type: "response",
+        content: `ok from mock orchestrator (${mode})`,
+      });
       setTimeout(() => {
         writeNdjson(res, { type: "end", content: "done" });
         res.end();
@@ -45,7 +51,7 @@ const server = http.createServer((req, res) => {
 
   res.statusCode = 404;
   res.setHeader("Content-Type", "application/json");
-  res.end(JSON.stringify({ error: "not found", method, url }));
+  res.end(JSON.stringify({ error: "not found", method, url: url || "" }));
 });
 
 server.listen(port, "127.0.0.1", () => {
