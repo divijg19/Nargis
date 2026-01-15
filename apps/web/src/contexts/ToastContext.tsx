@@ -24,6 +24,7 @@ export interface Toast {
     | "reconnecting"
     | "reconnected"
     | "connection-error"
+    | "auth-required"
     | "transcript-ready"
     | "ai-response"
     | "stream-canceled";

@@ -1,6 +1,8 @@
 "use client";
 
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRealtime } from "@/contexts/RealtimeContext";
 import { useTaskStore } from "@/contexts/TaskContext";
 import { useToasts } from "@/contexts/ToastContext";
@@ -29,12 +31,17 @@ export default function ChatPanel({
   merged = false,
   permissionDenied = false,
 }: ChatPanelProps) {
+  const { isAuthenticated, loading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
   const {
     aiResponse,
     transcribedText,
     clearAiResponse,
     clearTranscribedText,
     messages,
+    voiceMode,
+    setVoiceMode,
     openConversation,
     setOpenConversation,
     clearMessages,
@@ -60,6 +67,18 @@ export default function ChatPanel({
   const displayTranscript = showFullTranscript
     ? safeTranscript
     : safeTranscript.slice(0, DISPLAY_LIMIT);
+
+  const shouldShowSignInNudge =
+    !loading && !isAuthenticated && (messages?.length || 0) > 0;
+
+  const handleModeChange = (m: "chat" | "agent") => {
+    if (m === "agent" && (!isAuthenticated || loading)) {
+      const next = pathname || "/";
+      router.push(`/login?next=${encodeURIComponent(next)}`);
+      return;
+    }
+    setVoiceMode(m);
+  };
 
   // Accessible header id for merged mode
   const headerId = merged ? "chat-merged-header" : undefined;
@@ -228,6 +247,40 @@ export default function ChatPanel({
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {/* Mode toggle: chat (planning) vs agent (execution) */}
+                <fieldset className="hidden sm:flex items-center rounded-lg border border-border/20 bg-surface/30 p-1">
+                  <legend className="sr-only">Conversation mode</legend>
+                  <button
+                    type="button"
+                    className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                      voiceMode === "chat"
+                        ? "bg-white/8 text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => handleModeChange("chat")}
+                    aria-pressed={voiceMode === "chat"}
+                    title="Planning mode (no tools)"
+                  >
+                    Plan
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                      voiceMode === "agent"
+                        ? "bg-white/8 text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => handleModeChange("agent")}
+                    aria-pressed={voiceMode === "agent"}
+                    title={
+                      isAuthenticated
+                        ? "Execution mode (uses tools)"
+                        : "Sign in to use execution mode"
+                    }
+                  >
+                    Execute
+                  </button>
+                </fieldset>
                 {/* Clear */}
                 <button
                   type="button"
@@ -349,6 +402,24 @@ export default function ChatPanel({
                 </button>
               </div>
             </div>
+
+            {shouldShowSignInNudge && (
+              <div className="mb-3 rounded-xl border border-border/20 bg-surface-elevated/70 p-3 flex items-center justify-between gap-3">
+                <div className="text-xs text-muted-foreground">
+                  You’re in guest mode — sign in to save history.
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => {
+                    const next = pathname || "/";
+                    router.push(`/login?next=${encodeURIComponent(next)}`);
+                  }}
+                >
+                  Sign in
+                </button>
+              </div>
+            )}
 
             <div
               id="chat-merged-body"

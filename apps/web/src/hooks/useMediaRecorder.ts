@@ -35,7 +35,9 @@ export function useMediaRecorder() {
         streamRef.current = null;
         onStopRef.current = undefined;
       };
-      recorder.start(500);
+      // Record until stopped. This yields a single Blob on stop, which keeps
+      // the backend request model simple and avoids per-chunk orchestration.
+      recorder.start();
     },
     [isRecording],
   );

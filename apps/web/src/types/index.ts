@@ -239,6 +239,7 @@ export interface ConversationMessage {
 
 // NEW: Agent streaming event discriminated union
 export type AgentEvent =
+  | { type: "transcript"; content: string }
   | { type: "thought"; content: string }
   | { type: "tool_use"; tool: string; input: string }
   | { type: "tool_result"; tool: string; result: string }

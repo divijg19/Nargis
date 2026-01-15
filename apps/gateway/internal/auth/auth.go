@@ -99,9 +99,12 @@ func VerifyJWTFromRequest(r *http.Request) (string, error) {
 		tok := strings.TrimPrefix(auth, "Bearer ")
 		return VerifyJWTToken(tok)
 	}
-	// Fallback to query param `token` for browser WS clients
-	if tok := r.URL.Query().Get("token"); strings.TrimSpace(tok) != "" {
-		return VerifyJWTToken(tok)
+	// Avoid query-string tokens by default (they can leak via logs/history).
+	// If you must support them for tooling, set WS_ALLOW_QUERY_TOKEN=1.
+	if os.Getenv("WS_ALLOW_QUERY_TOKEN") == "1" {
+		if tok := r.URL.Query().Get("token"); strings.TrimSpace(tok) != "" {
+			return VerifyJWTToken(tok)
+		}
 	}
 	// Fallback to cookie `access_token` for browser clients
 	if c, err := r.Cookie("access_token"); err == nil {

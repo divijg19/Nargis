@@ -15,6 +15,7 @@ import { useMediaRecorder } from "@/hooks/useMediaRecorder";
 import { sanitizeText } from "@/lib/sanitize";
 import { RealtimeConnection } from "@/realtime/connection";
 import type { AgentEvent } from "@/types";
+import { useAuth } from "./AuthContext";
 import { useToasts } from "./ToastContext";
 
 // Narrow incoming messages safely (top-level to avoid hook deps)
@@ -69,6 +70,9 @@ interface RealtimeContextValue {
   // NEW: agent streaming state
   currentAgentState: string | null;
   processing: boolean;
+  // Voice mode: chat (anonymous-safe) vs agent (requires auth)
+  voiceMode: "chat" | "agent";
+  setVoiceMode: (m: "chat" | "agent") => void;
   // dev helper to inject messages into the same handling logic (useful for testing)
   simulateIncoming?: (msg: unknown) => void;
 }
@@ -78,6 +82,7 @@ const RealtimeContext = createContext<RealtimeContextValue | undefined>(
 );
 
 export function RealtimeProvider({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuth();
   const [connectionStatus, setConnectionStatus] =
     useState<RealtimeContextValue["connectionStatus"]>("idle");
   // Recording is handled by useMediaRecorder hook
@@ -103,7 +108,11 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   // Use refs to hold objects that shouldn't trigger re-renders when they change,
   // like the connection and media recorder instances.
   const connectionRef = useRef<RealtimeConnection | null>(null);
-  const STORAGE_KEY = "nargis:ai:messages:v1";
+  const BASE_STORAGE_KEY = "nargis:ai:messages:v1";
+  const storageKey = useMemo(() => {
+    if (!isAuthenticated || !user?.id) return null;
+    return `${BASE_STORAGE_KEY}:${user.id}`;
+  }, [isAuthenticated, user?.id]);
 
   // NEW: Agent state
   const [currentAgentState, setCurrentAgentState] = useState<string | null>(
@@ -111,8 +120,18 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   );
   const [processing, setProcessing] = useState<boolean>(false);
 
+  // Voice mode defaults to anonymous-safe chat.
+  const [voiceMode, setVoiceMode] = useState<"chat" | "agent">("chat");
+
   // Accumulate thoughts during a streaming session until a final response
   const pendingThoughtsRef = useRef<string[]>([]);
+
+  // If the user logs out, force mode back to chat.
+  useEffect(() => {
+    if (!isAuthenticated && voiceMode !== "chat") {
+      setVoiceMode("chat");
+    }
+  }, [isAuthenticated, voiceMode]);
 
   // Centralized incoming message handler (used for both real WS messages and
   // dev/testing injections). Kept stable via useCallback so it can be used
@@ -128,6 +147,18 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
         if ("type" in maybe) {
           const evt = maybe as AgentEvent;
           switch (evt.type) {
+            case "transcript": {
+              const t = sanitizeText(evt.content);
+              if (t) {
+                setTranscribedText(t);
+                setMessages((cur) => [
+                  ...cur,
+                  { role: "user", text: t, ts: Date.now() },
+                ]);
+                setOpenConversation(true);
+              }
+              return;
+            }
             case "thought": {
               const t = String(evt.content || "").trim();
               if (t) pendingThoughtsRef.current.push(t);
@@ -312,21 +343,18 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     const enabled = isFlagEnabled("realtime") || hasWsUrl;
     if (!enabled) return;
 
-    let url = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws";
-    // Append JWT as query param for gateway auth if available
-    try {
-      const { authService } = require("@/services/auth");
-      const tok = authService.getToken?.();
-      if (tok) {
-        const u = new URL(url);
-        // preserve existing params and add token
-        u.searchParams.set("token", tok);
-        url = u.toString();
+    const defaultUrl = (() => {
+      if (typeof window === "undefined") return "ws://localhost:8080/ws";
+      if (process.env.NODE_ENV === "production") {
+        const proto = window.location.protocol === "https:" ? "wss" : "ws";
+        return `${proto}://${window.location.host}/ws`;
       }
-    } catch {
-      /* ignore */
-    }
-    console.debug("[Realtime] initializing connection to", url);
+      return "ws://localhost:8080/ws";
+    })();
+
+    const url = process.env.NEXT_PUBLIC_WS_URL || defaultUrl;
+    // Security: do not append auth tokens to the WS URL.
+    console.debug("[Realtime] initializing connection");
     const conn = new RealtimeConnection({ url, maxRetries: 6 });
     connectionRef.current = conn;
 
@@ -427,11 +455,17 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transcribedText, aiResponse, openConversation]);
 
-  // Load persisted conversation from localStorage on mount (client-side only)
+  // Auth-gated persistence:
+  // - Anonymous: keep history in-memory only (resets on refresh/tab close).
+  // - Authenticated: load+persist history scoped by user id.
+  const migratedOnLoginRef = useRef(false);
+
+  // Load persisted conversation when a user becomes authenticated (or changes).
   useEffect(() => {
     try {
       if (typeof window === "undefined") return;
-      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!storageKey) return;
+      const raw = window.localStorage.getItem(storageKey);
       if (!raw) return;
       const parsed = JSON.parse(raw) as Array<{
         role: "user" | "assistant";
@@ -439,26 +473,44 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
         ts: number;
         thoughts?: string[];
       }>;
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         setMessages(parsed);
       }
     } catch (e) {
-      // ignore malformed storage
       console.warn("Could not load persisted conversation", e);
     }
-    // run only once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [storageKey]);
 
-  // Persist conversation to localStorage whenever messages change
+  // Migrate in-memory anonymous history into persisted storage on login.
   useEffect(() => {
     try {
       if (typeof window === "undefined") return;
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages || []));
+      if (!storageKey) return;
+      if (!isAuthenticated) {
+        migratedOnLoginRef.current = false;
+        return;
+      }
+
+      if (!migratedOnLoginRef.current && messages.length > 0) {
+        window.localStorage.setItem(storageKey, JSON.stringify(messages));
+        migratedOnLoginRef.current = true;
+      }
+    } catch (e) {
+      console.warn("Could not migrate conversation on login", e);
+    }
+  }, [isAuthenticated, messages, storageKey]);
+
+  // Persist conversation whenever messages change (authenticated only).
+  useEffect(() => {
+    try {
+      if (typeof window === "undefined") return;
+      if (!storageKey) return;
+      if (!isAuthenticated) return;
+      window.localStorage.setItem(storageKey, JSON.stringify(messages || []));
     } catch (e) {
       console.warn("Could not persist conversation", e);
     }
-  }, [messages]);
+  }, [messages, storageKey, isAuthenticated]);
 
   // Allow programmatic insertion of a user message (e.g., from UI prompts)
   const sendUserMessage = useCallback((text: string) => {
@@ -473,12 +525,31 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
   const startListening = useCallback(async () => {
     if (isRecording) return;
+
+    // Enforce auth for execution/agent mode.
+    if (voiceMode === "agent" && !isAuthenticated) {
+      push({
+        message: "Sign in to use execution mode.",
+        variant: "warning",
+        type: "auth-required",
+      });
+      return;
+    }
+
     // If connection isn't ready, attempt to wait for it to open briefly so
     // the user can press the voice button and the app will try to connect.
     if (connectionStatus !== "open") {
       let conn = connectionRef.current;
       if (!conn) {
-        const url = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8080/ws";
+        const defaultUrl = (() => {
+          if (typeof window === "undefined") return "ws://localhost:8080/ws";
+          if (process.env.NODE_ENV === "production") {
+            const proto = window.location.protocol === "https:" ? "wss" : "ws";
+            return `${proto}://${window.location.host}/ws`;
+          }
+          return "ws://localhost:8080/ws";
+        })();
+        const url = process.env.NEXT_PUBLIC_WS_URL || defaultUrl;
         conn = new RealtimeConnection({ url, maxRetries: 6 });
         connectionRef.current = conn;
         conn.onStatus(setConnectionStatus);
@@ -517,6 +588,13 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Inform the gateway which mode this turn should use.
+    try {
+      connectionRef.current?.send(`MODE:${voiceMode}`);
+    } catch {
+      /* best-effort */
+    }
+
     try {
       // Clear any previous conversation state immediately so the UI resets
       setAiResponse(null);
@@ -545,7 +623,15 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
         variant: "error",
       });
     }
-  }, [isRecording, connectionStatus, push, start, handleIncoming]);
+  }, [
+    isRecording,
+    voiceMode,
+    isAuthenticated,
+    connectionStatus,
+    push,
+    start,
+    handleIncoming,
+  ]);
 
   const stopListening = useCallback(() => {
     if (!isRecording) return;
@@ -576,6 +662,8 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       stopListening,
       aiResponse,
       transcribedText,
+      voiceMode,
+      setVoiceMode,
       clearTranscribedText,
       clearAiResponse,
       messages,
@@ -599,12 +687,13 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       stopListening,
       aiResponse,
       transcribedText,
-      clearTranscribedText,
-      clearAiResponse,
+      voiceMode,
       messages,
       clearMessages,
       openConversation,
       sendUserMessage,
+      clearTranscribedText,
+      clearAiResponse,
       handleIncoming,
       currentAgentState,
       processing,

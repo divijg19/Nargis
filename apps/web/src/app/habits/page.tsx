@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { RequireAuth } from "@/components/auth/RequireAuth";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { DashboardCard } from "@/components/ui/DashboardCard";
 import { HabitCard } from "@/components/ui/HabitCard";
@@ -54,111 +55,114 @@ export default function HabitsPage() {
   };
 
   return (
-    <div className="h-full overflow-hidden flex flex-col bg-app-light transition-all duration-500">
-      {/* Premium ambient overlay */}
-      <div className="absolute inset-0 bg-linear-to-r from-transparent via-orange-500/5 to-transparent dark:via-orange-400/10 pointer-events-none" />
-      <div className="w-full max-w-6xl 2xl:max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 space-y-6 py-4 flex-1 min-h-0 overflow-hidden">
-        {/* Premium Header */}
-        <div className="animate-fade-in">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-8">
-            <div>
-              <h1 className="text-5xl md:text-6xl font-bold mb-3">
-                <span className="bg-linear-to-r from-orange-600 via-red-600 to-pink-600 bg-clip-text text-transparent">
-                  Habits
-                </span>
-                <span className="text-foreground dark:text-white"> 🔥</span>
-              </h1>
-              <p className="text-xl text-muted-foreground dark:text-slate-300">
-                Build consistency, one day at a time
-              </p>
+    <RequireAuth>
+      <div className="h-full overflow-hidden flex flex-col bg-app-light transition-all duration-500">
+        {/* Premium ambient overlay */}
+        <div className="absolute inset-0 bg-linear-to-r from-transparent via-orange-500/5 to-transparent dark:via-orange-400/10 pointer-events-none" />
+        <div className="w-full max-w-6xl 2xl:max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 space-y-6 py-4 flex-1 min-h-0 overflow-hidden">
+          {/* Premium Header */}
+          <div className="animate-fade-in">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-8">
+              <div>
+                <h1 className="text-5xl md:text-6xl font-bold mb-3">
+                  <span className="bg-linear-to-r from-orange-600 via-red-600 to-pink-600 bg-clip-text text-transparent">
+                    Habits
+                  </span>
+                  <span className="text-foreground dark:text-white"> 🔥</span>
+                </h1>
+                <p className="text-xl text-muted-foreground dark:text-slate-300">
+                  Build consistency, one day at a time
+                </p>
+              </div>
+              <ActionButton
+                icon="➕"
+                label="New Habit"
+                variant="primary"
+                onClick={() => setIsModalOpen(true)}
+              />
             </div>
-            <ActionButton
-              icon="➕"
-              label="New Habit"
-              variant="primary"
-              onClick={() => setIsModalOpen(true)}
-            />
+
+            {/* Streak badge moved into the Today's Progress column */}
           </div>
 
-          {/* Streak badge moved into the Today's Progress column */}
-        </div>
-
-        {/* Split layout: Today's Progress (vertical list) beside Activity Heatmap (squarish) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4 h-full overflow-auto pr-1">
-          {/* Left: Today's Progress - single vertical column with streak badge to the left on large screens */}
-          <div className="lg:col-span-5">
-            <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-              <div className="shrink-0 lg:-ml-28 lg:mr-8">
-                <div className="inline-flex items-center px-3 sm:px-4 py-2 rounded-xl glass bg-linear-to-br from-orange-50/90 to-red-50/90 dark:from-orange-900/20 dark:to-red-900/20 backdrop-blur-xl border border-orange-200/60 dark:border-orange-800/60 shadow-lg transition-all duration-300 animate-scale-in">
-                  <span className="text-2xl mr-2" aria-hidden="true">
-                    🔥
-                  </span>
-                  <span className="text-sm font-semibold text-orange-900 dark:text-orange-200">
-                    {totalStreaks} Active Streak{totalStreaks !== 1 ? "s" : ""}
-                  </span>
+          {/* Split layout: Today's Progress (vertical list) beside Activity Heatmap (squarish) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4 h-full overflow-auto pr-1">
+            {/* Left: Today's Progress - single vertical column with streak badge to the left on large screens */}
+            <div className="lg:col-span-5">
+              <div className="flex flex-col lg:flex-row lg:items-start gap-4">
+                <div className="shrink-0 lg:-ml-28 lg:mr-8">
+                  <div className="inline-flex items-center px-3 sm:px-4 py-2 rounded-xl glass bg-linear-to-br from-orange-50/90 to-red-50/90 dark:from-orange-900/20 dark:to-red-900/20 backdrop-blur-xl border border-orange-200/60 dark:border-orange-800/60 shadow-lg transition-all duration-300 animate-scale-in">
+                    <span className="text-2xl mr-2" aria-hidden="true">
+                      🔥
+                    </span>
+                    <span className="text-sm font-semibold text-orange-900 dark:text-orange-200">
+                      {totalStreaks} Active Streak
+                      {totalStreaks !== 1 ? "s" : ""}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div className="flex-1">
-                <DashboardCard title="Today's Progress">
-                  {todayProgress.length === 0 ? (
-                    <div className="text-center py-16">
-                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
-                        <span className="text-4xl" aria-hidden="true">
-                          🎯
-                        </span>
-                      </div>
-                      <p className="text-lg font-medium text-muted-foreground mb-2">
-                        No habits yet
-                      </p>
-                      <p className="text-sm text-muted-foreground mb-6">
-                        Create your first habit to start building consistency
-                      </p>
-                      <ActionButton
-                        icon="➕"
-                        label="Create Your First Habit"
-                        variant="primary"
-                        onClick={() => setIsModalOpen(true)}
-                      />
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
-                      {todayProgress.map((habit) => (
-                        <HabitCard
-                          key={habit.id}
-                          habit={habit}
-                          onUpdateCount={updateHabitCount}
-                          onEdit={handleEditHabit}
-                          onDelete={handleDeleteHabit}
-                          showActions={true}
+                <div className="flex-1">
+                  <DashboardCard title="Today's Progress">
+                    {todayProgress.length === 0 ? (
+                      <div className="text-center py-16">
+                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
+                          <span className="text-4xl" aria-hidden="true">
+                            🎯
+                          </span>
+                        </div>
+                        <p className="text-lg font-medium text-muted-foreground mb-2">
+                          No habits yet
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-6">
+                          Create your first habit to start building consistency
+                        </p>
+                        <ActionButton
+                          icon="➕"
+                          label="Create Your First Habit"
+                          variant="primary"
+                          onClick={() => setIsModalOpen(true)}
                         />
-                      ))}
-                    </div>
-                  )}
-                </DashboardCard>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Activity heatmap large squarish card */}
-          <div className="lg:col-span-7 flex items-stretch">
-            <DashboardCard title="Activity" className="w-full">
-              <div className="w-full flex items-center justify-center">
-                <div className="w-full max-w-[360px] sm:max-w-[420px] max-h-[360px] sm:max-h-[420px] overflow-auto">
-                  <Heatmap habits={habits || []} weeks={14} />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                        {todayProgress.map((habit) => (
+                          <HabitCard
+                            key={habit.id}
+                            habit={habit}
+                            onUpdateCount={updateHabitCount}
+                            onEdit={handleEditHabit}
+                            onDelete={handleDeleteHabit}
+                            showActions={true}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </DashboardCard>
                 </div>
               </div>
-            </DashboardCard>
+            </div>
+
+            {/* Right: Activity heatmap large squarish card */}
+            <div className="lg:col-span-7 flex items-stretch">
+              <DashboardCard title="Activity" className="w-full">
+                <div className="w-full flex items-center justify-center">
+                  <div className="w-full max-w-90 sm:max-w-105 max-h-90 sm:max-h-105 overflow-auto">
+                    <Heatmap habits={habits || []} weeks={14} />
+                  </div>
+                </div>
+              </DashboardCard>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Habit Creation Modal */}
-      <HabitModal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        onSubmit={handleCreateHabit}
-        initialData={editingHabit || undefined}
-      />
-    </div>
+        {/* Habit Creation Modal */}
+        <HabitModal
+          isOpen={isModalOpen}
+          onClose={handleModalClose}
+          onSubmit={handleCreateHabit}
+          initialData={editingHabit || undefined}
+        />
+      </div>
+    </RequireAuth>
   );
 }

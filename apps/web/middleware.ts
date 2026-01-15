@@ -1,11 +1,10 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-// Public routes that do not require authentication
+// Public routes that do not require authentication.
+// NOTE: Do NOT include "/" as a prefix, otherwise every route becomes public.
+const PUBLIC_PATHS_EXACT = ["/", "/login", "/register"];
 const PUBLIC_PATH_PREFIXES = [
-  "/",
-  "/login",
-  "/register",
   "/_next",
   "/api",
   "/favicon.ico",
@@ -14,9 +13,8 @@ const PUBLIC_PATH_PREFIXES = [
 ];
 
 function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATH_PREFIXES.some(
-    (p) => pathname === p || pathname.startsWith(p),
-  );
+  if (PUBLIC_PATHS_EXACT.includes(pathname)) return true;
+  return PUBLIC_PATH_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
 export function middleware(req: NextRequest) {

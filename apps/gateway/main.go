@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -23,6 +24,28 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+func extractAuthToken(r *http.Request) string {
+	// Prefer Authorization header if present
+	authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		return strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
+	}
+	// Avoid query-string tokens by default (they can leak via logs/history).
+	// If you must support them for tooling, set WS_ALLOW_QUERY_TOKEN=1.
+	if os.Getenv("WS_ALLOW_QUERY_TOKEN") == "1" {
+		if tok := strings.TrimSpace(r.URL.Query().Get("token")); tok != "" {
+			return tok
+		}
+	}
+	// Fallback to cookie `access_token` for browser clients
+	if c, err := r.Cookie("access_token"); err == nil {
+		if tok := strings.TrimSpace(c.Value); tok != "" {
+			return tok
+		}
+	}
+	return ""
+}
 
 var (
 	cfg        *config.Config
@@ -217,6 +240,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 	// Auth check
 	uid, err := auth.VerifyJWTFromRequest(r)
+	authToken := extractAuthToken(r)
 	if os.Getenv("WS_REQUIRE_AUTH") == "1" {
 		if err != nil || strings.TrimSpace(uid) == "" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -238,6 +262,17 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	// Channel for outgoing messages to ensure thread-safety
 	send := make(chan []byte, 256)
 
+	// Per-connection orchestration worker. We process at most one audio request
+	// at a time, and allow STOP to cancel the in-flight request.
+	type orchState struct {
+		mu     sync.Mutex
+		cancel context.CancelFunc
+		mode   string
+	}
+	state := &orchState{mode: "chat"}
+	audioQueue := make(chan []byte)
+	defer close(audioQueue)
+
 	// Writer Goroutine
 	go func() {
 		for msg := range send {
@@ -248,6 +283,97 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	defer close(send)
+
+	// Orchestrator worker goroutine
+	go func() {
+		for payload := range audioQueue {
+			// Concurrency limit across all connections
+			select {
+			case audioSem <- struct{}{}:
+				// acquired
+			default:
+				safeSend(send, []byte(`{"type": "error", "content": "Too many requests, try again later."}`))
+				continue
+			}
+
+			reqID := uuid.New().String()
+			slog.Info("Processing audio", "req_id", reqID, "user_id", uid)
+			start := time.Now()
+
+			ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
+			state.mu.Lock()
+			state.cancel = cancel
+			mode := state.mode
+			state.mu.Unlock()
+
+			stream, err := orchClient.ProcessAudioBufferWithOptions(
+				ctx,
+				payload,
+				reqID,
+				&orchestrator.ProcessAudioOptions{Mode: mode, AuthToken: authToken},
+			)
+			metrics.OrchestratorLatency.Observe(time.Since(start).Seconds())
+			if err != nil {
+				slog.Error("Orchestrator failed", "error", err, "req_id", reqID)
+				if se, ok := err.(*orchestrator.StatusError); ok {
+					if se.StatusCode == http.StatusUnauthorized || se.StatusCode == http.StatusForbidden {
+						safeSend(send, []byte(`{"type":"error","content":"Login required for execute mode."}`))
+						cancel()
+						state.mu.Lock()
+						state.cancel = nil
+						state.mode = "chat"
+						state.mu.Unlock()
+						<-audioSem
+						continue
+					}
+				}
+				safeSend(send, []byte(`{"type": "error", "content": "AI service unavailable"}`))
+				cancel()
+				state.mu.Lock()
+				state.cancel = nil
+				state.mu.Unlock()
+				<-audioSem
+				continue
+			}
+			scanner := bufio.NewScanner(stream)
+			buf := make([]byte, 0, 64*1024)
+			scanner.Buffer(buf, 1024*1024)
+			canceled := false
+		scanLoop:
+			for scanner.Scan() {
+				select {
+				case <-ctx.Done():
+					canceled = true
+					break scanLoop
+				default:
+				}
+				line := strings.TrimSpace(scanner.Text())
+				if line == "" {
+					continue
+				}
+				safeSend(send, []byte(line))
+			}
+			if err := scanner.Err(); err != nil {
+				// If canceled, prefer a clean canceled end event.
+				if ctx.Err() == context.Canceled {
+					safeSend(send, []byte(`{"type": "end", "content": "canceled"}`))
+				} else {
+					slog.Error("Failed to stream response", "error", err, "req_id", reqID)
+					safeSend(send, []byte(`{"type": "error", "content": "Failed to stream response"}`))
+				}
+			} else if canceled {
+				safeSend(send, []byte(`{"type": "end", "content": "canceled"}`))
+			}
+
+			stream.Close()
+
+			cancel()
+			state.mu.Lock()
+			state.cancel = nil
+			state.mu.Unlock()
+			<-audioSem
+		}
+	}()
 
 	// Redis Subscriber Goroutine
 	if busClient != nil && uid != "" {
@@ -286,9 +412,50 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		// These are not audio and must never be forwarded to the orchestrator.
 		if msgType == websocket.TextMessage {
 			txt := strings.TrimSpace(string(msg))
+			if strings.HasPrefix(txt, "MODE:") {
+				mode := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(txt, "MODE:")))
+				switch mode {
+				case "chat":
+					state.mu.Lock()
+					state.mode = "chat"
+					state.mu.Unlock()
+					continue
+				case "agent":
+					// Defense-in-depth: agent/execute mode must be authenticated.
+					if strings.TrimSpace(authToken) == "" {
+						safeSend(send, []byte(`{"type":"error","content":"Login required for execute mode."}`))
+						continue
+					}
+					// If the gateway is configured to validate JWTs, require a valid token.
+					if strings.TrimSpace(os.Getenv("JWT_SECRET_KEY")) != "" || strings.TrimSpace(os.Getenv("JWT_HMAC_SECRET")) != "" {
+						if sub, verr := auth.VerifyJWTToken(authToken); verr != nil || strings.TrimSpace(sub) == "" {
+							safeSend(send, []byte(`{"type":"error","content":"Login required for execute mode."}`))
+							continue
+						}
+					}
+					state.mu.Lock()
+					state.mode = "agent"
+					state.mu.Unlock()
+					continue
+				default:
+					// Ignore unknown mode.
+					continue
+				}
+			}
 			switch txt {
 			case "EOS", "STOP":
-				// Best-effort: ignore.
+				// STOP cancels any in-flight orchestration request.
+				if txt == "STOP" {
+					state.mu.Lock()
+					if state.cancel != nil {
+						state.cancel()
+						state.cancel = nil
+					}
+					state.mu.Unlock()
+					// Best-effort user feedback; UI treats this as cancel.
+					safeSend(send, []byte(`{"type": "end", "content": "canceled"}`))
+				}
+				// EOS is ignored at the gateway level (the client controls turn boundaries).
 				continue
 			default:
 				// Ignore arbitrary text frames.
@@ -310,49 +477,13 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		}
 		metrics.AudioFramesProcessed.WithLabelValues("forwarded").Inc()
 
-		// Concurrency limit: try to acquire semaphore
+		// Queue one request at a time per connection.
 		select {
-		case audioSem <- struct{}{}:
-			// Acquired slot
+		case audioQueue <- msg:
+			// queued
 		default:
-			// Pool full, reject request
-			safeSend(send, []byte(`{"type": "error", "content": "Too many requests, try again later."}`))
-			continue
+			safeSend(send, []byte(`{"type": "error", "content": "Already processing. Try again in a moment."}`))
 		}
-
-		go func(msg []byte, send chan<- []byte, uid string) {
-			defer func() { <-audioSem }()
-			reqID := uuid.New().String()
-			slog.Info("Processing audio", "req_id", reqID, "user_id", uid)
-			start := time.Now()
-			ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
-			defer cancel()
-			stream, err := orchClient.ProcessAudioBuffer(ctx, msg, reqID)
-			metrics.OrchestratorLatency.Observe(time.Since(start).Seconds())
-			if err != nil {
-				slog.Error("Orchestrator failed", "error", err, "req_id", reqID)
-				safeSend(send, []byte(`{"type": "error", "content": "AI service unavailable"}`))
-				return
-			}
-			defer stream.Close()
-
-			scanner := bufio.NewScanner(stream)
-			// Some responses can be large; bump the scanner buffer to avoid truncation.
-			buf := make([]byte, 0, 64*1024)
-			scanner.Buffer(buf, 1024*1024)
-			for scanner.Scan() {
-				line := strings.TrimSpace(scanner.Text())
-				if line == "" {
-					continue
-				}
-				safeSend(send, []byte(line))
-			}
-			if err := scanner.Err(); err != nil {
-				slog.Error("Failed to stream response", "error", err, "req_id", reqID)
-				safeSend(send, []byte(`{"type": "error", "content": "Failed to stream response"}`))
-				return
-			}
-		}(msg, send, uid)
 	}
 }
 

@@ -415,7 +415,8 @@ func TestGatewayWSConcurrencyLimitReturnsError(t *testing.T) {
 		t.Fatalf("orchestrator did not start")
 	}
 
-	// Second message should be rejected immediately with an error.
+	// Second message should be rejected immediately with an error because this
+	// connection is already processing an audio request.
 	if err := conn.WriteMessage(websocket.BinaryMessage, []byte("RIFF....WAVE")); err != nil {
 		t.Fatalf("write 2 failed: %v", err)
 	}
@@ -425,8 +426,8 @@ func TestGatewayWSConcurrencyLimitReturnsError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read failed: %v", err)
 	}
-	if !strings.Contains(string(msg), "Too many requests") {
-		t.Fatalf("expected concurrency error, got: %s", string(msg))
+	if !strings.Contains(string(msg), "Already processing") {
+		t.Fatalf("expected already-processing error, got: %s", string(msg))
 	}
 
 	close(release)

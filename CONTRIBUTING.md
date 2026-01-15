@@ -96,9 +96,17 @@ git checkout -b feature/your-feature-name
 # ... edit files ...
 
 # 3. Run checks
-bun run typecheck  # TypeScript
-bun run lint       # Biome linting
-bun run format     # Code formatting
+bun run type-check      # TypeScript
+bun run lint            # Biome linting
+bun run format          # Code formatting
+
+# Python API (apps/api-py)
+bun run api-py:ruff
+bun run api-py:ty
+bun run api-py:test
+
+# End-to-end orchestration smoke (mock orchestrator + gateway + WS client)
+bun run smoke:local-realtime
 
 # 4. Commit your changes
 git add .
@@ -213,11 +221,16 @@ refactor(contexts): simplify state management
 ## Pull Request Process
 
 ### Before Submitting
-1. ✅ Code passes `bun run typecheck`
+1. ✅ Code passes `bun run type-check`
 2. ✅ Code passes `bun run lint`
 3. ✅ Code is formatted with `bun run format`
 4. ✅ All features work as expected
 5. ✅ Documentation is updated if needed
+
+For the Python API, also run:
+- `bun run api-py:ruff`
+- `bun run api-py:ty`
+- `bun run api-py:test`
 6. ✅ Commit messages follow guidelines
 
 ### PR Template
@@ -328,7 +341,7 @@ curl http://localhost:8000/health
 ### Type Checking
 ```bash
 # Check TypeScript types
-bun run typecheck
+bun run type-check
 ```
 
 ---
