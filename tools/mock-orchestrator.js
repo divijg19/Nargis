@@ -17,7 +17,10 @@ function writeNdjson(res, obj) {
 
 const server = http.createServer((req, res) => {
   const { method, url } = req;
-  const parsedUrl = new URL(url || "/", `http://${req.headers.host || "127.0.0.1"}`);
+  const parsedUrl = new URL(
+    url || "/",
+    `http://${req.headers.host || "127.0.0.1"}`,
+  );
   const path = parsedUrl.pathname;
 
   if (method === "GET" && path === "/health") {
