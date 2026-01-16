@@ -219,7 +219,10 @@ async def process_audio_pipeline(
 
     mode_norm = (mode or "chat").strip().lower()
     if mode_norm not in {"chat", "agent"}:
-        raise HTTPException(status_code=400, detail="Invalid mode")
+        raise HTTPException(
+            status_code=400,
+            detail='Invalid mode. Must be either "chat" or "agent".',
+        )
     if mode_norm == "agent" and current_user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
 

@@ -444,7 +444,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 				}
 				if se, ok := err.(*orchestrator.StatusError); ok {
 					if se.StatusCode == http.StatusUnauthorized || se.StatusCode == http.StatusForbidden {
-						safeSend(send, []byte(`{"type":"error","content":"Login required for execute mode."}`))
+						safeSend(send, []byte(`{"type":"error","content":"Login required for agent mode."}`))
 						cancel()
 						state.mu.Lock()
 						state.cancel = nil
