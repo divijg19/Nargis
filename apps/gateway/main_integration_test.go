@@ -146,6 +146,8 @@ func TestGatewayStopCancelsInFlightOrchestrator(t *testing.T) {
 		t.Fatalf("write chunk failed: %v", err)
 	}
 
+
+	// (Nested test removed - moved to top-level)
 	select {
 	case <-started:
 		// orchestrator request began
@@ -166,6 +168,226 @@ func TestGatewayStopCancelsInFlightOrchestrator(t *testing.T) {
 	s := strings.TrimSpace(string(msg))
 	if !strings.Contains(s, `"type"`) || !strings.Contains(s, `end`) || !strings.Contains(strings.ToLower(s), "canceled") {
 		t.Fatalf("expected canceled end event, got: %s", s)
+	}
+}
+
+// Ensure that STOP results in exactly one terminal event even if the
+// orchestrator later attempts to write an `end` line. This guards against
+// duplicate terminal events reaching clients when STOP races with upstream
+// completion.
+func TestGatewayStopProducesSingleTerminalEvent(t *testing.T) {
+	secret := "test-hmac-secret"
+	os.Setenv("JWT_SECRET_KEY", secret)
+	os.Setenv("VAD_MODE", "off")
+
+	started := make(chan struct{}, 1)
+
+	// Orchestrator that writes a response, flushes, then sleeps and writes an end
+	orch := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.Copy(io.Discard, r.Body)
+		w.Header().Set("Content-Type", "application/x-ndjson")
+		flusher, _ := w.(http.Flusher)
+		fmt.Fprintln(w, `{"type":"response","content":"partial"}`)
+		if flusher != nil {
+			flusher.Flush()
+		}
+		select {
+		case started <- struct{}{}:
+		default:
+		}
+		// Delay to simulate upstream trying to finish after client STOP
+		time.Sleep(200 * time.Millisecond)
+		// Attempt to emit a terminal end (should be suppressed by gateway if
+		// it already sent canceled end).
+		fmt.Fprintln(w, `{"type":"end","content":"done"}`)
+		if flusher != nil {
+			flusher.Flush()
+		}
+	}))
+	defer orch.Close()
+	os.Setenv("ORCHESTRATOR_URL", orch.URL)
+
+	// Initialize globals
+	orchClient = orchestrator.NewClient(orch.URL)
+	upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	vCfg := vad.DefaultConfig()
+	vCfg.EnergyThreshold = 0.0
+	vadProc = vad.NewProcessor(vCfg)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ws", handleConnections)
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws"
+	header := http.Header{}
+	header.Add("Cookie", "access_token="+makeToken(secret, "single-term-user"))
+
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, header)
+	if err != nil {
+		t.Fatalf("dial failed: %v resp=%v", err, resp)
+	}
+	defer conn.Close()
+
+	// Send a binary chunk to start orchestration.
+	if err := conn.WriteMessage(websocket.BinaryMessage, []byte{0x1, 0x0}); err != nil {
+		t.Fatalf("write chunk failed: %v", err)
+	}
+
+	select {
+	case <-started:
+		// orchestrator request began
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timeout waiting for orchestrator to start")
+	}
+
+	// Issue STOP; should result in a single terminal event being observed.
+	if err := conn.WriteMessage(websocket.TextMessage, []byte("STOP")); err != nil {
+		t.Fatalf("write STOP failed: %v", err)
+	}
+
+	// Read messages for a short while and count terminal events.
+	endCount := 0
+	deadline := time.Now().Add(1 * time.Second)
+	conn.SetReadDeadline(deadline)
+	for {
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			// treat read timeout as end of window
+			break
+		}
+		s := strings.TrimSpace(string(msg))
+		if strings.Contains(strings.ToLower(s), `"type":"end"`) || strings.Contains(strings.ToLower(s), "\"end\"") || strings.Contains(strings.ToLower(s), "end") {
+			endCount++
+		}
+		// keep collecting until deadline
+		if time.Now().After(deadline) {
+			break
+		}
+	}
+
+	if endCount != 1 {
+		t.Fatalf("expected exactly 1 terminal end event, got %d", endCount)
+	}
+}
+
+// TestWSStopEmitsSingleCanceledEnd verifies that issuing STOP during an
+// in-flight orchestration produces exactly one `{ type: "end", content:
+// "canceled" }` event and that no further events are sent after it.
+func TestWSStopEmitsSingleCanceledEnd(t *testing.T) {
+	secret := "test-hmac-secret"
+	os.Setenv("JWT_SECRET_KEY", secret)
+	os.Setenv("VAD_MODE", "off")
+
+	started := make(chan struct{}, 1)
+
+	// Orchestrator that emits a response, flushes, then after a short delay
+	// emits an end marker. This simulates an upstream that may attempt to
+	// complete after the gateway cancels the request.
+	orch := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.Copy(io.Discard, r.Body)
+		w.Header().Set("Content-Type", "application/x-ndjson")
+		flusher, _ := w.(http.Flusher)
+		fmt.Fprintln(w, `{"type":"response","content":"partial"}`)
+		if flusher != nil {
+			flusher.Flush()
+		}
+		select {
+		case started <- struct{}{}:
+		default:
+		}
+		// Short delay to simulate late upstream completion
+		time.Sleep(200 * time.Millisecond)
+		fmt.Fprintln(w, `{"type":"end","content":"done"}`)
+		if flusher != nil {
+			flusher.Flush()
+		}
+	}))
+	defer orch.Close()
+	os.Setenv("ORCHESTRATOR_URL", orch.URL)
+
+	// Initialize globals
+	orchClient = orchestrator.NewClient(orch.URL)
+	upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	vCfg := vad.DefaultConfig()
+	vCfg.EnergyThreshold = 0.0
+	vadProc = vad.NewProcessor(vCfg)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ws", handleConnections)
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(srv.URL, "http") + "/ws"
+	header := http.Header{}
+	header.Add("Cookie", "access_token="+makeToken(secret, "ws-stop-user"))
+
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, header)
+	if err != nil {
+		t.Fatalf("dial failed: %v resp=%v", err, resp)
+	}
+	defer conn.Close()
+
+	// Start orchestration by sending a binary chunk
+	if err := conn.WriteMessage(websocket.BinaryMessage, []byte{0x1, 0x0}); err != nil {
+		t.Fatalf("write chunk failed: %v", err)
+	}
+
+	select {
+	case <-started:
+		// orchestrator began
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timeout waiting for orchestrator to start")
+	}
+
+	// Send STOP immediately
+	if err := conn.WriteMessage(websocket.TextMessage, []byte("STOP")); err != nil {
+		t.Fatalf("write STOP failed: %v", err)
+	}
+
+	// Collect all outgoing events for a short window.
+	var events []string
+	conn.SetReadDeadline(time.Now().Add(800 * time.Millisecond))
+	for {
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			break
+		}
+		s := strings.TrimSpace(string(msg))
+		events = append(events, s)
+	}
+
+	// Find the first canceled end and ensure it's the only terminal and
+	// that no events appear after it.
+	endIdx := -1
+	canceledCount := 0
+	for i, e := range events {
+		low := strings.ToLower(e)
+		if strings.Contains(low, `"type":"end"`) || strings.Contains(low, `"end"`) {
+			if strings.Contains(low, "canceled") || strings.Contains(low, "cancelled") {
+				canceledCount++
+				if endIdx == -1 {
+					endIdx = i
+				}
+			} else {
+				// An end that is not canceled (e.g. upstream 'done') counts too
+				// and should not be present after cancellation.
+				if endIdx != -1 {
+					t.Fatalf("unexpected non-canceled end after canceled: %s", e)
+				}
+				// If we saw upstream end before canceled, that's also invalid.
+				t.Fatalf("unexpected non-canceled end observed: %s", e)
+			}
+		}
+	}
+
+	if canceledCount != 1 {
+		t.Fatalf("expected exactly one canceled end event, got %d; events: %v", canceledCount, events)
+	}
+
+	// Ensure no events after the canceled end
+	if endIdx >= 0 && endIdx < len(events)-1 {
+		t.Fatalf("events were emitted after canceled end: %+v", events[endIdx+1:])
 	}
 }
 
@@ -617,4 +839,40 @@ func TestGatewayWSConcurrencyLimitReturnsError(t *testing.T) {
 	}
 
 	close(release)
+}
+
+// TestGatewayWaitsForOrchestratorReadiness verifies the gateway blocks startup
+// until the orchestrator /health endpoint returns 2xx. We simulate an
+// orchestrator that is initially unhealthy and becomes healthy after a delay.
+func TestGatewayWaitsForOrchestratorReadiness(t *testing.T) {
+	// orchestrator faux server: unhealthy for first 3 calls, then healthy
+	callCount := 0
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/health" {
+			http.NotFound(w, r)
+			return
+		}
+		callCount++
+		if callCount <= 3 {
+			w.WriteHeader(500)
+			_, _ = w.Write([]byte("not ready"))
+			return
+		}
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer ts.Close()
+
+	// give WaitForOrchestrator an aggressive retry so test runs quickly
+	start := time.Now()
+	err := WaitForOrchestrator(ts.URL+"/health", 10, 50*time.Millisecond)
+	elapsed := time.Since(start)
+	if err != nil {
+		t.Fatalf("expected orchestrator to become ready: %v", err)
+	}
+
+	// ensure it waited at least long enough to observe multiple failing calls
+	if elapsed < 100*time.Millisecond {
+		t.Fatalf("expected WaitForOrchestrator to retry, elapsed %v", elapsed)
+	}
 }
