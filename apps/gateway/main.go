@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -115,7 +116,16 @@ func main() {
 		WriteTimeout: cfg.WriteTimeout,
 	}
 
-	// 5. Start Server
+	// 5. Ensure orchestrator readiness before serving
+	orchBase := getOrchestratorBaseURL()
+	healthURL := strings.TrimRight(orchBase, "/") + "/health"
+	if err := WaitForOrchestrator(healthURL, 30, 500*time.Millisecond); err != nil {
+		slog.Error("Orchestrator not ready; aborting startup", "health_url", healthURL, "error", err)
+		os.Exit(1)
+	}
+	slog.Info("Orchestrator ready", "health_url", healthURL)
+
+	// 6. Start Server
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("Server failed", "error", err)
@@ -147,6 +157,25 @@ func getOrchestratorBaseURL() string {
 		return u
 	}
 	return "http://localhost:8000"
+}
+
+// WaitForOrchestrator polls the orchestrator health endpoint until it becomes
+// healthy or the retry limit is reached. `maxRetries` retries the GET every
+// `retryMs` milliseconds. Returns nil when a 2xx response is observed.
+func WaitForOrchestrator(healthURL string, maxRetries int, retryMs time.Duration) error {
+	client := &http.Client{Timeout: 2 * time.Second}
+	for i := 0; i < maxRetries; i++ {
+		resp, err := client.Get(healthURL)
+		if err == nil && resp != nil {
+			_, _ = io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
+			if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+				return nil
+			}
+		}
+		time.Sleep(retryMs)
+	}
+	return fmt.Errorf("orchestrator healthcheck failed after %d retries", maxRetries)
 }
 
 func isAllowedHTTPOrigin(origin string) bool {
@@ -466,6 +495,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			buf := make([]byte, 0, 64*1024)
 			scanner.Buffer(buf, 1024*1024)
 			canceled := false
+			terminalSent := false
 		scanLoop:
 			for scanner.Scan() {
 				select {
@@ -478,18 +508,34 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 				if line == "" {
 					continue
 				}
+				// Do not send any non-terminal messages after we've sent a terminal
+				// event for this request. This ensures the client sees exactly one
+				// terminal event and avoids racey duplicate messages when STOP is
+				// issued concurrently.
+				if terminalSent {
+					continue
+				}
 				safeSend(send, []byte(line))
 			}
 			if err := scanner.Err(); err != nil {
 				// If canceled, prefer a clean canceled end event.
 				if ctx.Err() == context.Canceled {
-					safeSend(send, []byte(`{"type": "end", "content": "canceled"}`))
+					if !terminalSent {
+						terminalSent = true
+						safeSend(send, []byte(`{"type": "end", "content": "canceled"}`))
+					}
 				} else {
 					slog.Error("Failed to stream response", "error", err, "req_id", reqID)
-					safeSend(send, []byte(`{"type": "error", "content": "Failed to stream response"}`))
+					if !terminalSent {
+						terminalSent = true
+						safeSend(send, []byte(`{"type": "error", "content": "Failed to stream response"}`))
+					}
 				}
 			} else if canceled {
-				safeSend(send, []byte(`{"type": "end", "content": "canceled"}`))
+				if !terminalSent {
+					terminalSent = true
+					safeSend(send, []byte(`{"type": "end", "content": "canceled"}`))
+				}
 			}
 
 			stream.Close()
@@ -572,7 +618,11 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			}
 			switch txt {
 			case "EOS", "STOP":
-				// STOP cancels any in-flight orchestration request.
+				// STOP cancels any in-flight orchestration request. Do NOT emit
+				// a terminal event here — the orchestrator worker is responsible
+				// for emitting exactly one terminal event when the ctx is
+				// canceled. This prevents duplicate terminal events reaching the
+				// client when STOP and the worker race.
 				if txt == "STOP" {
 					state.mu.Lock()
 					if state.cancel != nil {
@@ -580,8 +630,6 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 						state.cancel = nil
 					}
 					state.mu.Unlock()
-					// Best-effort user feedback; UI treats this as cancel.
-					safeSend(send, []byte(`{"type": "end", "content": "canceled"}`))
 				}
 				// EOS is ignored at the gateway level (the client controls turn boundaries).
 				continue

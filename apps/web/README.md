@@ -31,6 +31,9 @@ Set the public URLs the browser should use:
 
 - `NEXT_PUBLIC_API_URL` (HTTP) → the **Gateway** base URL (dev default `http://localhost:8080`)
 - `NEXT_PUBLIC_WS_URL` (WebSocket) → the **Gateway** WS endpoint (dev default `ws://localhost:8080/ws`)
+	- NOTE: WebSocket is opt-in. The client will only enable WS when the `realtime`
+		feature flag is enabled or when `NEXT_PUBLIC_ENABLE_WS=1` is set. `NEXT_PUBLIC_WS_URL`
+		alone will not enable WebSocket usage in production.
 - `NEXT_PUBLIC_API_PY_URL` (HTTP) → the **api-py** base URL (dev default `http://localhost:8000`)
 
 In production, use `https://` + `wss://`.

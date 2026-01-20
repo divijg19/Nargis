@@ -125,6 +125,9 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
   // Accumulate thoughts during a streaming session until a final response
   const pendingThoughtsRef = useRef<string[]>([]);
+  // Marks whether we've already seen a terminal event for the current stream.
+  // When true, the UI will ignore late events from the server for this turn.
+  const terminalSeenRef = useRef<boolean>(false);
 
   // If the user logs out, force mode back to chat.
   useEffect(() => {
@@ -138,6 +141,12 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   // outside the connection effect.
   const handleIncoming = useCallback(
     (msg: unknown) => {
+      // Ignore any late events after we've observed a terminal event for the
+      // current stream. This prevents duplicates and racey ordering when the
+      // gateway sends a fast 'end' following a STOP while buffered NDJSON
+      // lines still arrive from upstream.
+      if (terminalSeenRef.current) return;
+
       // This is where we receive the final, processed response from the backend.
       console.debug("[Realtime] AI Response Received:", msg);
 
@@ -221,7 +230,9 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
               setProcessing(false);
               return;
             case "end":
-              // Upstream signaled end-of-stream; if no final response arrived, clear processing
+              // Upstream signaled end-of-stream; mark terminal observed and
+              // clear processing. Only handle the first terminal event.
+              terminalSeenRef.current = true;
               setProcessing(false);
               setCurrentAgentState(null);
               try {
@@ -342,11 +353,13 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
   // Effect to establish and manage the WebSocket connection on component mount.
   useEffect(() => {
-    // Enable realtime if the feature flag is on OR if a WS url is explicitly
-    // provided via NEXT_PUBLIC_WS_URL. This lets dev and prod opt-ins work
-    // without needing to toggle flags in every environment.
-    const hasWsUrl = Boolean(process.env.NEXT_PUBLIC_WS_URL);
-    const enabled = isFlagEnabled("realtime") || hasWsUrl;
+    // Enable realtime only if the feature flag is on OR if the explicit
+    // environment opt-in `NEXT_PUBLIC_ENABLE_WS=1` is set. `NEXT_PUBLIC_WS_URL`
+    // remains a provisioning override for the URL but will not enable WS by
+    // itself. This reduces accidental reliance on WS in production.
+    const envEnable = String(process.env.NEXT_PUBLIC_ENABLE_WS || "0") === "1";
+    const _hasWsUrl = Boolean(process.env.NEXT_PUBLIC_WS_URL);
+    const enabled = isFlagEnabled("realtime") || envEnable;
     if (!enabled) return;
 
     const defaultUrl = (() => {
@@ -531,6 +544,9 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
   const startListening = useCallback(async () => {
     if (isRecording) return;
+
+    // Reset terminal marker for a fresh turn.
+    terminalSeenRef.current = false;
 
     // Enforce auth for execution/agent mode.
     if (voiceMode === "agent" && !isAuthenticated) {
