@@ -22,7 +22,9 @@ HTTP_TIMEOUT = int(os.getenv("HTTP_TIMEOUT_SECONDS", "60"))
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "phi-3-mini")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 ML_WORKER_URL = os.getenv("ML_WORKER_URL", "")
-DISABLE_LOCAL_STT = os.getenv("DISABLE_LOCAL_STT", "0")
+# New flag: ENABLE_LOCAL_STT enables local Whisper-based STT when set to "1".
+# Default is disabled in production.
+ENABLE_LOCAL_STT = os.getenv("ENABLE_LOCAL_STT", "0") == "1"
 
 # Local STT model state
 device = "cpu"
@@ -116,54 +118,105 @@ def run_llm_sync(text: str) -> dict:
 
 
 async def _get_transcription(audio_bytes: bytes) -> str:
-    # E2E/dev safety valve: avoid heavy local model downloads/loads.
-    # When enabled, transcription is intentionally empty to allow the API
-    # to short-circuit with a deterministic response.
-    if str(DISABLE_LOCAL_STT).strip() in {"1", "true", "yes", "on"}:
-        return ""
+    # Log basic info about the incoming audio for observability (can be removed later)
+    try:
+        logging.info(
+            "STT input",
+            extra={"bytes": len(audio_bytes), "head": audio_bytes[:8].hex()},
+        )
+    except Exception:
+        logging.debug("Failed to log STT input head")
 
-    # Prefer external STT provider if configured
+    # Decision order (production-safe):
+    # 1) If Deepgram is configured -> use Deepgram
+    # 2) Else if ENABLE_LOCAL_STT -> use local Whisper
+    # 3) Else -> raise error
+
+    # 1) Deepgram
     if STT_URL and DEEPGRAM_API_KEY:
         logging.info("Using external STT provider: Deepgram")
         try:
+            params = {
+                # ensure correct decoding on Deepgram side
+                "encoding": "opus",
+                "container": "webm",
+                "sample_rate": 48000,
+            }
+            headers = {
+                "Authorization": f"Token {DEEPGRAM_API_KEY}",
+                "Content-Type": "audio/webm",
+            }
             async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-                files = {"file": ("audio.webm", audio_bytes, "audio/webm")}
-                headers = {"Authorization": f"Token {DEEPGRAM_API_KEY}"}
-                resp = await client.post(STT_URL, headers=headers, files=files)
+                resp = await client.post(
+                    STT_URL, headers=headers, params=params, content=audio_bytes
+                )
                 resp.raise_for_status()
-                return resp.json()["results"]["channels"][0]["alternatives"][0][
-                    "transcript"
-                ]
+                data = resp.json()
+                # Deepgram shape: results.channels[0].alternatives[0].transcript
+                transcript = (
+                    data.get("results", {})
+                    .get("channels", [{}])[0]
+                    .get("alternatives", [{}])[0]
+                    .get("transcript", "")
+                )
+                if not transcript:
+                    # Empty transcripts are errors in production
+                    logging.error("Deepgram returned empty transcript")
+                    raise HTTPException(
+                        status_code=502, detail="STT returned empty transcript"
+                    )
+                return transcript
+        except HTTPException:
+            raise
         except Exception as e:
-            logging.exception(f"Deepgram STT failed; falling back. Error: {e}")
+            logging.exception(f"Deepgram STT failed: {e}")
+            # Do not silently fall back; surface the error to caller
+            raise
 
     # If an ML worker is available, prefer delegating to it (isolates heavy deps)
     if ML_WORKER_URL:
         logging.info(f"Delegating STT to ML worker at {ML_WORKER_URL}")
         stt_url = ML_WORKER_URL.rstrip("/") + "/stt"
         try:
+            headers = {"Content-Type": "audio/webm"}
             async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-                files = {"audio": ("audio.webm", audio_bytes, "audio/webm")}
-                resp = await client.post(stt_url, files=files)
+                resp = await client.post(stt_url, headers=headers, content=audio_bytes)
                 resp.raise_for_status()
                 data = resp.json()
                 # ML worker expected to return {"text": "..."}
-                return data.get("text", "")
+                text = data.get("text", "")
+                if not text:
+                    logging.error("ML worker returned empty transcript")
+                    raise HTTPException(
+                        status_code=502,
+                        detail="STT returned empty transcript from ML worker",
+                    )
+                return text
+        except HTTPException:
+            raise
         except Exception as e:
             logging.exception(f"Error delegating STT to ML worker: {e}")
+            raise
 
-    # Fallback to local STT model
-    logging.info("Using local STT model.")
-    await ensure_stt_loaded()
-    loop = asyncio.get_running_loop()
-    try:
-        wav_audio_bytes = await loop.run_in_executor(
-            None, convert_audio_to_wav_sync, audio_bytes
-        )
-        return await loop.run_in_executor(None, run_stt_inference_sync, wav_audio_bytes)
-    except Exception:
-        # In tests or with invalid audio, fail soft and return empty to allow fast path
-        return ""
+    # 2) Local STT if explicitly enabled
+    if ENABLE_LOCAL_STT:
+        logging.info("Using local STT model.")
+        await ensure_stt_loaded()
+        loop = asyncio.get_running_loop()
+        try:
+            wav_audio_bytes = await loop.run_in_executor(
+                None, convert_audio_to_wav_sync, audio_bytes
+            )
+            return await loop.run_in_executor(
+                None, run_stt_inference_sync, wav_audio_bytes
+            )
+        except Exception as e:
+            logging.exception(f"Local STT failed: {e}")
+            raise HTTPException(status_code=500, detail="Local STT failed") from e
+
+    # 3) No STT backend available
+    logging.error("No STT backend available: neither Deepgram nor local STT enabled")
+    raise HTTPException(status_code=503, detail="No STT backend available")
 
 
 async def _get_llm_response(text: str) -> dict:
