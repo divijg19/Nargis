@@ -50,6 +50,7 @@ export default function ChatPanel({
     currentAgentState,
     processing,
     stopListening,
+    capabilities,
   } = useRealtime();
   const { push } = useToasts();
   const { addTask } = useTaskStore();
@@ -72,7 +73,7 @@ export default function ChatPanel({
     !loading && !isAuthenticated && (messages?.length || 0) > 0;
 
   const handleModeChange = (m: "chat" | "agent") => {
-    if (m === "agent" && (!isAuthenticated || loading)) {
+    if (m === "agent" && !capabilities.canExecuteAgents) {
       const next = pathname || "/";
       router.push(`/login?next=${encodeURIComponent(next)}`);
       return;
@@ -273,7 +274,7 @@ export default function ChatPanel({
                     onClick={() => handleModeChange("agent")}
                     aria-pressed={voiceMode === "agent"}
                     title={
-                      isAuthenticated
+                      capabilities.canExecuteAgents
                         ? "Execution mode (uses tools)"
                         : "Sign in to use execution mode"
                     }

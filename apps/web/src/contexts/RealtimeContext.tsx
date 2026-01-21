@@ -70,6 +70,12 @@ interface RealtimeContextValue {
   // NEW: agent streaming state
   currentAgentState: string | null;
   processing: boolean;
+  capabilities: {
+    canChatEphemeral: boolean;
+    canStream: boolean;
+    canPersist: boolean;
+    canExecuteAgents: boolean;
+  };
   // Voice mode: chat (anonymous-safe) vs agent (requires auth)
   voiceMode: "chat" | "agent";
   setVoiceMode: (m: "chat" | "agent") => void;
@@ -119,6 +125,21 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     null,
   );
   const [processing, setProcessing] = useState<boolean>(false);
+
+  // Capability flags determine what the current client environment allows.
+  // Auth gates persistence and agent execution only; ephemeral chat and
+  // streaming are available regardless of authentication (subject to
+  // feature flags / provisioning).
+  const capabilities = useMemo(() => {
+    const envEnable = String(process.env.NEXT_PUBLIC_ENABLE_WS || "0") === "1";
+    const streamEnabled = isFlagEnabled("realtime") || envEnable;
+    return {
+      canChatEphemeral: true,
+      canStream: streamEnabled,
+      canPersist: Boolean(isAuthenticated && user?.id),
+      canExecuteAgents: Boolean(isAuthenticated && user?.id),
+    };
+  }, [isAuthenticated, user?.id]);
 
   // Voice mode defaults to anonymous-safe chat.
   const [voiceMode, setVoiceMode] = useState<"chat" | "agent">("chat");
@@ -676,8 +697,8 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Memoize the context value to avoid unnecessary re-renders in consumers
-  const value = useMemo(
-    () => ({
+  const value = useMemo(() => {
+    const v: RealtimeContextValue = {
       connectionStatus,
       isListening: Boolean(isRecording),
       startListening,
@@ -695,32 +716,38 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       setOpenConversation,
       currentAgentState,
       processing,
-      // Dev/testing helper: allow consumers to inject messages through the
-      // same handling pipeline. Only useful in non-prod or debugging.
+      // Note: `capabilities` is included below in the returned object but
+      // not typed on the shallow RealtimeContextValue to avoid circular refs
+      // in this handwritten value. We'll spread capabilities in via cast.
+      // Dev/testing helper
       simulateIncoming:
         typeof window !== "undefined"
           ? (msg: unknown) => handleIncoming(msg)
           : undefined,
-    }),
-    [
-      connectionStatus,
-      isRecording,
-      startListening,
-      stopListening,
-      aiResponse,
-      transcribedText,
-      voiceMode,
-      messages,
-      clearMessages,
-      openConversation,
-      sendUserMessage,
-      clearTranscribedText,
-      clearAiResponse,
-      handleIncoming,
-      currentAgentState,
-      processing,
-    ],
-  );
+      // Attach capability flags describing allowed operations in this session.
+      capabilities,
+    } as unknown as RealtimeContextValue;
+
+    return v;
+  }, [
+    connectionStatus,
+    isRecording,
+    startListening,
+    stopListening,
+    aiResponse,
+    transcribedText,
+    voiceMode,
+    messages,
+    clearMessages,
+    openConversation,
+    sendUserMessage,
+    clearTranscribedText,
+    clearAiResponse,
+    handleIncoming,
+    currentAgentState,
+    processing,
+    capabilities,
+  ]);
 
   return (
     <RealtimeContext.Provider value={value}>
