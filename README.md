@@ -107,31 +107,6 @@ This is currently a personal project, but suggestions and feedback are welcome! 
 
 ---
 
-## 📋 Recent Updates
-
-### Architectural Refactor & Backend Polish (October 2025)
-
-This series of updates represents a complete overhaul of the backend architecture to create a robust, production-ready, and high-performance system.
-
--   **✅ Refactored to a Single-Hop Pipeline**: The entire AI workflow was consolidated. The Go gateway now makes a single, efficient call to the Python API, which orchestrates the full STT -> LLM chain. This dramatically reduces latency and complexity.
--   **✅ Implemented Dual-Mode AI Backend**: The Python API now intelligently switches between high-speed external APIs (Deepgram, Groq) and a local-only fallback (Whisper, Ollama) based on environment variables, providing maximum flexibility for development and deployment.
--   **✅ Modernized Python Dependencies**: Migrated from multiple `requirements.txt` files and build arguments to a single, modern `pyproject.toml` with `uv` for dependency management and `uv.lock` for reproducible builds.
--   **✅ Implemented Distributed Tracing**: The Go gateway now generates a unique `RequestID` for every voice request and forwards it to the Python API, enabling end-to-end traceability in the logs.
--   **✅ Stabilized Development Workflows**: Created and debugged two distinct, reliable development modes (`dev:hybrid` and `dev`) with hot-reloading for all services (Go, Python, Next.js) and cross-platform compatibility.
--   **✅ Production-Hardened Services**: Fixed numerous bugs related to timeouts, configuration loading (`.env`), and logging. Implemented graceful shutdown in the Go gateway for robust operation.
-
-### Previous Frontend UX Improvements
-
--   **✅ Fixed Toast Positioning**: Moved toasts from bottom to top to prevent footer overlap.
--   **✅ Modal System**: Created accessible `Modal`, `TaskModal`, and `HabitModal` components with full keyboard navigation, ARIA roles, form validation, and backdrop-click-to-close.
--   **✅ Action Buttons Wired**: All placeholder actions were replaced with real functionality for creating tasks/habits and navigating to the Pomodoro timer.
--   **✅ Code Cleanup**: Removed all `console.log` statements and debug code from the frontend.
----
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
 ## 👤 Author
 
 **Divij Ganjoo**
@@ -141,3 +116,4 @@ This project is licensed under the MIT License.
 -   GitHub: [@divijg19](https://github.com/divijg19)
 
 *Built with ❤️ and ☕ as a demonstration of modern full-stack development with AI/ML integration.*
+
