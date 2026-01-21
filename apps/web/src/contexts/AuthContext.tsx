@@ -28,7 +28,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Prefer server session discovery (httpOnly cookie), falling back to legacy local token.
         // `getProfile()` already includes credentials and will attach the token if present.
         const userData = await authService.getProfile();
-        setUser(userData);
+        // `getProfile` returns `null` for unauthenticated users. Treat this
+        // as optional enrichment rather than an error.
+        setUser(userData ?? null);
       } catch {
         // Not logged in (or session expired). Avoid noisy console errors on first load.
         authService.removeToken();
@@ -58,6 +60,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = async () => {
     try {
       const userData = await authService.getProfile();
+      if (userData === null) {
+        // Session no longer valid: fully log out
+        logout();
+        return;
+      }
       setUser(userData);
     } catch (error) {
       console.error("Failed to refresh user:", error);

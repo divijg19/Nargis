@@ -116,6 +116,10 @@ class AuthService {
 
     // Fetch user profile
     const user = await this.getProfile();
+    if (!user) {
+      // This should not normally happen after registration; treat as fatal.
+      throw new Error("Failed to retrieve profile after registration");
+    }
     this.setUser(user);
 
     return user;
@@ -146,6 +150,9 @@ class AuthService {
 
     // Fetch user profile
     const user = await this.getProfile();
+    if (!user) {
+      throw new Error("Failed to retrieve profile after login");
+    }
     this.setUser(user);
 
     return user;
@@ -175,7 +182,7 @@ class AuthService {
   /**
    * Get current user profile
    */
-  async getProfile(): Promise<User> {
+  async getProfile(): Promise<User | null> {
     // Try local token first (legacy). If absent, rely on cookie being sent.
     const token = this.getToken();
     const headers: HeadersInit = {};
@@ -190,13 +197,15 @@ class AuthService {
 
     if (!response.ok) {
       if (response.status === 401) {
+        // Treat 401 as unauthenticated (optional enrichment). Do not throw
+        // as callers should handle absence of a user without disabling AI.
         this.removeToken();
-        throw new Error("Session expired");
+        return null;
       }
       throw new Error("Failed to fetch profile");
     }
 
-    return await response.json();
+    return (await response.json()) as User;
   }
 
   /**
@@ -267,12 +276,11 @@ class AuthService {
       credentials: "include",
     });
 
-    // Handle authentication errors
+    // Handle authentication errors: clear local token but do NOT perform a
+    // hard redirect. Authentication is optional for ephemeral AI flows and
+    // should not block streaming or UI availability.
     if (response.status === 401 || response.status === 403) {
       this.removeToken();
-      if (typeof window !== "undefined") {
-        window.location.href = "/";
-      }
       throw new Error("Authentication required");
     }
 
