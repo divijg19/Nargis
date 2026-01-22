@@ -140,7 +140,8 @@ async def _get_transcription(audio_bytes: bytes) -> str:
                 # ensure correct decoding on Deepgram side
                 "encoding": "opus",
                 "container": "webm",
-                "sample_rate": 48000,
+                "punctuate": "true",
+                "smart_format": "true",
             }
             headers = {
                 "Authorization": f"Token {DEEPGRAM_API_KEY}",
