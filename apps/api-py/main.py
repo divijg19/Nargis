@@ -267,14 +267,28 @@ async def process_audio_pipeline(
                     ).encode()
 
                 llm_result = await _get_llm_response(transcribed_text)
-                final_text = (
-                    llm_result.get("reply")
-                    or llm_result.get("output")
-                    or llm_result.get("text")
-                    or str(llm_result)
-                )
+                assistant_text = None
+                # Try OpenAI/Groq schema first: choices[0].message.content
+                if isinstance(llm_result, dict):
+                    choices = llm_result.get("choices")
+                    if (
+                        isinstance(choices, list)
+                        and len(choices) > 0
+                        and isinstance(choices[0], dict)
+                    ):
+                        message = choices[0].get("message")
+                        if isinstance(message, dict):
+                            assistant_text = message.get("content")
+                if not assistant_text:
+                    assistant_text = (
+                        llm_result.get("reply")
+                        or llm_result.get("output")
+                        or llm_result.get("text")
+                    )
+                if not assistant_text:
+                    assistant_text = str(llm_result)
                 yield (
-                    json.dumps({"type": "response", "content": final_text}) + "\n"
+                    json.dumps({"type": "response", "content": assistant_text}) + "\n"
                 ).encode()
                 yield (json.dumps({"type": "end", "content": "done"}) + "\n").encode()
                 return

@@ -1,0 +1,168 @@
+/* Design tokens for Nargis — Quiet Premium Essentialism */
+:root {
+  /* Colors (tokens shared across Ember Dawn and Midnight Bloom by swapping values) */
+  --color-bg: #0f172a;
+  --color-surface: #0b1220;
+  --color-primary: #7c5cff;
+  --color-text: #e6eef8;
+  --color-muted: #9fb3c8;
+  --color-success: #22c55e;
+  --color-error: #ef4444;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --msg-gap: 12px;
+  --bubble-pad: 14px;
+
+  /* Radii */
+  --radius-sm: 6px;
+
+  /* Typography */
+  --font-family-sans:
+    Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial;
+  --font-size-body: 16px;
+  --font-size-assistant: 20px;
+  --line-height: 1.4;
+
+  /* Layout */
+  --content-max-width: 760px;
+
+  /* Chrome opacity when voice active */
+  --chrome-opacity: 1;
+}
+
+/* Theme overrides (Midnight Bloom defaults above). Ember Dawn overrides can be applied via .theme--ember on root */
+.theme--ember {
+  --color-bg: #faf8f6; /* paper-like */
+  --color-surface: #ffffff;
+  --color-primary: #6b46ff;
+  --color-text: #0b1b2b;
+  --color-muted: #6b7b86;
+}
+
+/* Layout helpers */
+.app__content {
+  max-width: var(--content-max-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
+}
+
+/* Chrome dimming during voice session */
+.is-voice-active .app__chrome,
+.is-voice-active .app__sidebar {
+  opacity: var(--chrome-opacity);
+  transition: opacity 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Message bubble basics */
+.message {
+  display: block;
+  margin-bottom: var(--msg-gap);
+  padding: var(--bubble-pad);
+  border-radius: var(--radius-sm);
+  line-height: var(--line-height);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.message--assistant {
+  font-size: var(--font-size-assistant);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.02),
+    rgba(255, 255, 255, 0)
+  );
+  box-shadow: none;
+}
+
+.message--user {
+  background: rgba(255, 255, 255, 0.02);
+  opacity: 0.9;
+}
+
+/* Streaming partial text (low visual weight) */
+.message--streaming .message__partial {
+  color: var(--color-muted);
+  font-style: italic;
+  opacity: 0.9;
+  transition:
+    opacity 120ms ease,
+    transform 160ms ease;
+  transform: translateY(0);
+}
+
+/* Final assistant entrance */
+.message--final {
+  animation: fadeUp 160ms ease both;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Recording button states (visual only) */
+.record-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: none;
+  transition:
+    transform 120ms ease,
+    opacity 120ms ease;
+}
+
+.record-btn.rec--recording {
+  animation: pulse 1000ms infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.86;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.record-btn.rec--processing {
+  opacity: 0.6;
+}
+.record-btn.rec--disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Utility: reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .record-btn.rec--recording {
+    animation: none;
+  }
+  .message--final {
+    animation: none;
+  }
+}

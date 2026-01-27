@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
 import type { ReactNode } from "react";
 import "./globals.css";
+import "../styles/design-tokens.css";
 import { AppProviders } from "@/components/layout/AppProviders";
 import RootLayoutInner from "@/components/layout/RootLayoutInner";
 

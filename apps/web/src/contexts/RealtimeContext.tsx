@@ -87,6 +87,17 @@ const RealtimeContext = createContext<RealtimeContextValue | undefined>(
   undefined,
 );
 
+// Normalize assistant-facing text to prefer plain English. If the input looks
+// like a JSON/object dump, perform an additional `stripJson` pass so the UI
+// never renders raw model dicts.
+function normalizeAssistantText(input: unknown): string {
+  const s = sanitizeText(input);
+  // crude heuristic for JSON/object-like payloads
+  const looksLikeJson = /[{[\]"]|\bchoices\b|\bmessage\b|\bcontent\b/i;
+  if (looksLikeJson.test(s)) return sanitizeText(s, 20000, true);
+  return s;
+}
+
 export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user } = useAuth();
   const [connectionStatus, setConnectionStatus] =
@@ -125,6 +136,10 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     null,
   );
   const [processing, setProcessing] = useState<boolean>(false);
+
+  // Streaming buffer for partial assistant text; commit to history only on `end`.
+  const responseBufferRef = useRef<string>("");
+  const streamActiveRef = useRef<boolean>(false);
 
   // Capability flags determine what the current client environment allows.
   // Auth gates persistence and agent execution only; ephemeral chat and
@@ -231,16 +246,16 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
               return;
             }
             case "response": {
-              const aiText = sanitizeText(evt.content);
-              const thoughts = pendingThoughtsRef.current.slice();
-              pendingThoughtsRef.current = [];
-              setAiResponse(aiText);
-              setMessages((cur) => [
-                ...cur,
-                { role: "assistant", text: aiText, ts: Date.now(), thoughts },
-              ]);
-              setCurrentAgentState(null);
-              setProcessing(false);
+              // Buffer partial response text; show as transient `aiResponse`.
+              const chunk = sanitizeText(evt.content);
+              // mark stream active
+              streamActiveRef.current = true;
+              // accumulate
+              responseBufferRef.current =
+                (responseBufferRef.current || "") + chunk;
+              setAiResponse(responseBufferRef.current);
+              // keep processing true until we see `end`
+              setProcessing(true);
               setOpenConversation(true);
               return;
             }
@@ -254,8 +269,35 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
               // Upstream signaled end-of-stream; mark terminal observed and
               // clear processing. Only handle the first terminal event.
               terminalSeenRef.current = true;
-              setProcessing(false);
               setCurrentAgentState(null);
+              // Commit buffered response to message history as a single assistant block
+              try {
+                const rawFinal =
+                  responseBufferRef.current || String(evt.content || "");
+                const finalText = sanitizeText(rawFinal, 20000, true);
+                if (finalText?.trim()) {
+                  const thoughts = pendingThoughtsRef.current.slice();
+                  pendingThoughtsRef.current = [];
+                  // defensively normalize to avoid raw JSON-like blobs
+                  const normalized = normalizeAssistantText(finalText);
+                  setMessages((cur) => [
+                    ...cur,
+                    {
+                      role: "assistant",
+                      text: normalized,
+                      ts: Date.now(),
+                      thoughts,
+                    },
+                  ]);
+                  // Ensure the final aiResponse reflects the committed text
+                  setAiResponse(normalized);
+                }
+              } finally {
+                // Reset streaming state
+                responseBufferRef.current = "";
+                streamActiveRef.current = false;
+                setProcessing(false);
+              }
               try {
                 const content = String(evt.content || "").toLowerCase();
                 if (
@@ -304,40 +346,106 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
               | undefined;
             if (message && "content" in message) {
               const aiText = sanitizeText(message.content);
-              setAiResponse(aiText);
+              const normalized = normalizeAssistantText(aiText);
+              setAiResponse(normalized);
               setMessages((cur) => [
                 ...cur,
-                { role: "assistant", text: aiText, ts: Date.now() },
+                { role: "assistant", text: normalized, ts: Date.now() },
               ]);
             } else {
-              const raw = sanitizeText(JSON.stringify(llm));
-              setAiResponse(raw);
+              // Attempt to extract likely assistant text from common keys
+              let aiText = "";
+              try {
+                const lobj = llm as Record<string, unknown>;
+                // OpenAI/Groq schema: safely inspect first choice
+                if (Array.isArray(lobj.choices)) {
+                  const firstChoice = lobj.choices[0];
+                  if (typeof firstChoice === "object" && firstChoice !== null) {
+                    const msg = (firstChoice as Record<string, unknown>)
+                      .message;
+                    if (
+                      typeof msg === "object" &&
+                      msg !== null &&
+                      "content" in msg
+                    ) {
+                      aiText = String((msg as Record<string, unknown>).content);
+                    }
+                  }
+                }
+                if (!aiText && typeof lobj.reply === "string") {
+                  aiText = lobj.reply;
+                } else if (!aiText && typeof lobj.output === "string") {
+                  aiText = lobj.output;
+                } else if (!aiText && typeof lobj.text === "string") {
+                  aiText = lobj.text;
+                } else if (!aiText) {
+                  // Last-resort: stringify then strip JSON punctuation
+                  aiText = sanitizeText(String(lobj), 20000, true);
+                }
+              } catch {
+                aiText = sanitizeText(String(llm), 20000, true);
+              }
+              aiText = sanitizeText(aiText);
+              const normalized = normalizeAssistantText(aiText);
+              setAiResponse(normalized);
               setMessages((cur) => [
                 ...cur,
-                { role: "assistant", text: raw, ts: Date.now() },
+                { role: "assistant", text: normalized, ts: Date.now() },
               ]);
             }
           } else {
-            const raw = sanitizeText(JSON.stringify(llm));
-            setAiResponse(raw);
+            // Attempt to extract likely assistant text from common keys
+            let aiText = "";
+            try {
+              const lobj = llm as Record<string, unknown>;
+              if (Array.isArray(lobj.choices)) {
+                const firstChoice = lobj.choices[0];
+                if (typeof firstChoice === "object" && firstChoice !== null) {
+                  const msg = (firstChoice as Record<string, unknown>).message;
+                  if (
+                    typeof msg === "object" &&
+                    msg !== null &&
+                    "content" in msg
+                  ) {
+                    aiText = String((msg as Record<string, unknown>).content);
+                  }
+                }
+              }
+              if (!aiText && typeof lobj.reply === "string") {
+                aiText = lobj.reply;
+              } else if (!aiText && typeof lobj.output === "string") {
+                aiText = lobj.output;
+              } else if (!aiText && typeof lobj.text === "string") {
+                aiText = lobj.text;
+              } else if (!aiText) {
+                aiText = sanitizeText(String(lobj), 20000, true);
+              }
+            } catch {
+              aiText = sanitizeText(String(llm), 20000, true);
+            }
+            aiText = sanitizeText(aiText);
+            const normalized = normalizeAssistantText(aiText);
+            setAiResponse(normalized);
             setMessages((cur) => [
               ...cur,
-              { role: "assistant", text: raw, ts: Date.now() },
+              { role: "assistant", text: normalized, ts: Date.now() },
             ]);
           }
         } else if (typeof llm === "string") {
           const aiText = sanitizeText(llm);
-          setAiResponse(aiText);
+          const normalized = normalizeAssistantText(aiText);
+          setAiResponse(normalized);
           setMessages((cur) => [
             ...cur,
-            { role: "assistant", text: aiText, ts: Date.now() },
+            { role: "assistant", text: normalized, ts: Date.now() },
           ]);
         } else {
           const aiText = sanitizeText(String(llm));
-          setAiResponse(aiText);
+          const normalized = normalizeAssistantText(aiText);
+          setAiResponse(normalized);
           setMessages((cur) => [
             ...cur,
-            { role: "assistant", text: aiText, ts: Date.now() },
+            { role: "assistant", text: normalized, ts: Date.now() },
           ]);
         }
         return;
@@ -351,10 +459,11 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
         };
         if (Array.isArray(m.choices) && m.choices[0]?.message?.content) {
           const aiText = sanitizeText(m.choices[0].message.content);
-          setAiResponse(aiText);
+          const normalized = normalizeAssistantText(aiText);
+          setAiResponse(normalized);
           setMessages((cur) => [
             ...cur,
-            { role: "assistant", text: aiText, ts: Date.now() },
+            { role: "assistant", text: normalized, ts: Date.now() },
           ]);
           return;
         }
@@ -450,6 +559,20 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       /* noop - accessibility best-effort */
     }
   }, [transcribedText, aiResponse]);
+
+  // Toggle `.is-voice-active` on the document root while recording or processing.
+  useEffect(() => {
+    try {
+      const root = typeof document !== "undefined" && document.documentElement;
+      if (!root) return;
+      const active = isRecording || processing;
+      if (active) root.classList.add("is-voice-active");
+      else root.classList.remove("is-voice-active");
+      return () => root.classList.remove("is-voice-active");
+    } catch {
+      /* noop */
+    }
+  }, [isRecording, processing]);
 
   // Notify users when the realtime connection status changes (connect/retry/error)
   useEffect(() => {

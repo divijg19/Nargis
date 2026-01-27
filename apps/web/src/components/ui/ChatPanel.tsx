@@ -7,6 +7,7 @@ import { useRealtime } from "@/contexts/RealtimeContext";
 import { useTaskStore } from "@/contexts/TaskContext";
 import { useToasts } from "@/contexts/ToastContext";
 import { sanitizeText } from "@/lib/sanitize";
+import Message from "./Message";
 
 declare global {
   interface Window {
@@ -40,23 +41,20 @@ export default function ChatPanel({
     clearAiResponse,
     clearTranscribedText,
     messages,
-    voiceMode,
-    setVoiceMode,
+    clearMessages,
     openConversation,
     setOpenConversation,
-    clearMessages,
     simulateIncoming,
     isListening,
+    stopListening,
     currentAgentState,
     processing,
-    stopListening,
+    voiceMode,
+    setVoiceMode,
     capabilities,
   } = useRealtime();
-  const { push } = useToasts();
-  const { addTask } = useTaskStore();
+
   const panelRef = useRef<HTMLDivElement | null>(null);
-  // When used as a merged embedded panel we allow local collapsing so the
-  // hero can remain compact while still exposing the unified experience.
   const [embeddedOpen, setEmbeddedOpen] = useState(true);
   const [showFullAi, setShowFullAi] = useState(false);
   const [showFullTranscript, setShowFullTranscript] = useState(false);
@@ -68,6 +66,9 @@ export default function ChatPanel({
   const displayTranscript = showFullTranscript
     ? safeTranscript
     : safeTranscript.slice(0, DISPLAY_LIMIT);
+
+  const { push } = useToasts();
+  const { addTask } = useTaskStore();
 
   const shouldShowSignInNudge =
     !loading && !isAuthenticated && (messages?.length || 0) > 0;
@@ -459,7 +460,7 @@ export default function ChatPanel({
             {/* Live transcript */}
             {transcribedText && !aiResponse && (
               <div
-                className="mt-1 p-3 bg-white/5 rounded-md border border-border/20 text-sm text-foreground/90 whitespace-pre-wrap"
+                className="mt-1 p-3 bg-surface-elevated rounded-md border border-border/20 text-sm text-foreground whitespace-pre-wrap"
                 aria-live="polite"
               >
                 <strong className="sr-only">Live transcript:</strong>
@@ -491,18 +492,13 @@ export default function ChatPanel({
 
         {/* Chat body and controls (shared behavior with previous layout) */}
         <div
-          className={`chat-body overflow-auto space-y-3 mb-3 ${merged ? "flex-1 min-h-0" : "max-h-72 sm:max-h-64"}`}
+          className={`chat-body space-y-3 mb-3 ${merged ? "flex-1 min-h-0" : ""}`}
         >
           {messages && messages.length > 0 ? (
-            messages.map((m, i) => {
-              const ts = new Date(m.ts);
-              const isToday = new Date().toDateString() === ts.toDateString();
-              const time = ts.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              });
-              const datePrefix = isToday ? "" : ts.toLocaleDateString();
-              return (
+            <div
+              className={`messages-scroll space-y-3 ${merged ? "flex-1 min-h-0" : "max-h-72 sm:max-h-64"}`}
+            >
+              {messages.map((m, i) => (
                 <div
                   key={`${m.ts}-${m.role}-${i}`}
                   className={
@@ -511,34 +507,24 @@ export default function ChatPanel({
                       : "flex justify-start"
                   }
                 >
-                  <div
-                    className={
-                      m.role === "user"
-                        ? "max-w-[80%] bg-primary/90 text-white rounded-xl px-4 py-2 text-sm"
-                        : "max-w-[80%] bg-surface-elevated rounded-xl px-4 py-2 text-sm border border-border/20"
-                    }
-                  >
-                    <div className="flex items-center justify-between gap-3 mb-1">
-                      <div className="text-xs font-medium">
-                        {m.role === "user" ? "You" : "Nargis"}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground ml-2">
-                        {datePrefix ? `${datePrefix} • ${time}` : time}
-                      </div>
-                    </div>
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                      {m.text}
-                    </div>
+                  <div className="max-w-[80%]">
+                    {/* Use centralized Message component for markup */}
+                    <Message
+                      role={m.role}
+                      text={m.text}
+                      ts={m.ts}
+                      thoughts={m.thoughts}
+                    />
                   </div>
                 </div>
-              );
-            })
+              ))}
+            </div>
           ) : (
             <>
               {safeTranscript && (
                 <div className="mb-2">
                   <div className="text-xs font-medium mb-1">You said</div>
-                  <div className="max-h-28 overflow-auto text-sm leading-relaxed">
+                  <div className="max-h-28 overflow-y-auto text-sm leading-relaxed">
                     {displayTranscript}
                     {safeTranscript.length > DISPLAY_LIMIT && (
                       <div className="mt-2">
@@ -611,7 +597,7 @@ export default function ChatPanel({
                 ) : (
                   <div>
                     <div
-                      className="max-h-44 overflow-auto text-sm leading-relaxed"
+                      className="max-h-44 overflow-y-auto text-sm leading-relaxed"
                       aria-live="polite"
                     >
                       {displayAi}

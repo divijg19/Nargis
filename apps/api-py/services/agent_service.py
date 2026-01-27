@@ -23,15 +23,33 @@ async def run_agent_pipeline(
     if not getattr(agent_graph, "agent_app", None) or not hasattr(
         agent_graph.agent_app, "astream_events"
     ):
-        # Fallback
+        # Fallback: Normalize LLM output to assistant text only
         llm_result = await _get_llm_response(user_input)
-        final_text = (
-            llm_result.get("reply")
-            or llm_result.get("output")
-            or llm_result.get("text")
-            or str(llm_result)
-        )
-        yield (json.dumps({"type": "response", "content": final_text}) + "\n").encode()
+        assistant_text = None
+        # OpenAI/Groq schema: choices[0].message.content
+        if isinstance(llm_result, dict):
+            choices = llm_result.get("choices")
+            if (
+                isinstance(choices, list)
+                and len(choices) > 0
+                and isinstance(choices[0], dict)
+            ):
+                message = choices[0].get("message")
+                if isinstance(message, dict):
+                    assistant_text = message.get("content")
+        if not assistant_text:
+            # Try legacy keys
+            assistant_text = (
+                llm_result.get("reply")
+                or llm_result.get("output")
+                or llm_result.get("text")
+            )
+        if not assistant_text:
+            # Fallback to stringified dict
+            assistant_text = str(llm_result)
+        yield (
+            json.dumps({"type": "response", "content": assistant_text}) + "\n"
+        ).encode()
         yield (json.dumps({"type": "end", "content": "done"}) + "\n").encode()
         return
 
@@ -101,8 +119,10 @@ async def run_agent_pipeline(
                 response_parts.append(content)
 
     if response_parts:
+        # Normalize: emit only assistant text, not raw LLM dict
+        assistant_text = "".join(response_parts)
         yield (
-            json.dumps({"type": "response", "content": "".join(response_parts)}) + "\n"
+            json.dumps({"type": "response", "content": assistant_text}) + "\n"
         ).encode()
 
     yield (json.dumps({"type": "end", "content": "done"}) + "\n").encode()
