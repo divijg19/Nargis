@@ -94,4 +94,7 @@ packages = ["routers", "storage", "services", "agent"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "integration: mark a test as an integration test (deselect with -m 'not integration')",
+]
 

@@ -96,7 +96,7 @@ export function Footer() {
                 </div>
                 <div className="w-px h-3 bg-border/50" aria-hidden />
                 <small className="text-xs text-muted-foreground" aria-hidden>
-                  v0.5
+                  v1.x
                 </small>
               </div>
             </div>

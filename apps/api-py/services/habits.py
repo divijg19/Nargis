@@ -28,9 +28,9 @@ def _compute_streaks(entries: list[HabitEntry]) -> dict[str, int]:
     if not completed_dates:
         return {"currentStreak": 0, "bestStreak": 0}
 
-    # Use UTC date to avoid server local time issues,
-    # though ideally this should be user-local
-    today = datetime.now(UTC).date()
+    # Use local date (date.today) for streak calculation. Using UTC here
+    # can shift the perceived "today" across timezones and break tests.
+    today = date_cls.today()
 
     # Current Streak
     current_streak = 0
