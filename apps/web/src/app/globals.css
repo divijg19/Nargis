@@ -601,6 +601,26 @@ body {
   color: inherit;
 }
 
+/* Ensure svg strokes inherit the button's current color (theme/token aware)
+   so listening/connecting variants follow semantic/token colors instead
+   of hard-coded white. */
+.voice-btn--listening svg *,
+.btn-icon-primary.voice-btn--listening svg * {
+  stroke: currentColor;
+  color: currentColor;
+}
+
+/* Reusable mode toggle highlight: light uses Ember Dawn primary tint,
+   dark preserves the subtle white tint used for midnight-bloom active states. */
+.mode-toggle-active {
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-card));
+  color: var(--color-primary);
+}
+.dark .mode-toggle-active {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-card-foreground);
+}
+
 /* Theme-aware states */
 .pulse-success {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -1062,12 +1082,12 @@ body {
 }
 
 .toast--info {
-  /* Blue */
-  border-left: 8px solid #2563eb; /* keep blue */
-  background: color-mix(in srgb, #2563eb 8%, var(--color-card));
+  /* Blue/info */
+  border-left: 8px solid var(--color-info);
+  background: color-mix(in srgb, var(--color-info) 8%, var(--color-card));
 }
 .dark .toast--info {
-  background: color-mix(in srgb, #2563eb 10%, var(--color-card));
+  background: color-mix(in srgb, var(--color-info) 10%, var(--color-card));
 }
 
 /* Toast icon slot */
@@ -1084,35 +1104,43 @@ body {
 }
 
 .toast--success .toast-icon {
-  color: #16a34a;
-  background: rgba(22, 163, 74, 0.1);
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 10%, var(--color-card));
 }
 .dark .toast--success .toast-icon {
-  background: rgba(22, 163, 74, 0.12);
+  background: color-mix(in srgb, var(--color-success) 12%, var(--color-card));
 }
 
 .toast--error .toast-icon {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-destructive);
+  background: color-mix(
+    in srgb,
+    var(--color-destructive) 10%,
+    var(--color-card)
+  );
 }
 .dark .toast--error .toast-icon {
-  background: rgba(239, 68, 68, 0.12);
+  background: color-mix(
+    in srgb,
+    var(--color-destructive) 12%,
+    var(--color-card)
+  );
 }
 
 .toast--warning .toast-icon {
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.1);
+  color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 10%, var(--color-card));
 }
 .dark .toast--warning .toast-icon {
-  background: rgba(245, 158, 11, 0.12);
+  background: color-mix(in srgb, var(--color-warning) 12%, var(--color-card));
 }
 
 .toast--info .toast-icon {
-  color: #2563eb;
-  background: rgba(37, 99, 235, 0.1);
+  color: var(--color-info);
+  background: color-mix(in srgb, var(--color-info) 10%, var(--color-card));
 }
 .dark .toast--info .toast-icon {
-  background: rgba(37, 99, 235, 0.12);
+  background: color-mix(in srgb, var(--color-info) 12%, var(--color-card));
 }
 
 /* Toast / notification styling: theme-aware using color tokens */
