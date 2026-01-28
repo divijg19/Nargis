@@ -1,13 +1,14 @@
 /* Design tokens for Nargis — Quiet Premium Essentialism */
 :root {
-  /* Colors (tokens shared across Ember Dawn and Midnight Bloom by swapping values) */
-  --color-bg: #0f172a;
-  --color-surface: #0b1220;
-  --color-primary: #7c5cff;
-  --color-text: #e6eef8;
-  --color-muted: #9fb3c8;
-  --color-success: #22c55e;
+  /* Ember Dawn (light) palette — default tokens for light mode */
+  --color-bg: #faf8f6; /* paper-like */
+  --color-surface: #ffffff;
+  --color-primary: #6b46ff;
+  --color-text: #0b1b2b;
+  --color-muted: #6b7b86;
+  --color-success: #059669;
   --color-error: #ef4444;
+  --color-info: #2563eb;
 
   /* Spacing */
   --space-1: 4px;
@@ -34,13 +35,64 @@
   --chrome-opacity: 1;
 }
 
-/* Theme overrides (Midnight Bloom defaults above). Ember Dawn overrides can be applied via .theme--ember on root */
-.theme--ember {
-  --color-bg: #faf8f6; /* paper-like */
-  --color-surface: #ffffff;
-  --color-primary: #6b46ff;
-  --color-text: #0b1b2b;
-  --color-muted: #6b7b86;
+/* Midnight Bloom (dark) overrides — apply via `.dark` class on root */
+.dark {
+  --color-bg: #0f172a;
+  --color-surface: #0b1220;
+  --color-primary: #7c5cff;
+  --color-text: #e6eef8;
+  --color-muted: #9fb3c8;
+  --color-info: #2563eb;
+}
+
+/* Palette tokens for user-selectable colors (used by HabitModal and others) */
+:root {
+  --palette-1: #3b82f6; /* blue */
+  --palette-2: #10b981; /* green */
+  --palette-3: #f59e0b; /* amber */
+  --palette-4: #ef4444; /* red */
+  --palette-5: #8b5cf6; /* purple */
+  --palette-6: #ec4899; /* pink */
+  --palette-7: #06b6d4; /* cyan */
+  --palette-8: #f97316; /* orange */
+}
+
+.dark {
+  --palette-1: #3b82f6;
+  --palette-2: #10b981;
+  --palette-3: #f59e0b;
+  --palette-4: #ef4444;
+  --palette-5: #8b5cf6;
+  --palette-6: #ec4899;
+  --palette-7: #06b6d4;
+  --palette-8: #f97316;
+}
+
+/* Canonical aliases for legacy/global token names so components
+   referencing older tokens continue to work while we migrate. These
+   alias canonical tokens (like --color-text / --color-surface) and
+   introduce an overlay token for subtle surfaces. */
+:root {
+  --color-foreground: var(--color-text);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text);
+  /* Provide a default border tuned for Ember Dawn (light) */
+  --color-border: #d6dde6;
+  /* Subtle overlay used for message bubbles / assistant overlays (light)
+     use a light tint over white surface. */
+  --overlay-subtle: rgba(0, 0, 0, 0.04);
+}
+
+.dark {
+  --color-foreground: var(--color-text);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text);
+  --color-border: color-mix(
+    in srgb,
+    var(--color-surface) 88%,
+    var(--color-text) 12%
+  );
+  --overlay-subtle: rgba(255, 255, 255, 0.02);
 }
 
 /* Layout helpers */

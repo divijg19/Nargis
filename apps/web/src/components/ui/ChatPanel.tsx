@@ -142,12 +142,19 @@ export default function ChatPanel({
       container.scrollTop = container.scrollHeight;
     };
 
-    // Initially scroll to bottom
+    // Initially scroll to bottom when opening the conversation
     scrollToBottom();
 
     const obs = new MutationObserver(() => {
-      // small timeout to allow rendering to finish
-      setTimeout(scrollToBottom, 30);
+      // Only auto-scroll when the user is near the bottom to avoid
+      // yanking them while they're reading earlier messages.
+      const isNearBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight <=
+        40;
+      if (isNearBottom) {
+        // small timeout to allow rendering to finish
+        setTimeout(scrollToBottom, 30);
+      }
     });
 
     obs.observe(container, { childList: true, subtree: true });
@@ -256,7 +263,7 @@ export default function ChatPanel({
                     type="button"
                     className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
                       voiceMode === "chat"
-                        ? "bg-white/8 text-foreground"
+                        ? "mode-toggle-active"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                     onClick={() => handleModeChange("chat")}
@@ -269,7 +276,7 @@ export default function ChatPanel({
                     type="button"
                     className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
                       voiceMode === "agent"
-                        ? "bg-white/8 text-foreground"
+                        ? "mode-toggle-active"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                     onClick={() => handleModeChange("agent")}

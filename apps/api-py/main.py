@@ -233,7 +233,15 @@ async def process_audio_pipeline(
         user_id = str(user["id"])
 
     audio_bytes = await audio_file.read()
-    transcribed_text = await _get_transcription(audio_bytes)
+    try:
+        transcribed_text = await _get_transcription(audio_bytes)
+    except HTTPException as e:
+        # Treat STT failures (e.g., empty transcript from Deepgram) as
+        # non-fatal for the pipeline: return a polite empty response
+        # stream so frontends receive a usable NDJSON payload instead
+        # of a 502 which breaks upstream gateways.
+        logging.warning(f"STT failure treated as empty transcript: {e.detail}")
+        transcribed_text = ""
 
     if not transcribed_text or not transcribed_text.strip():
         # Immediate short-circuit response as NDJSON (include end marker)
