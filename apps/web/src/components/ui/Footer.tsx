@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { VoiceInputButton } from "@/components/ui/VoiceInputButton";
 
 function CompactVoiceControl() {
@@ -18,9 +18,35 @@ function CompactVoiceControl() {
 }
 
 export function Footer() {
+  const footerRef = useRef<HTMLElement | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+
+  // Measure footer height and publish to CSS custom property so other
+  // layout pieces (chat panel) can reserve appropriate space.
+  useEffect(() => {
+    const updateFooterOffset = () => {
+      const el = footerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      // add a small gap (16px) so content doesn't butt up against the footer
+      const offset = Math.ceil(rect.height + 16);
+      document.documentElement.style.setProperty(
+        "--app-footer-offset",
+        `${offset}px`,
+      );
+    };
+
+    updateFooterOffset();
+    const ro = new ResizeObserver(updateFooterOffset);
+    if (footerRef.current) ro.observe(footerRef.current);
+    window.addEventListener("resize", updateFooterOffset);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", updateFooterOffset);
+    };
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -51,6 +77,7 @@ export function Footer() {
   }, [lastScrollY]);
   return (
     <footer
+      ref={footerRef}
       className={`fixed bottom-4 left-4 right-4 z-40 transition-all duration-300 ease-out ${
         isVisible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
       }`}
