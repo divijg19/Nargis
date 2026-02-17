@@ -159,6 +159,7 @@ export function AIOverview({ className = "" }: AIOverviewProps) {
     todayProgress,
     todaySessionsCount,
     totalFocusMinutes,
+    goals.filter,
   ]);
 
   const summary = useMemo(() => {
