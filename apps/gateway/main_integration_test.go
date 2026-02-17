@@ -146,7 +146,6 @@ func TestGatewayStopCancelsInFlightOrchestrator(t *testing.T) {
 		t.Fatalf("write chunk failed: %v", err)
 	}
 
-
 	// (Nested test removed - moved to top-level)
 	select {
 	case <-started:
