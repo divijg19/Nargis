@@ -88,26 +88,30 @@ export function PomodoroTimer({
           <button
             type="button"
             onClick={isRunning ? pauseTimer : () => startTimer()}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="p-2 rounded-lg hover:bg-hover/20 transition-colors"
             aria-label={isRunning ? "Pause" : "Play"}
           >
             {isRunning ? (
               <svg
                 className="w-6 h-6 text-foreground"
-                fill="currentColor"
+                fill="none"
                 viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.75}
               >
                 <title>Pause</title>
-                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                <path d="M9 6v12M15 6v12" strokeLinecap="round" />
               </svg>
             ) : (
               <svg
                 className="w-6 h-6 text-foreground"
-                fill="currentColor"
+                fill="none"
                 viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.75}
               >
                 <title>Play</title>
-                <path d="M8 5v14l11-7z" />
+                <path d="M8 6l10 6-10 6V6z" strokeLinejoin="round" />
               </svg>
             )}
           </button>
@@ -140,7 +144,7 @@ export function PomodoroTimer({
       <div className="flex flex-col items-center justify-center mb-8">
         <div
           className={cn(
-            "font-mono font-bold tabular-nums transition-all duration-300",
+            "font-mono font-bold tabular-nums transition-[color,opacity,transform] duration-300",
             sizeClasses[size],
             getSessionColor(),
             "select-none",
@@ -154,7 +158,7 @@ export function PomodoroTimer({
           <div className="relative w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
               className={cn(
-                "absolute top-0 left-0 h-full rounded-full transition-all duration-1000 ease-linear",
+                "absolute top-0 left-0 h-full rounded-full transition-[background-color,opacity] duration-1000 ease-linear",
                 getProgressColor(),
               )}
               style={{ width: `${progress}%` }}
@@ -178,7 +182,7 @@ export function PomodoroTimer({
             <button
               type="button"
               onClick={() => startTimer()}
-              className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium text-lg transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+              className="px-8 py-4 bg-primary text-primary-foreground rounded-xl font-medium text-lg border border-primary/60 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200 hover:opacity-95 active:scale-95"
             >
               Start Focus
             </button>
@@ -189,30 +193,34 @@ export function PomodoroTimer({
                 type="button"
                 onClick={isRunning ? pauseTimer : () => startTimer()}
                 className={cn(
-                  "p-4 rounded-full transition-all duration-200 hover:scale-110 active:scale-95 shadow-lg hover:shadow-xl",
+                  "p-4 rounded-full border transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200 active:scale-95",
                   isRunning
-                    ? "bg-amber-500 hover:bg-amber-600 text-white"
-                    : "bg-blue-600 hover:bg-blue-700 text-white",
+                    ? "bg-card text-foreground border-border/40 hover:bg-hover/20"
+                    : "bg-primary text-primary-foreground border-primary/60 hover:opacity-95",
                 )}
                 aria-label={isRunning ? "Pause Timer" : "Start Timer"}
               >
                 {isRunning ? (
                   <svg
                     className="w-8 h-8"
-                    fill="currentColor"
+                    fill="none"
                     viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.75}
                   >
                     <title>Pause</title>
-                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                    <path d="M9 6v12M15 6v12" strokeLinecap="round" />
                   </svg>
                 ) : (
                   <svg
                     className="w-8 h-8"
-                    fill="currentColor"
+                    fill="none"
                     viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.75}
                   >
                     <title>Play</title>
-                    <path d="M8 5v14l11-7z" />
+                    <path d="M8 6l10 6-10 6V6z" strokeLinejoin="round" />
                   </svg>
                 )}
               </button>
@@ -221,7 +229,7 @@ export function PomodoroTimer({
               <button
                 type="button"
                 onClick={resetTimer}
-                className="p-4 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-foreground transition-all duration-200 hover:scale-110 active:scale-95 shadow-md hover:shadow-lg"
+                className="p-4 rounded-full bg-card border border-border/40 hover:bg-hover/20 text-foreground transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200 active:scale-95"
                 aria-label="Reset Timer"
               >
                 <svg
@@ -248,17 +256,7 @@ export function PomodoroTimer({
       {currentSession && (
         <div className="mt-8 text-center">
           <p className="text-sm text-muted-foreground">
-            {isRunning ? (
-              <span className="inline-flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                </span>
-                Timer running
-              </span>
-            ) : (
-              "Timer paused"
-            )}
+            {isRunning ? "Timer running" : "Timer paused"}
           </p>
         </div>
       )}

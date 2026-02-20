@@ -8,19 +8,19 @@ import { cn } from "@/utils";
 export function StatCard({
   title,
   value,
-  icon,
+  icon: _icon,
   className,
   size = "md",
 }: StatCardProps) {
   return (
     <div
       className={cn(
-        "relative group glass-strong rounded-2xl transition-all duration-300 hover-elevate animate-fade-in",
+        "relative rounded-xl border border-structural bg-card transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200",
         size === "xs" ? "p-3" : size === "sm" ? "p-4" : "p-6",
         className,
       )}
     >
-      <div className="relative z-10 flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div className="flex-1">
           <p
             className={cn(
@@ -36,7 +36,7 @@ export function StatCard({
           </p>
           <p
             className={cn(
-              "font-extrabold text-foreground tabular-nums tracking-tight",
+              "font-semibold text-foreground tabular-nums tracking-tight",
               size === "xs"
                 ? "text-2xl"
                 : size === "sm"
@@ -46,31 +46,6 @@ export function StatCard({
           >
             {value}
           </p>
-        </div>
-        <div className="shrink-0 ml-4 flex items-center justify-center">
-          <div
-            className={cn(
-              "rounded-lg surface-elevated flex items-center justify-center shadow",
-              size === "xs"
-                ? "w-8 h-8"
-                : size === "sm"
-                  ? "w-10 h-10"
-                  : "w-12 h-12",
-            )}
-          >
-            <span
-              className={cn(
-                size === "xs"
-                  ? "text-base"
-                  : size === "sm"
-                    ? "text-lg"
-                    : "text-xl",
-              )}
-              aria-hidden="true"
-            >
-              {icon}
-            </span>
-          </div>
         </div>
       </div>
     </div>

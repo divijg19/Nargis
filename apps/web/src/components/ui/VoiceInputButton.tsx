@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useRealtime } from "@/contexts/RealtimeContext";
 import { useToasts } from "@/contexts/ToastContext";
+import { VoiceStatusBadge } from "./VoiceStatusBadge";
 
 type VoiceSize = "sm" | "md" | "lg";
 
@@ -10,14 +11,12 @@ export function VoiceInputButton({
   size = "md",
   showStatus = true,
   variantOverride,
-  iconTranslateY,
   iconSizeClass: iconSizeClassProp,
   statusInline = false,
 }: {
   size?: VoiceSize;
   showStatus?: boolean;
   variantOverride?: string;
-  iconTranslateY?: number;
   iconSizeClass?: string;
   statusInline?: boolean;
 }) {
@@ -76,17 +75,6 @@ export function VoiceInputButton({
   // size. If an explicit iconSizeClass is provided, use that instead.
   const finalIconSizeClass = iconSizeClassProp ?? iconSizeClass;
 
-  const statusMap: Record<string, { dot: string; label: string }> = {
-    open: { dot: "bg-success", label: "Connected" },
-    connecting: { dot: "bg-warning", label: "Connecting…" },
-    retrying: { dot: "bg-warning", label: "Reconnecting…" },
-    closed: { dot: "bg-destructive", label: "Disconnected" },
-    error: { dot: "bg-destructive", label: "Connection Error" },
-    idle: { dot: "bg-muted", label: "Idle" },
-  };
-
-  const status = statusMap[connectionStatus] ?? statusMap.idle;
-
   // Detect inline/compact usage (navbar) — small size with no status shown
   const isInline = size === "sm" && showStatus === false;
 
@@ -101,23 +89,6 @@ export function VoiceInputButton({
 
   const roundedClass = variantOverride ? "" : "rounded-full";
 
-  // When callers override with rounded-* classes, some component-level
-  // rules (like .btn) may set their own border-radius. To ensure the
-  // caller's desired radius (rounded-md/lg/xl/full) always wins, map
-  // common Tailwind rounded utilities to an inline style which has
-  // higher specificity than stylesheet rules.
-  const inlineStyle: React.CSSProperties = {};
-  if (variantOverride) {
-    if (variantOverride.includes("rounded-full"))
-      inlineStyle.borderRadius = "9999px";
-    else if (variantOverride.includes("rounded-xl"))
-      inlineStyle.borderRadius = "0.75rem";
-    else if (variantOverride.includes("rounded-lg"))
-      inlineStyle.borderRadius = "0.5rem";
-    else if (variantOverride.includes("rounded-md"))
-      inlineStyle.borderRadius = "0.375rem";
-  }
-
   // Determine container layout: stacked (default when showStatus true),
   // inline (when caller requests statusInline), or compact (no status)
   const containerClass = statusInline
@@ -126,48 +97,16 @@ export function VoiceInputButton({
       ? "flex flex-col items-center gap-3"
       : "flex items-center gap-2";
 
-  // Determine if this is used as a compact icon button (e.g., footer)
-  const isIconButtonVariant = Boolean(
-    variantOverride?.includes("btn-icon-primary") ?? false,
-  );
-
-  // Unified translate computation for DRY, with size-aware listening nudge
-  const computeTop = (isListeningState: boolean): number => {
-    // Treat iconTranslateY (if provided) as the baseline, then apply listening delta
-    const base =
-      iconTranslateY !== undefined
-        ? iconTranslateY
-        : isIconButtonVariant || size === "sm"
-          ? 0
-          : isInline
-            ? 5
-            : 10;
-
-    if (!isListeningState) return base;
-
-    // Raise the recording icon to match perceived center across contexts
-    const isHero = size === "lg" && !isIconButtonVariant && !isInline;
-    const isCompact = isIconButtonVariant || size === "sm" || isInline;
-    const delta = isHero ? -10 : isCompact ? -5 : -5; // default medium uses -5 as well
-    return base + delta;
-  };
-
   return (
     <div className={containerClass}>
       {/* When rendering inline status we show the small status first so the
 			   icon sits to the right of the status (per design request). */}
       {showStatus && statusInline && (
-        <div
+        <VoiceStatusBadge
+          connectionStatus={connectionStatus}
+          isListening={isListening}
           className="flex items-center gap-2 text-xs text-muted-foreground"
-          aria-hidden
-        >
-          <span
-            className={`inline-flex items-center w-2 h-2 rounded-full ${status.dot}`}
-          />
-          <span className="font-medium">
-            {isListening ? "Listening" : status.label}
-          </span>
-        </div>
+        />
       )}
       <button
         type="button"
@@ -176,8 +115,7 @@ export function VoiceInputButton({
         aria-pressed={isListening}
         disabled={disabled}
         onClick={handleClick}
-        className={`btn voice-btn ${sizeClass} ${roundedClass} ${variantClass} ${isInline ? "" : "hover-elevate"} ${variantOverride ?? ""} disabled:opacity-40 disabled:cursor-not-allowed`}
-        style={inlineStyle}
+        className={`btn voice-btn ${sizeClass} ${roundedClass} ${variantClass} ${variantOverride ?? ""} disabled:opacity-40 disabled:cursor-not-allowed`}
         title={
           connectionStatus === "connecting"
             ? "Connecting..."
@@ -185,17 +123,13 @@ export function VoiceInputButton({
               ? "Stop listening"
               : "Start listening"
         }
-        aria-live="polite"
       >
         <span className="sr-only">Voice Input</span>
         {isListening ? (
           <svg
             role="img"
             aria-label="Stop recording"
-            className={`${finalIconSizeClass} animate-pulse block mx-auto leading-none relative`}
-            style={{
-              top: `${computeTop(true)}px`,
-            }}
+            className={`${finalIconSizeClass} animate-pulse block mx-auto leading-none`}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -208,10 +142,7 @@ export function VoiceInputButton({
           <svg
             role="img"
             aria-label="Start recording"
-            className={`${finalIconSizeClass} block mx-auto leading-none relative`}
-            style={{
-              top: `${computeTop(false)}px`,
-            }}
+            className={`${finalIconSizeClass} block mx-auto leading-none`}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -231,17 +162,11 @@ export function VoiceInputButton({
           or hidden when the caller prefers to render a compact status inline
           (for example, inside a navbar). */}
       {showStatus && !statusInline && (
-        <div
+        <VoiceStatusBadge
+          connectionStatus={connectionStatus}
+          isListening={isListening}
           className="flex items-center gap-2 text-2xs text-muted-foreground"
-          aria-hidden
-        >
-          <span
-            className={`inline-flex items-center w-2 h-2 rounded-full ${status.dot}`}
-          />
-          <span className="font-medium">
-            {isListening ? "Listening" : status.label}
-          </span>
-        </div>
+        />
       )}
     </div>
   );

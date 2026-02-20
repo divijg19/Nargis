@@ -86,9 +86,9 @@ export function PomodoroSettings({ isOpen, onClose }: PomodoroSettingsProps) {
                 onChange={(e) =>
                   setWorkDuration(Number.parseInt(e.target.value, 10) || 25)
                 }
-                className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="flex-1 px-4 py-2.5 bg-card border border-border/40 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/35 transition-[color,background-color,border-color,opacity,box-shadow]"
               />
-              <span className="text-sm text-muted-foreground min-w-[60px]">
+              <span className="text-sm text-muted-foreground min-w-15">
                 minutes
               </span>
             </div>
@@ -114,9 +114,9 @@ export function PomodoroSettings({ isOpen, onClose }: PomodoroSettingsProps) {
                     Number.parseInt(e.target.value, 10) || 5,
                   )
                 }
-                className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="flex-1 px-4 py-2.5 bg-card border border-border/40 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/35 transition-[color,background-color,border-color,opacity,box-shadow]"
               />
-              <span className="text-sm text-muted-foreground min-w-[60px]">
+              <span className="text-sm text-muted-foreground min-w-15">
                 minutes
               </span>
             </div>
@@ -142,9 +142,9 @@ export function PomodoroSettings({ isOpen, onClose }: PomodoroSettingsProps) {
                     Number.parseInt(e.target.value, 10) || 15,
                   )
                 }
-                className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="flex-1 px-4 py-2.5 bg-card border border-border/40 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/35 transition-[color,background-color,border-color,opacity,box-shadow]"
               />
-              <span className="text-sm text-muted-foreground min-w-[60px]">
+              <span className="text-sm text-muted-foreground min-w-15">
                 minutes
               </span>
             </div>
@@ -168,9 +168,9 @@ export function PomodoroSettings({ isOpen, onClose }: PomodoroSettingsProps) {
                 onChange={(e) =>
                   setLongBreakInterval(Number.parseInt(e.target.value, 10) || 4)
                 }
-                className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="flex-1 px-4 py-2.5 bg-card border border-border/40 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/35 transition-[color,background-color,border-color,opacity,box-shadow]"
               />
-              <span className="text-sm text-muted-foreground min-w-[60px]">
+              <span className="text-sm text-muted-foreground min-w-15">
                 sessions
               </span>
             </div>
@@ -204,7 +204,7 @@ export function PomodoroSettings({ isOpen, onClose }: PomodoroSettingsProps) {
               id="auto-start-breaks"
               onClick={() => setAutoStartBreaks(!autoStartBreaks)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                autoStartBreaks ? "bg-blue-600" : "bg-gray-200 dark:bg-gray-700"
+                autoStartBreaks ? "bg-primary/70" : "bg-muted"
               }`}
               role="switch"
               aria-checked={autoStartBreaks}
@@ -235,7 +235,7 @@ export function PomodoroSettings({ isOpen, onClose }: PomodoroSettingsProps) {
               id="auto-start-work"
               onClick={() => setAutoStartWork(!autoStartWork)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                autoStartWork ? "bg-blue-600" : "bg-gray-200 dark:bg-gray-700"
+                autoStartWork ? "bg-primary/70" : "bg-muted"
               }`}
               role="switch"
               aria-checked={autoStartWork}
@@ -266,7 +266,7 @@ export function PomodoroSettings({ isOpen, onClose }: PomodoroSettingsProps) {
               id="sound-enabled"
               onClick={() => setSoundEnabled(!soundEnabled)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                soundEnabled ? "bg-blue-600" : "bg-gray-200 dark:bg-gray-700"
+                soundEnabled ? "bg-primary/70" : "bg-muted"
               }`}
               role="switch"
               aria-checked={soundEnabled}
@@ -283,7 +283,6 @@ export function PomodoroSettings({ isOpen, onClose }: PomodoroSettingsProps) {
         {/* Action Buttons */}
         <div className="flex gap-3 pt-4">
           <ActionButton
-            icon="↺"
             label="Reset to Defaults"
             variant="secondary"
             size="md"
@@ -291,7 +290,6 @@ export function PomodoroSettings({ isOpen, onClose }: PomodoroSettingsProps) {
             className="flex-1"
           />
           <ActionButton
-            icon="✓"
             label="Save Settings"
             variant="primary"
             size="md"

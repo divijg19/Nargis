@@ -65,7 +65,7 @@ export function PomodoroPreview({
 
       <div className="w-full bg-white bg-opacity-25 rounded-full h-2 mb-4">
         <div
-          className="bg-white rounded-full h-2 transition-all duration-300"
+          className="bg-white rounded-full h-2 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-300"
           style={{ width: `${progressPercentage}%` }}
         />
       </div>

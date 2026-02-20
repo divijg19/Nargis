@@ -1,63 +1,71 @@
-/* Design tokens for Nargis — Quiet Premium Essentialism */
+/* V2 token authority for Nargis.
+   Rule: only color tokens vary by theme; geometry/motion/layout remain constant. */
 :root {
-  /* Ember Dawn (light) palette — default tokens for light mode */
-  --color-bg: #faf8f6; /* paper-like */
-  --color-surface: #ffffff;
-  --color-primary: #6b46ff;
-  --color-text: #0b1b2b;
-  --color-muted: #6b7b86;
-  --color-success: #059669;
-  --color-error: #ef4444;
+  /* Core semantic tokens (Ember Dawn default) */
+  --bg: #faf8f6;
+  --surface: #ffffff;
+  --primary: #6b46ff;
+  --text: #0b1b2b;
+  --muted: #6b7b86;
+  --success: #059669;
+  --error: #ef4444;
+  --focus-ring: rgba(107, 70, 255, 0.28);
+  --streaming-buffer-bg: rgba(107, 70, 255, 0.08);
+
+  /* Geometry + layout (theme-invariant) */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --radius-1: 8px;
+  --radius-2: 12px;
+  --radius-3: 16px;
+  --content-max-width: 760px;
+
+  /* Elevation (only two levels) */
+  --elevation-1: 0 6px 18px rgba(2, 6, 23, 0.06);
+  --elevation-2: 0 18px 40px rgba(2, 6, 23, 0.1);
+
+  /* Motion */
+  --motion-micro: 120ms;
+  --motion-medium: 180ms;
+  --motion-large: 260ms;
+  --motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Legacy compatibility aliases */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-primary: var(--primary);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-focus: var(--focus-ring);
+  --color-foreground: var(--text);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-background: var(--bg);
+  --color-muted-foreground: var(--muted);
   --color-info: #2563eb;
+  --color-warning: #d97706;
+  --color-destructive: var(--error);
+  --color-primary-rgb: 107, 70, 255;
+  --color-border: #d6dde6;
+  --overlay-subtle: rgba(0, 0, 0, 0.04);
 
-  /* Spacing */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 16px;
-  --msg-gap: 12px;
-  --bubble-pad: 14px;
-
-  /* Radii */
+  /* Existing component scales preserved */
+  --msg-gap: 16px;
+  --bubble-pad: 12px;
   --radius-sm: 6px;
-
-  /* Typography */
   --font-family-sans:
     Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial;
   --font-size-body: 16px;
   --font-size-assistant: 20px;
-  --line-height: 1.4;
-
-  /* Layout */
-  --content-max-width: 760px;
-
-  /* Chrome opacity when voice active */
+  --line-height: 1.5;
   --chrome-opacity: 1;
-}
 
-/* Midnight Bloom (dark) overrides — apply via `.dark` class on root */
-.dark {
-  --color-bg: #0f172a;
-  --color-surface: #0b1220;
-  --color-primary: #7c5cff;
-  --color-text: #e6eef8;
-  --color-muted: #9fb3c8;
-  --color-info: #2563eb;
-}
-
-/* Palette tokens for user-selectable colors (used by HabitModal and others) */
-:root {
-  --palette-1: #3b82f6; /* blue */
-  --palette-2: #10b981; /* green */
-  --palette-3: #f59e0b; /* amber */
-  --palette-4: #ef4444; /* red */
-  --palette-5: #8b5cf6; /* purple */
-  --palette-6: #ec4899; /* pink */
-  --palette-7: #06b6d4; /* cyan */
-  --palette-8: #f97316; /* orange */
-}
-
-.dark {
+  /* Keep palette tokens for backward compatibility in HabitModal */
   --palette-1: #3b82f6;
   --palette-2: #10b981;
   --palette-3: #f59e0b;
@@ -68,30 +76,21 @@
   --palette-8: #f97316;
 }
 
-/* Canonical aliases for legacy/global token names so components
-   referencing older tokens continue to work while we migrate. These
-   alias canonical tokens (like --color-text / --color-surface) and
-   introduce an overlay token for subtle surfaces. */
-:root {
-  --color-foreground: var(--color-text);
-  --color-card: var(--color-surface);
-  --color-card-foreground: var(--color-text);
-  /* Provide a default border tuned for Ember Dawn (light) */
-  --color-border: #d6dde6;
-  /* Subtle overlay used for message bubbles / assistant overlays (light)
-     use a light tint over white surface. */
-  --overlay-subtle: rgba(0, 0, 0, 0.04);
-}
-
+/* Midnight Bloom overrides: colors only */
 .dark {
-  --color-foreground: var(--color-text);
-  --color-card: var(--color-surface);
-  --color-card-foreground: var(--color-text);
-  --color-border: color-mix(
-    in srgb,
-    var(--color-surface) 88%,
-    var(--color-text) 12%
-  );
+  --bg: #0f172a;
+  --surface: #0b1220;
+  --primary: #7c5cff;
+  --text: #e6eef8;
+  --muted: #9fb3c8;
+  --success: #22c55e;
+  --error: #f87171;
+  --focus-ring: rgba(124, 92, 255, 0.28);
+  --streaming-buffer-bg: rgba(124, 92, 255, 0.16);
+
+  --color-primary-rgb: 124, 92, 255;
+  --color-warning: #fbbf24;
+  --color-border: color-mix(in srgb, var(--surface) 88%, var(--text) 12%);
   --overlay-subtle: rgba(255, 255, 255, 0.02);
 }
 
@@ -108,35 +107,34 @@
 .is-voice-active .app__chrome,
 .is-voice-active .app__sidebar {
   opacity: var(--chrome-opacity);
-  transition: opacity 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity var(--motion-medium) var(--motion-ease);
 }
 
 /* Message bubble basics */
 .message {
   display: block;
   margin-bottom: var(--msg-gap);
-  padding: var(--bubble-pad);
+  padding: 16px;
   border-radius: var(--radius-sm);
   line-height: var(--line-height);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-body);
   color: var(--color-text);
-  background: var(--color-surface);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--color-border) 10%, transparent);
 }
 
 .message--assistant {
-  font-size: var(--font-size-assistant);
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.02),
-    rgba(255, 255, 255, 0)
-  );
+  font-size: var(--font-size-body);
+  background: transparent;
+  border-color: color-mix(in srgb, var(--color-border) 8%, transparent);
   box-shadow: none;
 }
 
 .message--user {
-  background: rgba(255, 255, 255, 0.02);
-  opacity: 0.9;
+  background: transparent;
+  border-color: color-mix(in srgb, var(--color-border) 10%, transparent);
+  opacity: 1;
 }
 
 /* Streaming partial text (low visual weight) */
@@ -145,14 +143,14 @@
   font-style: italic;
   opacity: 0.9;
   transition:
-    opacity 120ms ease,
-    transform 160ms ease;
+    opacity var(--motion-micro) var(--motion-ease),
+    transform var(--motion-medium) var(--motion-ease);
   transform: translateY(0);
 }
 
 /* Final assistant entrance */
 .message--final {
-  animation: fadeUp 160ms ease both;
+  animation: fadeUp var(--motion-medium) var(--motion-ease) both;
 }
 
 @keyframes fadeUp {
@@ -178,12 +176,12 @@
   color: white;
   box-shadow: none;
   transition:
-    transform 120ms ease,
-    opacity 120ms ease;
+    transform var(--motion-micro) var(--motion-ease),
+    opacity var(--motion-micro) var(--motion-ease);
 }
 
 .record-btn.rec--recording {
-  animation: pulse 1000ms infinite ease-in-out;
+  animation: pulse 1000ms infinite var(--motion-ease);
 }
 
 @keyframes pulse {
@@ -216,5 +214,8 @@
   }
   .message--final {
     animation: none;
+  }
+  .message--streaming .message__partial {
+    transition: none;
   }
 }

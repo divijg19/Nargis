@@ -111,13 +111,13 @@ export interface DashboardCardProps {
 export interface StatCardProps {
   title: string;
   value: string | number;
-  icon: string;
+  icon?: string;
   className?: string;
   size?: "xs" | "sm" | "md";
 }
 
 export interface ActionButtonProps {
-  icon: string;
+  icon?: string;
   label: string;
   variant?: "primary" | "secondary" | "danger";
   size?: "sm" | "md" | "lg";

@@ -304,7 +304,7 @@ export default function JournalPage() {
                       : "bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600"
                   }`}
                 >
-                  📝 Text
+                  Text
                 </button>
                 <button
                   type="button"
@@ -315,7 +315,7 @@ export default function JournalPage() {
                       : "bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600"
                   }`}
                 >
-                  🎤 Voice
+                  Voice
                 </button>
               </div>
 
@@ -349,11 +349,7 @@ export default function JournalPage() {
                       title={mood.charAt(0).toUpperCase() + mood.slice(1)}
                       aria-label={`Filter by ${mood} mood`}
                     >
-                      {mood === "great" && "😄"}
-                      {mood === "good" && "🙂"}
-                      {mood === "neutral" && "😐"}
-                      {mood === "bad" && "😕"}
-                      {mood === "terrible" && "😢"}
+                      {mood.charAt(0).toUpperCase() + mood.slice(1)}
                     </button>
                   ),
                 )}
@@ -364,7 +360,6 @@ export default function JournalPage() {
           {/* Empty state */}
           {filteredEntries.length === 0 && (
             <div className="text-center py-16">
-              <div className="text-6xl mb-4">📔</div>
               <h3 className="text-xl font-semibold text-foreground mb-2">
                 {entries.length === 0
                   ? "Start Your Journal"
@@ -709,7 +704,7 @@ export default function JournalPage() {
           <button
             type="button"
             onClick={handleNewEntry}
-            className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center group z-50"
+            className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] flex items-center justify-center group z-50"
             aria-label="New journal entry"
           >
             <svg

@@ -21,9 +21,20 @@ export function TaskPreview({
     return (
       <div className="flex flex-col items-center justify-center h-full text-center px-4">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 mb-3">
-          <span className="text-2xl" aria-hidden="true">
-            📝
-          </span>
+          <svg
+            className="w-6 h-6 text-muted-foreground"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12h6m-6 4h6M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"
+            />
+          </svg>
         </div>
         <p className="text-muted-foreground text-sm">No tasks found</p>
         <p className="text-muted-foreground text-xs mt-1">
@@ -38,7 +49,7 @@ export function TaskPreview({
       {displayTasks.map((task, index) => (
         <div
           key={task.id}
-          className="group flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:shadow-sm animate-slide-up"
+          className="group flex items-center justify-between p-4 bg-card border border-structural rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200 hover:bg-hover/20 animate-slide-up"
           style={{ animationDelay: `${index * 50}ms` }}
         >
           <div className="flex items-center space-x-3 flex-1 min-w-0">
@@ -51,7 +62,7 @@ export function TaskPreview({
                   : `Mark "${task.title}" as complete`
               }
               className={cn(
-                "shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500",
+                "shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500",
                 task.completed
                   ? "bg-green-500 border-green-500 hover:bg-green-600 hover:border-green-600"
                   : "border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20",
@@ -77,7 +88,7 @@ export function TaskPreview({
             <div className="flex-1 min-w-0">
               <p
                 className={cn(
-                  "text-sm font-medium text-foreground dark:text-white transition-all duration-200 truncate",
+                  "text-sm font-medium text-foreground transition-[color,opacity,transform] duration-200 truncate",
                   task.completed && "line-through text-muted-foreground",
                 )}
               >

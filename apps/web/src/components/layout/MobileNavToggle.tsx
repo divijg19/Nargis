@@ -14,7 +14,7 @@ export const MobileNavToggle: React.FC<Props> = ({ onClick, open = false }) => {
       type="button"
       aria-label="Toggle sidebar"
       onClick={onClick}
-      className="md:hidden p-2 rounded-xl hover:bg-hover/50 transition-all duration-200 active:scale-95"
+      className="md:hidden p-2 rounded-xl hover:bg-hover/50 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200 active:scale-95"
     >
       <Bars3Icon
         className={`w-5 h-5 transition-transform ${open ? "rotate-90" : "rotate-0"}`}

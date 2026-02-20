@@ -131,7 +131,7 @@ export function ToastViewport() {
               className="toast-dismiss"
               onClick={() => dismiss(t.id)}
             >
-              ✕
+              x
             </button>
           </div>
         );

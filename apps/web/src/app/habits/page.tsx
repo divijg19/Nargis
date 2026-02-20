@@ -56,26 +56,20 @@ export default function HabitsPage() {
 
   return (
     <RequireAuth>
-      <div className="h-full overflow-hidden flex flex-col bg-app-light transition-all duration-500">
-        {/* Premium ambient overlay */}
-        <div className="absolute inset-0 bg-linear-to-r from-transparent via-orange-500/5 to-transparent dark:via-orange-400/10 pointer-events-none" />
+      <div className="h-full overflow-hidden flex flex-col bg-app-light transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-300">
         <div className="w-full max-w-6xl 2xl:max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 space-y-6 py-4 flex-1 min-h-0 overflow-hidden">
           {/* Premium Header */}
           <div className="animate-fade-in">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-6">
               <div>
-                <h1 className="text-5xl md:text-6xl font-bold mb-3">
-                  <span className="bg-linear-to-r from-orange-600 via-red-600 to-pink-600 bg-clip-text text-transparent">
-                    Habits
-                  </span>
-                  <span className="text-foreground dark:text-white"> 🔥</span>
+                <h1 className="text-4xl md:text-5xl font-semibold mb-2 text-foreground">
+                  Habits
                 </h1>
-                <p className="text-xl text-muted-foreground dark:text-slate-300">
+                <p className="text-base text-muted-foreground">
                   Build consistency, one day at a time
                 </p>
               </div>
               <ActionButton
-                icon="➕"
                 label="New Habit"
                 variant="primary"
                 onClick={() => setIsModalOpen(true)}
@@ -91,11 +85,8 @@ export default function HabitsPage() {
             <div className="lg:col-span-5">
               <div className="flex flex-col lg:flex-row lg:items-start gap-4">
                 <div className="shrink-0 lg:-ml-28 lg:mr-8">
-                  <div className="inline-flex items-center px-3 sm:px-4 py-2 rounded-xl glass bg-linear-to-br from-orange-50/90 to-red-50/90 dark:from-orange-900/20 dark:to-red-900/20 backdrop-blur-xl border border-orange-200/60 dark:border-orange-800/60 shadow-lg transition-all duration-300 animate-scale-in">
-                    <span className="text-2xl mr-2" aria-hidden="true">
-                      🔥
-                    </span>
-                    <span className="text-sm font-semibold text-orange-900 dark:text-orange-200">
+                  <div className="inline-flex items-center px-3 sm:px-4 py-2 rounded-xl border border-border/25 bg-card transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200">
+                    <span className="text-sm font-medium text-foreground">
                       {totalStreaks} Active Streak
                       {totalStreaks !== 1 ? "s" : ""}
                     </span>
@@ -106,8 +97,11 @@ export default function HabitsPage() {
                     {todayProgress.length === 0 ? (
                       <div className="text-center py-16">
                         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
-                          <span className="text-4xl" aria-hidden="true">
-                            🎯
+                          <span
+                            className="text-sm text-muted-foreground"
+                            aria-hidden="true"
+                          >
+                            None
                           </span>
                         </div>
                         <p className="text-lg font-medium text-muted-foreground mb-2">
@@ -117,7 +111,6 @@ export default function HabitsPage() {
                           Create your first habit to start building consistency
                         </p>
                         <ActionButton
-                          icon="➕"
                           label="Create Your First Habit"
                           variant="primary"
                           onClick={() => setIsModalOpen(true)}

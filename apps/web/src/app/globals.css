@@ -22,6 +22,9 @@
   --color-background: #fefefe;
   --color-foreground: #0f172a;
   --color-focus: rgba(123, 44, 191, 0.22);
+  --text: var(--color-foreground);
+  --surface: var(--color-card);
+  --primary: var(--color-primary);
 
   /* Radius & shadow tokens for consistent premium geometry */
   --radius-sm: 6px;
@@ -93,6 +96,9 @@
   --color-background: #0a0f1c;
   --color-foreground: #f8fafc;
   --color-focus: rgba(79, 70, 229, 0.18);
+  --text: var(--color-foreground);
+  --surface: var(--color-card);
+  --primary: var(--color-primary);
 
   /* Semantic colors - dark optimized */
   --color-success: #22c55e;
@@ -269,36 +275,28 @@
   background: var(--color-card);
   color: var(--color-card-foreground);
   border: 1px solid var(--color-border);
-  box-shadow:
-    0 4px 18px rgba(var(--color-primary-rgb), 0.03),
-    0 1px 2px rgba(2, 6, 23, 0.04);
+  box-shadow: none;
 }
 
 .dark .surface-elevated {
   background: var(--color-card);
   color: var(--color-card-foreground);
   border: 1px solid var(--color-border);
-  box-shadow:
-    0 6px 28px rgba(2, 6, 23, 0.35),
-    0 2px 6px rgba(0, 0, 0, 0.25);
+  box-shadow: none;
 }
 
 .surface-floating {
   background: var(--color-card);
   color: var(--color-card-foreground);
   border: 1px solid var(--color-border);
-  box-shadow:
-    0 18px 40px rgba(var(--color-primary-rgb), 0.04),
-    0 6px 18px rgba(2, 6, 23, 0.05);
+  box-shadow: none;
 }
 
 .dark .surface-floating {
   background: var(--color-card);
   color: var(--color-card-foreground);
   border: 1px solid var(--color-border);
-  box-shadow:
-    0 20px 60px rgba(2, 6, 23, 0.38),
-    0 8px 28px rgba(0, 0, 0, 0.3);
+  box-shadow: none;
 }
 
 /* Enhanced global base styles */
@@ -312,13 +310,28 @@ html {
 }
 
 body {
-  background: var(--gradient-ambient);
+  background:
+    radial-gradient(
+      circle at 20% 20%,
+      color-mix(in srgb, var(--primary, var(--color-primary)) 8%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      circle at 82% 12%,
+      color-mix(in srgb, var(--color-accent) 7%, transparent),
+      transparent 56%
+    ),
+    var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
-  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background-color var(--motion-large, 260ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    color var(--motion-large, 260ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
   text-rendering: optimizeLegibility;
 }
 
@@ -329,14 +342,18 @@ body {
   transition-property:
     background-color, border-color, color, opacity, box-shadow, transform,
     backdrop-filter;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 200ms;
+  transition-timing-function: var(
+    --motion-ease,
+    cubic-bezier(0.2, 0.8, 0.2, 1)
+  );
+  transition-duration: var(--motion-medium, 180ms);
 }
 
 /* High-performance transforms */
 .hover-lift {
   will-change: transform;
-  transition: transform 0.2s ease-out;
+  transition: transform var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
 }
 
 .hover-lift:hover {
@@ -403,8 +420,10 @@ body {
 /* A soft elevate interaction used across cards/buttons (transform + shadow) */
 .hover-elevate {
   transition:
-    transform 200ms ease,
-    box-shadow 200ms ease;
+    transform var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    box-shadow var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
 }
 .hover-elevate:hover {
   transform: translateY(-3px);
@@ -422,6 +441,18 @@ body {
 .gradient-nargis {
   background: var(--gradient-nargis);
   -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.gradient-onboarding-text {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary, var(--color-primary)) 90%, white),
+    color-mix(in srgb, var(--primary, var(--color-primary)) 60%, white)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   background-clip: text;
   color: transparent;
 }
@@ -474,7 +505,7 @@ body {
 
 .app-viewport-available > * {
   /* keep children from overflowing the safe area; allow internal scroll if needed */
-  max-height: calc(100vh - var(--app-header-offset) - var(--app-footer-offset));
+  height: calc(100vh - var(--app-header-offset) - var(--app-footer-offset));
 }
 
 /* Chat panel: ensure it never extends into the footer or below the viewport.
@@ -485,12 +516,16 @@ body {
 .chat-panel {
   display: flex;
   flex-direction: column;
-  max-height: calc(
+  height: calc(
     100vh -
     var(--app-header-offset) -
     var(--app-footer-offset) -
     1rem
   );
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--color-border) 34%, transparent);
+  background: var(--color-card);
+  box-shadow: none;
 }
 
 .chat-panel .chat-body {
@@ -501,7 +536,7 @@ body {
 
 /* Ensure large SVG timers scale down on small viewports to avoid forcing scroll */
 .app-viewport-available svg {
-  max-height: calc(
+  height: calc(
     100vh -
     var(--app-header-offset) -
     var(--app-footer-offset) -
@@ -531,65 +566,55 @@ body {
   align-items: center;
   justify-content: center;
   transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    border-color 180ms ease;
-  will-change: transform, box-shadow;
+    transform var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    border-color var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+  will-change: transform;
 }
 
 /* Idle / default: brand gradient with subtle border and glow */
 .voice-btn--idle {
-  background: var(--gradient-brand);
-  color: var(--color-primary-foreground);
-  border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
-  box-shadow:
-    0 14px 38px rgba(var(--color-primary-rgb), 0.06),
-    0 6px 18px rgba(2, 6, 23, 0.04);
+  background: var(--color-card);
+  color: var(--color-foreground);
+  border: 1px solid color-mix(in srgb, var(--color-border) 42%, transparent);
+  box-shadow: none;
 }
 .dark .voice-btn--idle {
-  background: var(--gradient-brand);
+  background: var(--color-card);
   border-color: rgba(255, 255, 255, 0.06);
-  box-shadow:
-    0 20px 60px rgba(2, 6, 23, 0.5),
-    0 8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: none;
 }
 
-/* Listening: warm red/pink gradient with higher emphasis */
+/* Listening: matte, subtle emphasis without aggressive fill */
 .voice-btn--listening {
-  background: linear-gradient(
-    90deg,
-    rgba(239, 68, 68, 1) 0%,
-    rgba(236, 72, 153, 0.95) 100%
+  background: color-mix(
+    in srgb,
+    var(--color-destructive) 14%,
+    var(--color-card)
   );
-  color: #fff;
-  border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
-  box-shadow:
-    0 22px 68px rgba(239, 68, 68, 0.12),
-    0 10px 30px rgba(0, 0, 0, 0.14);
+  color: var(--color-destructive);
+  border: 1px solid
+    color-mix(in srgb, var(--color-destructive) 34%, var(--color-border));
+  box-shadow: none;
 }
 .dark .voice-btn--listening {
-  box-shadow:
-    0 24px 80px rgba(239, 68, 68, 0.12),
-    0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: none;
 }
 
 /* Connecting: amber gradient */
 .voice-btn--connecting {
-  background: linear-gradient(
-    90deg,
-    rgba(250, 204, 21, 1) 0%,
-    rgba(245, 158, 11, 1) 100%
-  );
-  color: #111827;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 0 12px 30px rgba(245, 158, 11, 0.08);
+  background: var(--color-card);
+  color: var(--color-foreground);
+  border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
+  box-shadow: none;
 }
 
 /* Inline (navbar) variant: transparent, subtle border and hover */
 .voice-btn--inline {
   background: transparent;
   color: var(--color-foreground);
-  border: 1px solid rgba(15, 23, 42, 0.06);
+  border: 1px solid color-mix(in srgb, var(--color-border) 44%, transparent);
   box-shadow: none;
 }
 .dark .voice-btn--inline {
@@ -700,9 +725,12 @@ body {
   font-weight: 600;
   box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
   transition:
-    transform 160ms ease,
-    box-shadow 160ms ease,
-    background-color 160ms ease;
+    transform var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    box-shadow var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    background-color var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
 }
 
 .btn-primary:hover {
@@ -742,9 +770,12 @@ body {
   border-radius: 0.75rem;
   font-weight: 600;
   transition:
-    transform 140ms ease,
-    background 140ms ease,
-    border-color 140ms ease;
+    transform var(--motion-micro, 120ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    background var(--motion-micro, 120ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    border-color var(--motion-micro, 120ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
 }
 .btn-secondary:hover {
   background: color-mix(
@@ -773,10 +804,14 @@ body {
 /* Hover glass utility for modernized subtle backdrop blur on hover */
 .hover-glass {
   transition:
-    backdrop-filter 180ms ease,
-    -webkit-backdrop-filter 180ms ease,
-    background-color 180ms ease,
-    box-shadow 180ms ease;
+    backdrop-filter var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    -webkit-backdrop-filter var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    background-color var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    box-shadow var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
 }
 .hover-glass:hover {
   backdrop-filter: blur(10px);
@@ -793,10 +828,14 @@ body {
 /* Stronger hover glass for small icon controls that need clearer affordance */
 .hover-glass-strong {
   transition:
-    backdrop-filter 180ms ease,
-    -webkit-backdrop-filter 180ms ease,
-    background-color 180ms ease,
-    box-shadow 180ms ease;
+    backdrop-filter var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    -webkit-backdrop-filter var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    background-color var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    box-shadow var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
 }
 .hover-glass-strong:hover {
   backdrop-filter: blur(14px) saturate(120%);
@@ -835,9 +874,12 @@ body {
   border-radius: 10px;
   box-shadow: 0 8px 22px rgba(2, 6, 23, 0.06);
   transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    background-color 160ms ease;
+    transform var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    box-shadow var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    background-color var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
   font-size: 0; /* hide any accidental text */
   line-height: 0;
 }
@@ -862,7 +904,8 @@ body {
 .btn-icon-primary svg {
   /* let the component-level Tailwind width/height classes control icon size */
   color: inherit;
-  transition: transform 140ms ease;
+  transition: transform var(--motion-micro, 120ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
   display: block;
 }
 .btn-icon-primary:active svg {
@@ -871,12 +914,8 @@ body {
 
 /* Ensure voice state variants override compact icon button base styling */
 .btn-icon-primary.voice-btn--listening {
-  background: linear-gradient(
-    90deg,
-    rgba(239, 68, 68, 1) 0%,
-    rgba(236, 72, 153, 0.95) 100%
-  );
-  color: #fff;
+  background: color-mix(in srgb, var(--color-primary) 22%, var(--color-card));
+  color: var(--color-primary);
 }
 .dark .btn-icon-primary.voice-btn--listening {
   /* preserve stronger shadow on dark if present via variant */
@@ -920,16 +959,19 @@ body {
 }
 
 .animate-in {
-  animation: float-up 0.2s ease-out;
+  animation: float-up var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
 }
 
 .slide-in-from-top-2 {
-  animation: slide-in-from-top 0.2s ease-out;
+  animation: slide-in-from-top var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
 }
 
 /* Enhanced hover effects for premium feel */
 .hover-scale {
-  transition: transform 0.2s ease-out;
+  transition: transform var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
 }
 
 .hover-scale:hover {
@@ -937,7 +979,8 @@ body {
 }
 
 .hover-glow {
-  transition: all 0.3s ease;
+  transition: box-shadow var(--motion-large, 260ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
 }
 
 .hover-glow:hover {
@@ -962,14 +1005,33 @@ body {
 
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   .animate-fade-in,
   .animate-scale-in,
   .animate-slide-up,
   .animate-float,
   .animate-glow-pulse,
+  .animate-in,
+  .slide-in-from-top-2,
   .voice-wave,
-  .voice-ripple {
+  .voice-ripple,
+  .message--final,
+  .message--streaming .message__partial {
     animation: none;
+    transition: none;
+  }
+
+  .hover-lift,
+  .hover-elevate,
+  .hover-scale,
+  .hover-glow,
+  .voice-btn,
+  .btn,
+  .btn-icon-primary,
+  .btn-icon-primary svg {
     transition: none;
   }
 }
@@ -1143,16 +1205,6 @@ body {
   background: color-mix(in srgb, var(--color-info) 12%, var(--color-card));
 }
 
-/* Toast / notification styling: theme-aware using color tokens */
-.toast {
-  background: var(--color-card);
-  color: var(--color-card-foreground);
-  border: 1px solid var(--color-border);
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
-}
-
 /* Priority badge utilities - token-driven for consistent contrast */
 .priority-low {
   color: var(--color-success);
@@ -1254,37 +1306,19 @@ body {
   opacity: 1;
 }
 
-/* Collapse/expand transition used by merged ChatPanel */
-.collapse-transition {
-  overflow: hidden;
-  transition:
-    max-height 220ms ease,
-    opacity 180ms ease;
-}
-.collapse-transition.expanded {
-  max-height: 1000px; /* large enough to show content */
-  opacity: 1;
-}
-.collapse-transition.collapsed {
-  max-height: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-
 /* Chat panel specific refinements for a premium, soft UI */
 .chat-panel {
-  border-radius: var(--radius-lg);
-  border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--color-card) 98%, transparent),
-    var(--color-card)
-  );
-  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
+  border-radius: var(--radius-md);
+  border: 1px solid
+    color-mix(in srgb, var(--text, var(--color-foreground)) 6%, transparent);
+  background: var(--color-card);
+  box-shadow: none;
 }
 .chat-panel .chat-body {
-  padding-top: 0.5rem;
-  border-top: 1px solid color-mix(in srgb, var(--color-border) 10%, transparent);
+  padding-top: 1.85rem;
+  padding-bottom: 1rem;
+  border-top: 0;
+  line-height: 1.5;
   /* Allow the chat body to scroll when content overflows. In merged (flex) layouts
      ensure min-height is respected by parent and allow overscroll containment. */
   overflow-y: auto;
@@ -1296,7 +1330,6 @@ body {
    and pointer-driven scrollbars are visible and usable. */
 .chat-panel .messages-scroll {
   height: 100%;
-  max-height: 100%;
   scrollbar-width: auto;
   scrollbar-color: rgba(125, 125, 125, 0.32) transparent;
 }
@@ -1311,9 +1344,9 @@ body {
   background: rgba(125, 125, 125, 0.52);
 }
 .chat-divider {
-  height: 1px;
-  background: color-mix(in srgb, var(--color-border) 18%, transparent);
-  margin: 0.5rem 0;
+  height: 0;
+  background: transparent;
+  margin: 0;
   border-radius: 2px;
 }
 .chat-actions {
@@ -1331,16 +1364,210 @@ body {
 
 /* Status tile refinements inside merged ChatPanel */
 .chat-panel .status-tile {
-  padding: 0.6rem;
+  padding: 0.5rem 0.6rem;
   border-radius: 10px;
-  background: color-mix(
-    in srgb,
-    var(--color-card) 96%,
-    var(--color-primary) 0%
-  );
-  border: 1px solid color-mix(in srgb, var(--color-border) 18%, transparent);
-  box-shadow: 0 2px 8px rgba(2, 6, 23, 0.03);
+  background: color-mix(in srgb, var(--color-card) 98%, var(--color-muted) 2%);
+  border: 1px solid
+    color-mix(in srgb, var(--text, var(--color-foreground)) 6%, transparent);
+  box-shadow: none;
 }
 .chat-panel .status-tile .text-xs {
   color: var(--color-muted-foreground);
+}
+
+/* Sidebar structural contract (Phase 2) */
+aside.sidebar-desktop[data-collapsed="true"] {
+  width: 72px;
+}
+
+aside.sidebar-desktop[data-collapsed="false"] {
+  width: 240px;
+}
+
+aside.sidebar-desktop {
+  transition: none;
+}
+
+aside.sidebar-desktop[data-collapsed="true"] .nav-label {
+  display: none;
+}
+
+/* Single global floating voice control (Phase 1) */
+.voice-control-shell {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  z-index: 45;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (min-width: 1024px) {
+  .voice-control-shell {
+    left: auto;
+    right: 1rem;
+    bottom: 1rem;
+    transform: none;
+  }
+}
+
+.voice-control {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
+  background: var(--color-card);
+  color: var(--color-foreground);
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    background-color var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    border-color var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    transform var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    opacity var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+}
+
+.voice-control-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.voice-control-meta {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--color-muted-foreground);
+  letter-spacing: 0.01em;
+  min-width: 66px;
+}
+
+.onboarding-info-btn {
+  position: fixed;
+  z-index: 60;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid
+    color-mix(in srgb, var(--text, var(--color-foreground)) 6%, transparent);
+  background: var(--color-card);
+  color: var(--color-foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
+    opacity var(--motion-medium, 180ms)
+    var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
+}
+
+.onboarding-info-btn:hover {
+  transform: scale(1.03);
+  opacity: 0.95;
+}
+
+@media (max-width: 1023px) {
+  .onboarding-info-btn {
+    left: 50%;
+    bottom: 4.25rem;
+    transform: translateX(-50%);
+  }
+
+  .onboarding-info-btn:hover {
+    transform: translateX(-50%) scale(1.03);
+  }
+}
+
+@media (min-width: 1024px) {
+  .onboarding-info-btn {
+    right: 1.35rem;
+    bottom: 4.75rem;
+  }
+}
+
+.border-structural {
+  border-style: solid;
+  border-width: 1px;
+  border-color: color-mix(
+    in srgb,
+    var(--text, var(--color-foreground)) 6%,
+    transparent
+  );
+}
+
+.border-structural-right {
+  border-right: 1px solid
+    color-mix(in srgb, var(--text, var(--color-foreground)) 6%, transparent);
+}
+
+.border-structural-bottom {
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--text, var(--color-foreground)) 6%, transparent);
+}
+
+html[data-voice-state="idle"] .voice-control {
+  background: var(--color-card);
+  color: var(--color-foreground);
+}
+
+html[data-voice-state="listening"] .voice-control {
+  background: color-mix(
+    in srgb,
+    var(--color-destructive) 14%,
+    var(--color-card)
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--color-destructive) 34%,
+    var(--color-border)
+  );
+  color: var(--color-destructive);
+}
+
+html[data-voice-state="processing"] .voice-control {
+  background: var(--color-card);
+  border-color: color-mix(in srgb, var(--color-border) 40%, transparent);
+  color: var(--color-foreground);
+}
+
+html[data-voice-state="streaming"] .voice-control {
+  background: var(--color-card);
+  border-color: color-mix(in srgb, var(--color-border) 40%, transparent);
+  color: var(--color-foreground);
+  animation: none;
+}
+
+html[data-voice-state="completed"] .voice-control {
+  background: var(--color-card);
+  border-color: color-mix(in srgb, var(--color-border) 40%, transparent);
+  color: var(--color-foreground);
+}
+
+@keyframes voice-control-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.92;
+  }
+  to {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-control {
+    transition: none;
+  }
+  html[data-voice-state="streaming"] .voice-control {
+    animation: none;
+  }
 }

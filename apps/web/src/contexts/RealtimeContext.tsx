@@ -65,8 +65,6 @@ interface RealtimeContextValue {
   clearMessages: () => void;
   /** Insert a user message into the conversation programmatically */
   sendUserMessage: (text: string) => void;
-  openConversation: boolean;
-  setOpenConversation: (v: boolean) => void;
   // NEW: agent streaming state
   currentAgentState: string | null;
   processing: boolean;
@@ -98,6 +96,33 @@ function normalizeAssistantText(input: unknown): string {
   return s;
 }
 
+const STREAM_DEBOUNCE_MS = 80;
+
+function extractAssistantText(input: unknown): string {
+  if (typeof input === "string") return sanitizeText(input, 20000, true);
+  if (typeof input !== "object" || input === null) {
+    return sanitizeText(String(input ?? ""), 20000, true);
+  }
+
+  const obj = input as Record<string, unknown>;
+
+  if (Array.isArray(obj.choices)) {
+    const first = obj.choices[0] as Record<string, unknown> | undefined;
+    const message = first?.message as Record<string, unknown> | undefined;
+    if (message && "content" in message) {
+      return sanitizeText(message.content, 20000, true);
+    }
+  }
+
+  if (typeof obj.reply === "string")
+    return sanitizeText(obj.reply, 20000, true);
+  if (typeof obj.output === "string")
+    return sanitizeText(obj.output, 20000, true);
+  if (typeof obj.text === "string") return sanitizeText(obj.text, 20000, true);
+
+  return sanitizeText(String(obj), 20000, true);
+}
+
 export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user } = useAuth();
   const [connectionStatus, setConnectionStatus] =
@@ -115,12 +140,10 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       thoughts?: string[];
     }>
   >([]);
-  const [openConversation, setOpenConversation] = useState(false);
   const { push } = useToasts();
   const lastConnRef = useRef<RealtimeContextValue["connectionStatus"] | null>(
     null,
   );
-  const lastTranscriptRef = useRef<{ text: string; ts: number } | null>(null);
 
   // Use refs to hold objects that shouldn't trigger re-renders when they change,
   // like the connection and media recorder instances.
@@ -140,6 +163,8 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   // Streaming buffer for partial assistant text; commit to history only on `end`.
   const responseBufferRef = useRef<string>("");
   const streamActiveRef = useRef<boolean>(false);
+  const streamDebounceTimerRef = useRef<number | null>(null);
+  const committedAssistantForTurnRef = useRef<boolean>(false);
 
   // Capability flags determine what the current client environment allows.
   // Auth gates persistence and agent execution only; ephemeral chat and
@@ -175,6 +200,61 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   // Centralized incoming message handler (used for both real WS messages and
   // dev/testing injections). Kept stable via useCallback so it can be used
   // outside the connection effect.
+  const flushStreamingBuffer = useCallback(() => {
+    const next = normalizeAssistantText(responseBufferRef.current || "");
+    setAiResponse(next || null);
+  }, []);
+
+  const scheduleStreamingBufferFlush = useCallback(() => {
+    if (streamDebounceTimerRef.current) {
+      window.clearTimeout(streamDebounceTimerRef.current);
+    }
+    streamDebounceTimerRef.current = window.setTimeout(() => {
+      flushStreamingBuffer();
+      streamDebounceTimerRef.current = null;
+    }, STREAM_DEBOUNCE_MS);
+  }, [flushStreamingBuffer]);
+
+  const commitAssistantBlock = useCallback(
+    (rawInput: unknown, thoughts: string[] = []) => {
+      const normalized = normalizeAssistantText(extractAssistantText(rawInput));
+      if (!normalized.trim()) return;
+
+      setAiResponse(normalized);
+      setMessages((cur) => {
+        if (!committedAssistantForTurnRef.current) {
+          committedAssistantForTurnRef.current = true;
+          return [
+            ...cur,
+            {
+              role: "assistant",
+              text: normalized,
+              ts: Date.now(),
+              thoughts,
+            },
+          ];
+        }
+
+        const next = [...cur];
+        const lastIdx = next.length - 1;
+        if (lastIdx >= 0 && next[lastIdx].role === "assistant") {
+          next[lastIdx] = {
+            ...next[lastIdx],
+            text: normalized,
+            thoughts: thoughts.length ? thoughts : next[lastIdx].thoughts,
+          };
+          return next;
+        }
+
+        return [
+          ...next,
+          { role: "assistant", text: normalized, ts: Date.now(), thoughts },
+        ];
+      });
+    },
+    [],
+  );
+
   const handleIncoming = useCallback(
     (msg: unknown) => {
       // Ignore any late events after we've observed a terminal event for the
@@ -195,12 +275,12 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
             case "transcript": {
               const t = sanitizeText(evt.content);
               if (t) {
+                committedAssistantForTurnRef.current = false;
                 setTranscribedText(t);
                 setMessages((cur) => [
                   ...cur,
                   { role: "user", text: t, ts: Date.now() },
                 ]);
-                setOpenConversation(true);
               }
               return;
             }
@@ -253,10 +333,10 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
               // accumulate
               responseBufferRef.current =
                 (responseBufferRef.current || "") + chunk;
-              setAiResponse(responseBufferRef.current);
+              // streaming mutates text only (debounced), never inserts siblings
+              scheduleStreamingBufferFlush();
               // keep processing true until we see `end`
               setProcessing(true);
-              setOpenConversation(true);
               return;
             }
             case "error":
@@ -274,24 +354,13 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
               try {
                 const rawFinal =
                   responseBufferRef.current || String(evt.content || "");
-                const finalText = sanitizeText(rawFinal, 20000, true);
-                if (finalText?.trim()) {
-                  const thoughts = pendingThoughtsRef.current.slice();
-                  pendingThoughtsRef.current = [];
-                  // defensively normalize to avoid raw JSON-like blobs
-                  const normalized = normalizeAssistantText(finalText);
-                  setMessages((cur) => [
-                    ...cur,
-                    {
-                      role: "assistant",
-                      text: normalized,
-                      ts: Date.now(),
-                      thoughts,
-                    },
-                  ]);
-                  // Ensure the final aiResponse reflects the committed text
-                  setAiResponse(normalized);
+                const thoughts = pendingThoughtsRef.current.slice();
+                pendingThoughtsRef.current = [];
+                if (streamDebounceTimerRef.current) {
+                  window.clearTimeout(streamDebounceTimerRef.current);
+                  streamDebounceTimerRef.current = null;
                 }
+                commitAssistantBlock(rawFinal, thoughts);
               } finally {
                 // Reset streaming state
                 responseBufferRef.current = "";
@@ -330,124 +399,14 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       if (isTranscriptLLM(msg)) {
         const o = msg as Record<string, unknown>;
         const cleanTranscript = sanitizeText(o.transcript as string);
+        committedAssistantForTurnRef.current = false;
         setTranscribedText(cleanTranscript);
         // push user message to history
         setMessages((cur) => [
           ...cur,
           { role: "user", text: cleanTranscript, ts: Date.now() },
         ]);
-        const llm = o.llm;
-        if (typeof llm === "object" && llm !== null) {
-          const l = llm as Record<string, unknown>;
-          if (Array.isArray(l.choices)) {
-            const first = l.choices[0] as Record<string, unknown> | undefined;
-            const message = first?.message as
-              | Record<string, unknown>
-              | undefined;
-            if (message && "content" in message) {
-              const aiText = sanitizeText(message.content);
-              const normalized = normalizeAssistantText(aiText);
-              setAiResponse(normalized);
-              setMessages((cur) => [
-                ...cur,
-                { role: "assistant", text: normalized, ts: Date.now() },
-              ]);
-            } else {
-              // Attempt to extract likely assistant text from common keys
-              let aiText = "";
-              try {
-                const lobj = llm as Record<string, unknown>;
-                // OpenAI/Groq schema: safely inspect first choice
-                if (Array.isArray(lobj.choices)) {
-                  const firstChoice = lobj.choices[0];
-                  if (typeof firstChoice === "object" && firstChoice !== null) {
-                    const msg = (firstChoice as Record<string, unknown>)
-                      .message;
-                    if (
-                      typeof msg === "object" &&
-                      msg !== null &&
-                      "content" in msg
-                    ) {
-                      aiText = String((msg as Record<string, unknown>).content);
-                    }
-                  }
-                }
-                if (!aiText && typeof lobj.reply === "string") {
-                  aiText = lobj.reply;
-                } else if (!aiText && typeof lobj.output === "string") {
-                  aiText = lobj.output;
-                } else if (!aiText && typeof lobj.text === "string") {
-                  aiText = lobj.text;
-                } else if (!aiText) {
-                  // Last-resort: stringify then strip JSON punctuation
-                  aiText = sanitizeText(String(lobj), 20000, true);
-                }
-              } catch {
-                aiText = sanitizeText(String(llm), 20000, true);
-              }
-              aiText = sanitizeText(aiText);
-              const normalized = normalizeAssistantText(aiText);
-              setAiResponse(normalized);
-              setMessages((cur) => [
-                ...cur,
-                { role: "assistant", text: normalized, ts: Date.now() },
-              ]);
-            }
-          } else {
-            // Attempt to extract likely assistant text from common keys
-            let aiText = "";
-            try {
-              const lobj = llm as Record<string, unknown>;
-              if (Array.isArray(lobj.choices)) {
-                const firstChoice = lobj.choices[0];
-                if (typeof firstChoice === "object" && firstChoice !== null) {
-                  const msg = (firstChoice as Record<string, unknown>).message;
-                  if (
-                    typeof msg === "object" &&
-                    msg !== null &&
-                    "content" in msg
-                  ) {
-                    aiText = String((msg as Record<string, unknown>).content);
-                  }
-                }
-              }
-              if (!aiText && typeof lobj.reply === "string") {
-                aiText = lobj.reply;
-              } else if (!aiText && typeof lobj.output === "string") {
-                aiText = lobj.output;
-              } else if (!aiText && typeof lobj.text === "string") {
-                aiText = lobj.text;
-              } else if (!aiText) {
-                aiText = sanitizeText(String(lobj), 20000, true);
-              }
-            } catch {
-              aiText = sanitizeText(String(llm), 20000, true);
-            }
-            aiText = sanitizeText(aiText);
-            const normalized = normalizeAssistantText(aiText);
-            setAiResponse(normalized);
-            setMessages((cur) => [
-              ...cur,
-              { role: "assistant", text: normalized, ts: Date.now() },
-            ]);
-          }
-        } else if (typeof llm === "string") {
-          const aiText = sanitizeText(llm);
-          const normalized = normalizeAssistantText(aiText);
-          setAiResponse(normalized);
-          setMessages((cur) => [
-            ...cur,
-            { role: "assistant", text: normalized, ts: Date.now() },
-          ]);
-        } else {
-          const aiText = sanitizeText(String(llm));
-          const normalized = normalizeAssistantText(aiText);
-          setAiResponse(normalized);
-          setMessages((cur) => [
-            ...cur,
-            { role: "assistant", text: normalized, ts: Date.now() },
-          ]);
-        }
+        commitAssistantBlock(o.llm);
         return;
       }
 
@@ -458,13 +417,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
           detail?: unknown;
         };
         if (Array.isArray(m.choices) && m.choices[0]?.message?.content) {
-          const aiText = sanitizeText(m.choices[0].message.content);
-          const normalized = normalizeAssistantText(aiText);
-          setAiResponse(normalized);
-          setMessages((cur) => [
-            ...cur,
-            { role: "assistant", text: normalized, ts: Date.now() },
-          ]);
+          commitAssistantBlock(m.choices[0].message.content);
           return;
         }
         if (m.error || m.detail) {
@@ -478,7 +431,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       }
       // ignore unexpected message shapes
     },
-    [push],
+    [push, scheduleStreamingBufferFlush, commitAssistantBlock],
   );
 
   // Effect to establish and manage the WebSocket connection on component mount.
@@ -516,49 +469,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     return () => conn.close();
   }, [handleIncoming]);
 
-  // Announce when a transcript becomes available (subtle toast to reassure users)
-  useEffect(() => {
-    if (transcribedText) {
-      const now = Date.now();
-      const txt = transcribedText;
-      // Only push when text changes or if it's been >3s since last similar toast
-      if (
-        !lastTranscriptRef.current ||
-        lastTranscriptRef.current.text !== txt ||
-        now - lastTranscriptRef.current.ts > 3000
-      ) {
-        push({
-          message: "Transcript ready",
-          variant: "info",
-          type: "transcript-ready",
-        });
-        lastTranscriptRef.current = { text: txt, ts: now };
-      }
-    }
-  }, [transcribedText, push]);
-
   const clearMessages = useCallback(() => setMessages([]), []);
-
-  // Mirror short announcements to an aria-live region for screen readers and
-  // visually-hidden assistive announcements. Keeps users informed about
-  // transcripts and AI responses without intrusive modals.
-  useEffect(() => {
-    try {
-      const node =
-        typeof document !== "undefined" &&
-        document.getElementById("voice-announcements");
-      if (!node) return;
-      if (transcribedText && !aiResponse) {
-        node.textContent = `Transcript ready: ${transcribedText.slice(0, 160)}`;
-      } else if (aiResponse) {
-        node.textContent = `AI response ready.`;
-      } else {
-        node.textContent = "";
-      }
-    } catch {
-      /* noop - accessibility best-effort */
-    }
-  }, [transcribedText, aiResponse]);
 
   // Toggle `.is-voice-active` on the document root while recording or processing.
   useEffect(() => {
@@ -605,18 +516,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     }
     // only run when connectionStatus or push changes
   }, [connectionStatus, push]);
-
-  // The AI modal is rendered by consumers when `aiResponse` or `transcribedText`
-  // are non-null. No additional effect is required here.
-
-  // Auto-open the conversation modal when we receive a transcript or AI response
-  useEffect(() => {
-    if ((transcribedText || aiResponse) && !openConversation) {
-      setOpenConversation(true);
-    }
-    // Intentionally only depend on these values to auto-open when new data arrives
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transcribedText, aiResponse, openConversation]);
 
   // Auth-gated persistence:
   // - Anonymous: keep history in-memory only (resets on refresh/tab close).
@@ -683,7 +582,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       ...cur,
       { role: "user", text: clean, ts: Date.now() },
     ]);
-    setOpenConversation(true);
   }, []);
 
   const startListening = useCallback(async () => {
@@ -691,6 +589,13 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
     // Reset terminal marker for a fresh turn.
     terminalSeenRef.current = false;
+    committedAssistantForTurnRef.current = false;
+    responseBufferRef.current = "";
+    streamActiveRef.current = false;
+    if (streamDebounceTimerRef.current) {
+      window.clearTimeout(streamDebounceTimerRef.current);
+      streamDebounceTimerRef.current = null;
+    }
 
     // Enforce auth for execution/agent mode.
     if (voiceMode === "agent" && !isAuthenticated) {
@@ -799,6 +704,14 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     handleIncoming,
   ]);
 
+  useEffect(() => {
+    return () => {
+      if (streamDebounceTimerRef.current) {
+        window.clearTimeout(streamDebounceTimerRef.current);
+      }
+    };
+  }, []);
+
   const stopListening = useCallback(() => {
     if (!isRecording) return;
     try {
@@ -834,9 +747,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       clearAiResponse,
       messages,
       clearMessages,
-      openConversation,
       sendUserMessage,
-      setOpenConversation,
       currentAgentState,
       processing,
       // Note: `capabilities` is included below in the returned object but
@@ -862,7 +773,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     voiceMode,
     messages,
     clearMessages,
-    openConversation,
     sendUserMessage,
     clearTranscribedText,
     clearAiResponse,

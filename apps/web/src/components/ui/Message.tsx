@@ -16,29 +16,18 @@ export default function Message({ role, text, ts, thoughts }: MessageProps) {
     : undefined;
 
   return (
-    <div
-      className={`message message--${role}`}
-      role={role === "assistant" ? "article" : "note"}
-      aria-live={role === "assistant" ? "polite" : undefined}
-    >
-      <div
-        className="message__meta"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: "6px",
-        }}
-      >
-        <div className="message__who text-xs font-medium">
+    <div className={`message message--${role}`}>
+      <div className="message__meta flex items-center justify-between mb-1.5">
+        <div className="message__who text-[13px] font-medium tracking-[0.01em] text-muted-foreground">
           {role === "user" ? "You" : "Nargis"}
         </div>
         {time && (
-          <div className="message__time text-[11px] text-muted-foreground">
+          <div className="message__time text-[12px] text-muted-foreground/90">
             {time}
           </div>
         )}
       </div>
-      <div className="message__body whitespace-pre-wrap text-sm leading-relaxed">
+      <div className="message__body whitespace-pre-wrap text-base leading-relaxed text-foreground">
         {text}
       </div>
       {thoughts && thoughts.length > 0 && (

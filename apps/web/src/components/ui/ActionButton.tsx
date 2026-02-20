@@ -6,7 +6,6 @@ import { cn } from "@/utils";
  * Enhanced with glass morphism and fluid animations
  */
 export function ActionButton({
-  icon,
   label,
   variant = "secondary",
   size = "md",
@@ -14,18 +13,17 @@ export function ActionButton({
   disabled = false,
   className,
   loading = false,
-  iconPosition = "left",
 }: ActionButtonProps) {
   const baseClasses =
-    "inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover-elevate active:scale-95";
+    "inline-flex items-center justify-center font-medium rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 border";
 
   const variantClasses = {
     primary:
-      "bg-gradient-brand text-primary-foreground hover:opacity-90 focus:ring-primary shadow-lg shadow-primary/30 hover:shadow-primary/40",
+      "bg-primary text-primary-foreground border-primary/60 hover:opacity-95 focus:ring-primary",
     secondary:
-      "glass bg-secondary/90 backdrop-blur-xl text-secondary-foreground hover:bg-secondary/70 focus:ring-ring border border-border",
+      "bg-card text-foreground border-border/40 hover:bg-hover/20 focus:ring-ring",
     danger:
-      "bg-linear-to-r from-destructive to-red-600 text-destructive-foreground hover:opacity-90 focus:ring-destructive shadow-lg shadow-destructive/30 hover:shadow-destructive/40",
+      "bg-card text-destructive border-destructive/35 hover:bg-destructive/8 focus:ring-destructive",
   };
 
   const sizeClasses = {
@@ -36,17 +34,7 @@ export function ActionButton({
 
   const content = (
     <>
-      {icon && iconPosition === "left" && (
-        <span className="text-lg mr-2" aria-hidden>
-          {icon}
-        </span>
-      )}
       <span>{label}</span>
-      {icon && iconPosition === "right" && (
-        <span className="text-lg ml-2" aria-hidden>
-          {icon}
-        </span>
-      )}
       {loading && (
         <span
           className="ml-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent align-middle"
