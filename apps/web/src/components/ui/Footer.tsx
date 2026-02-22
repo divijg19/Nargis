@@ -1,27 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { VoiceInputButton } from "@/components/ui/VoiceInputButton";
-
-function CompactVoiceControl() {
-  // Render the shared voice input control in compact mode for the footer
-  return (
-    <VoiceInputButton
-      size="sm"
-      showStatus={true}
-      statusInline={true}
-      variantOverride="btn-icon-primary btn-icon-sm rounded-lg"
-      iconTranslateY={5}
-      iconSizeClass="w-8 h-8"
-    />
-  );
-}
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useRealtime } from "@/contexts/RealtimeContext";
+import { OnboardingOverlay } from "./OnboardingOverlay";
+import { VoiceControl } from "./VoiceControl";
 
 export function Footer() {
   const footerRef = useRef<HTMLElement | null>(null);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const [draft, setDraft] = useState("");
+  const { sendUserMessage } = useRealtime();
 
   // Measure footer height and publish to CSS custom property so other
   // layout pieces (chat panel) can reserve appropriate space.
@@ -48,86 +35,49 @@ export function Footer() {
     };
   }, []);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const documentHeight = document.documentElement.scrollHeight;
-      const windowHeight = window.innerHeight;
-      const scrollPercentage = currentScrollY / (documentHeight - windowHeight);
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const message = draft.trim();
+    if (!message) return;
+    sendUserMessage(message);
+    setDraft("");
+  };
 
-      // Update scrolled state for background opacity
-      setIsScrolled(currentScrollY > 20);
-
-      // Show footer when near bottom or scrolling up
-      if (
-        scrollPercentage > 0.8 ||
-        currentScrollY < lastScrollY ||
-        currentScrollY < 100
-      ) {
-        setIsVisible(true);
-      } else if (currentScrollY > lastScrollY && currentScrollY > 200) {
-        setIsVisible(false);
-      }
-
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
   return (
     <footer
       ref={footerRef}
-      className={`fixed bottom-4 left-4 right-4 z-40 transition-all duration-300 ease-out ${
-        isVisible ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
-      }`}
+      className="fixed bottom-3 left-2 right-0 z-40 md:left-[calc(var(--sidebar-active-width)+0.5rem)] rounded-xl border border-structural bg-card backdrop-blur-sm"
     >
-      <div className="max-w-2xl mx-auto">
-        <div
-          className={`surface-elevated rounded-2xl transition-all duration-300 ${
-            isScrolled ? "shadow-lg" : "shadow-sm"
-          }`}
-        >
-          <div className="px-4 sm:px-6">
-            <div className="flex items-center justify-between h-12 text-sm">
-              <div className="flex items-center space-x-4">
-                <p className="text-muted-foreground">
-                  © 2025{" "}
-                  <span className="font-semibold text-foreground">Nargis</span>
-                </p>
-                <div className="hidden sm:flex items-center space-x-2">
-                  <span
-                    className="w-2 h-2 rounded-full bg-success"
-                    aria-hidden
-                  />
-                  <span className="text-muted-foreground font-medium text-xs">
-                    Voice Ready
-                  </span>
-                </div>
-              </div>
+      <div className="pl-2 pr-1 sm:pl-3 sm:pr-1">
+        <div className="w-full max-w-none ml-auto py-3.5">
+          <form
+            onSubmit={handleSubmit}
+            className="footer-conversation-shell relative flex items-center gap-2.5"
+          >
+            <label htmlFor="footer-chat-input" className="sr-only">
+              Send a message
+            </label>
+            <input
+              id="footer-chat-input"
+              type="text"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder="Type a message…"
+              className="h-10 flex-1 rounded-xl border border-structural bg-background/95 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/45"
+              autoComplete="off"
+            />
+            <button
+              type="submit"
+              className="h-10 px-3 rounded-xl border border-structural bg-background text-sm font-medium text-foreground hover:text-foreground transition-[opacity,transform] duration-(--motion-medium) hover:-translate-y-px"
+            >
+              Send
+            </button>
 
-              <div className="flex items-center space-x-3">
-                {/* Render the compact voice button with inline status here so footer uses the same source of truth */}
-                <CompactVoiceControl />
-              </div>
-
-              <div className="flex items-center space-x-3 text-muted-foreground">
-                <div className="hidden md:flex items-center space-x-2">
-                  <span
-                    className="w-1.5 h-1.5 rounded-full bg-primary/60"
-                    aria-hidden
-                  />
-                  <span className="text-xs font-medium">
-                    Premium AI Productivity
-                  </span>
-                </div>
-                <div className="w-px h-3 bg-border/50" aria-hidden />
-                <small className="text-xs text-muted-foreground" aria-hidden>
-                  v1.x
-                </small>
-              </div>
+            <div className="footer-voice-anchor relative shrink-0 ml-auto flex items-center justify-end">
+              <VoiceControl inline showMeta={false} />
+              <OnboardingOverlay />
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </footer>

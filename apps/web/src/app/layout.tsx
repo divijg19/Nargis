@@ -72,7 +72,11 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrains_mono.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${jetbrains_mono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <Script id="theme-init" strategy="beforeInteractive">
           {`try {
@@ -86,7 +90,7 @@ export default function RootLayout({
         </Script>
       </head>
       <body
-        className={`${inter.variable} ${jetbrains_mono.variable} font-sans antialiased min-h-screen transition-all duration-300`}
+        className={`${inter.variable} ${jetbrains_mono.variable} font-sans antialiased min-h-screen`}
       >
         <AppProviders>
           {/* Client-managed layout (sidebar state lives in a client component) */}

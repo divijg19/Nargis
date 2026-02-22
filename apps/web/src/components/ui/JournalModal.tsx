@@ -14,11 +14,11 @@ interface JournalModalProps {
 }
 
 const MOOD_OPTIONS = [
-  { value: "great" as const, emoji: "😄", label: "Great" },
-  { value: "good" as const, emoji: "🙂", label: "Good" },
-  { value: "neutral" as const, emoji: "😐", label: "Neutral" },
-  { value: "bad" as const, emoji: "😕", label: "Bad" },
-  { value: "terrible" as const, emoji: "😢", label: "Terrible" },
+  { value: "great" as const, label: "Great" },
+  { value: "good" as const, label: "Good" },
+  { value: "neutral" as const, label: "Neutral" },
+  { value: "bad" as const, label: "Bad" },
+  { value: "terrible" as const, label: "Terrible" },
 ];
 
 export function JournalModal({
@@ -202,25 +202,25 @@ export function JournalModal({
               type="button"
               onClick={() => setType("text")}
               className={cn(
-                "flex-1 px-4 py-2 rounded-lg border-2 font-medium transition-all",
+                "flex-1 px-4 py-2 rounded-lg border-2 font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform]",
                 type === "text"
                   ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                   : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-foreground",
               )}
             >
-              📝 Text Entry
+              Text Entry
             </button>
             <button
               type="button"
               onClick={() => setType("voice")}
               className={cn(
-                "flex-1 px-4 py-2 rounded-lg border-2 font-medium transition-all",
+                "flex-1 px-4 py-2 rounded-lg border-2 font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform]",
                 type === "voice"
                   ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                   : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-foreground",
               )}
             >
-              🎤 Voice Note
+              Voice Note
             </button>
           </div>
 
@@ -280,13 +280,12 @@ export function JournalModal({
                     setMood(mood === option.value ? undefined : option.value)
                   }
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg border-2 font-medium transition-all",
+                    "flex items-center gap-2 px-4 py-2 rounded-lg border-2 font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform]",
                     mood === option.value
                       ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                       : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-foreground",
                   )}
                 >
-                  <span className="text-xl">{option.emoji}</span>
                   <span className="text-sm">{option.label}</span>
                 </button>
               ))}
@@ -364,7 +363,9 @@ export function JournalModal({
             {aiSummary && (
               <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <div className="flex items-start gap-2">
-                  <span className="text-sm shrink-0">✨</span>
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-300 shrink-0 mt-0.5">
+                    AI
+                  </span>
                   <p className="text-sm text-foreground">{aiSummary}</p>
                 </div>
               </div>

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 // import ChatPanel from "./ChatPanel"; // Removed ChatPanel usage
-import { VoiceInputButton } from "./VoiceInputButton";
 
 export default function DashboardHero({ greeting }: { greeting?: string }) {
   const [fallbackGreeting, setFallbackGreeting] = useState("Good morning");
@@ -34,7 +33,6 @@ export default function DashboardHero({ greeting }: { greeting?: string }) {
         </div>
 
         <div className="shrink-0 flex flex-col gap-2">
-          <VoiceInputButton size="lg" showStatus={true} />
           <button
             type="button"
             onClick={async () => {
@@ -56,7 +54,7 @@ export default function DashboardHero({ greeting }: { greeting?: string }) {
                 console.error("Failed to trigger briefing", e);
               }
             }}
-            className="text-xs text-center text-blue-600 hover:underline"
+            className="text-xs text-center text-primary hover:underline"
           >
             Morning Briefing
           </button>

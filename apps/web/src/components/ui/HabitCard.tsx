@@ -51,7 +51,7 @@ export function HabitCard({
   if (compact) {
     return (
       <div
-        className="group flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:shadow-sm"
+        className="group flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:shadow-sm"
         style={{
           borderLeft: `4px solid ${habit.color}`,
         }}
@@ -61,7 +61,7 @@ export function HabitCard({
             type="button"
             onClick={handleToggleComplete}
             className={cn(
-              "shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200",
+              "shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200",
               completed
                 ? "border-green-500 bg-green-500"
                 : "border-gray-300 dark:border-gray-600 hover:border-primary",
@@ -96,7 +96,7 @@ export function HabitCard({
               <p className="text-sm font-medium truncate">{habit.name}</p>
               {habit.streak > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  🔥 {habit.streak} day{habit.streak !== 1 ? "s" : ""} streak
+                  {habit.streak} day{habit.streak !== 1 ? "s" : ""} streak
                 </p>
               )}
             </div>
@@ -114,7 +114,7 @@ export function HabitCard({
 
   return (
     <div
-      className="group relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 transition-all duration-200 hover:shadow-lg hover-elevate"
+      className="group relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200 hover:shadow-lg hover-elevate"
       style={{
         borderTop: `4px solid ${habit.color}`,
       }}
@@ -229,7 +229,7 @@ export function HabitCard({
         </div>
         <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
           <div
-            className="h-full rounded-full transition-all duration-300"
+            className="h-full rounded-full transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-300"
             style={{
               width: `${Math.min(progress, 100)}%`,
               backgroundColor: habit.color,
@@ -301,7 +301,6 @@ export function HabitCard({
       {/* Streak */}
       {habit.streak > 0 && (
         <div className="flex items-center justify-center gap-2 py-2 px-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-          <span className="text-xl">🔥</span>
           <span className="text-sm font-medium text-orange-700 dark:text-orange-300">
             {habit.streak} day{habit.streak !== 1 ? "s" : ""} streak!
           </span>

@@ -15,36 +15,34 @@ export default function RootLayoutInner({
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen">
-      <Sidebar
-        mobileOpen={mobileSidebarOpen}
-        onMobileClose={() => setMobileSidebarOpen(false)}
-      />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* NavBar receives a prop to toggle the sidebar on mobile */}
-        <div className="fixed top-4 left-4 right-4 z-50 pointer-events-auto">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between">
-              <NavBar
-                onMobileSidebarToggle={() => setMobileSidebarOpen((s) => !s)}
-              />
-            </div>
-          </div>
+    <>
+      <div className="h-screen grid grid-rows-[auto_1fr_auto] overflow-hidden">
+        <NavBar onMobileSidebarToggle={() => setMobileSidebarOpen((s) => !s)} />
+
+        <div className="min-h-0 grid grid-cols-1 md:grid-cols-[auto_1fr] overflow-hidden">
+          <Sidebar
+            mobileOpen={mobileSidebarOpen}
+            onMobileClose={() => setMobileSidebarOpen(false)}
+          />
+
+          <main
+            id="maincontent"
+            className="min-h-0 overflow-y-auto px-4 sm:px-6 pt-16 pb-24"
+          >
+            {children}
+          </main>
         </div>
 
-        <main id="main" className="flex-1 overflow-y-auto relative pt-16">
-          {children}
-        </main>
-
         <Footer />
-        <ToastViewport />
-        <div
-          id="voice-announcements"
-          aria-live="polite"
-          aria-atomic="true"
-          className="sr-only"
-        />
       </div>
-    </div>
+
+      <ToastViewport />
+      <div
+        id="voice-announcements"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      />
+    </>
   );
 }

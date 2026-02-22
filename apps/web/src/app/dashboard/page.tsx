@@ -62,7 +62,7 @@ export default function DashboardPage() {
 
   return (
     <RequireAuth>
-      <div className="h-screen overflow-hidden flex flex-col pt-8 md:pt-12 bg-app-light transition-all duration-500">
+      <div className="h-screen overflow-hidden flex flex-col pt-8 md:pt-12 bg-app-light transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-300">
         {/* Quick Actions: rendered beneath the hero (desktop) - mobile kept in the stacked area */}
 
         {/* Grid wrapper in a flex container to enable internal scrolling only */}
@@ -98,7 +98,6 @@ export default function DashboardPage() {
                   <DashboardCard title="Quick Actions" size="xs">
                     <div className="space-y-2">
                       <ActionButton
-                        icon="➕"
                         label="Create Task"
                         variant="primary"
                         size="sm"
@@ -106,7 +105,6 @@ export default function DashboardPage() {
                         className="w-full"
                       />
                       <ActionButton
-                        icon="🍅"
                         label="Start Focus Session"
                         variant="secondary"
                         size="sm"
@@ -114,7 +112,6 @@ export default function DashboardPage() {
                         className="w-full"
                       />
                       <ActionButton
-                        icon="⚡"
                         label="Log Habit"
                         variant="secondary"
                         size="sm"
@@ -146,7 +143,7 @@ export default function DashboardPage() {
                   <div className="w-full max-w-md sm:max-w-lg">
                     <DashboardCard title="Task Status Overview" size="xs">
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="text-center p-2.5 rounded-xl bg-gray-50 dark:bg-gray-700/30 transition-all hover:shadow-md">
+                        <div className="text-center p-2.5 rounded-xl bg-gray-50 dark:bg-gray-700/30 transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:shadow-md">
                           <div className="text-xl font-semibold text-foreground mb-1 tabular-nums">
                             {tasksByStatus.todo.length}
                           </div>
@@ -160,7 +157,7 @@ export default function DashboardPage() {
                             />
                           </div>
                         </div>
-                        <div className="text-center p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 transition-all hover:shadow-md">
+                        <div className="text-center p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:shadow-md">
                           <div className="text-xl font-semibold text-blue-600 dark:text-blue-400 mb-1 tabular-nums">
                             {tasksByStatus.inProgress.length}
                           </div>
@@ -174,7 +171,7 @@ export default function DashboardPage() {
                             />
                           </div>
                         </div>
-                        <div className="text-center p-2.5 rounded-xl bg-green-50 dark:bg-green-900/20 transition-all hover:shadow-md">
+                        <div className="text-center p-2.5 rounded-xl bg-green-50 dark:bg-green-900/20 transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:shadow-md">
                           <div className="text-xl font-semibold text-green-600 dark:text-green-400 mb-1 tabular-nums">
                             {tasksByStatus.done.length}
                           </div>
@@ -205,7 +202,6 @@ export default function DashboardPage() {
                         <DashboardCard title="Quick Actions" size="xs">
                           <div className="space-y-2">
                             <ActionButton
-                              icon="➕"
                               label="Create Task"
                               variant="primary"
                               size="md"
@@ -213,7 +209,6 @@ export default function DashboardPage() {
                               className="w-full"
                             />
                             <ActionButton
-                              icon="🍅"
                               label="Start Focus Session"
                               variant="secondary"
                               size="md"
@@ -221,7 +216,6 @@ export default function DashboardPage() {
                               className="w-full"
                             />
                             <ActionButton
-                              icon="⚡"
                               label="Log Habit"
                               variant="secondary"
                               size="md"
@@ -240,22 +234,10 @@ export default function DashboardPage() {
 
           {/* Right stat stack: right rail, sticky within its column */}
           <aside className="hidden lg:flex flex-col sticky top-16 w-48 xl:w-56 justify-self-start gap-3 z-20 lg:col-start-6 lg:col-end-7">
-            <StatCard
-              title="Tasks Completed"
-              value={completedToday}
-              icon="✅"
-            />
-            <StatCard
-              title="Focus Sessions"
-              value={todaySessionsCount}
-              icon="🍅"
-            />
-            <StatCard title="Active Streaks" value={totalStreaks} icon="🔥" />
-            <StatCard
-              title="Weekly Progress"
-              value={`${weeklyProgress}%`}
-              icon="📊"
-            />
+            <StatCard title="Tasks Completed" value={completedToday} />
+            <StatCard title="Focus Sessions" value={todaySessionsCount} />
+            <StatCard title="Active Streaks" value={totalStreaks} />
+            <StatCard title="Weekly Progress" value={`${weeklyProgress}%`} />
           </aside>
         </div>
 

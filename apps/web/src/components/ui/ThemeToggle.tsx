@@ -8,7 +8,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      className="relative w-9 h-9 rounded-md bg-transparent border-hairline-token hover-glass-strong transition-all duration-180 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="relative w-9 h-9 rounded-md bg-transparent border-hairline-token hover-glass-strong transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-180 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       aria-label={`Toggle theme, current: ${resolvedTheme}`}
       aria-pressed={resolvedTheme === "dark"}
     >

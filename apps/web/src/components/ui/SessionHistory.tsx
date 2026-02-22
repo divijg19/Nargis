@@ -66,19 +66,6 @@ export function SessionHistory({
     };
   }, [sessions, today]);
 
-  const getSessionIcon = (type: PomodoroSession["type"]) => {
-    switch (type) {
-      case "work":
-        return "🎯";
-      case "shortBreak":
-        return "☕";
-      case "longBreak":
-        return "🌟";
-      default:
-        return "⏱️";
-    }
-  };
-
   const getSessionLabel = (type: PomodoroSession["type"]) => {
     switch (type) {
       case "work":
@@ -139,7 +126,6 @@ export function SessionHistory({
   if (sortedSessions.length === 0) {
     return (
       <div className={cn("text-center py-12", className)}>
-        <div className="text-4xl mb-3">📊</div>
         <p className="text-sm font-medium text-muted-foreground mb-1">
           No sessions yet
         </p>
@@ -190,14 +176,11 @@ export function SessionHistory({
           <div
             key={session.id}
             className={cn(
-              "flex items-center justify-between p-3 rounded-lg border transition-all hover:shadow-md",
+              "flex items-center justify-between p-3 rounded-lg border transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:shadow-md",
               getSessionColor(session.type),
             )}
           >
             <div className="flex items-center gap-3 flex-1">
-              <div className="text-2xl" aria-hidden="true">
-                {getSessionIcon(session.type)}
-              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-foreground">

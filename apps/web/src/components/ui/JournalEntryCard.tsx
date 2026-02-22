@@ -40,20 +40,20 @@ export function JournalEntryCard({
     }
   };
 
-  const getMoodEmoji = (mood?: JournalEntry["mood"]) => {
+  const getMoodLabel = (mood?: JournalEntry["mood"]) => {
     switch (mood) {
       case "great":
-        return "😄";
+        return "Great";
       case "good":
-        return "🙂";
+        return "Good";
       case "neutral":
-        return "😐";
+        return "Neutral";
       case "bad":
-        return "😕";
+        return "Low";
       case "terrible":
-        return "😢";
+        return "Very Low";
       default:
-        return "📝";
+        return "Entry";
     }
   };
 
@@ -102,13 +102,16 @@ export function JournalEntryCard({
     return (
       <div
         className={cn(
-          "p-3 rounded-lg border transition-all hover:shadow-md",
+          "p-3 rounded-lg border transition-[color,background-color,border-color,opacity,box-shadow,transform]",
           getMoodColor(entry.mood),
         )}
       >
         <div className="flex items-start gap-3">
-          <div className="text-xl shrink-0" aria-hidden="true">
-            {entry.type === "voice" ? "🎤" : getMoodEmoji(entry.mood)}
+          <div
+            className="text-xs shrink-0 text-muted-foreground border border-border/35 rounded-md px-2 py-1"
+            aria-hidden="true"
+          >
+            {entry.type === "voice" ? "Voice" : getMoodLabel(entry.mood)}
           </div>
           <div className="flex-1 min-w-0">
             {entry.title && (
@@ -131,14 +134,17 @@ export function JournalEntryCard({
   return (
     <div
       className={cn(
-        "group p-4 rounded-xl border transition-all hover:shadow-lg",
+        "group p-4 rounded-xl border transition-[color,background-color,border-color,opacity,box-shadow,transform]",
         getMoodColor(entry.mood),
       )}
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-start gap-3 flex-1 min-w-0">
-          <div className="text-2xl shrink-0" aria-hidden="true">
-            {entry.type === "voice" ? "🎤" : getMoodEmoji(entry.mood)}
+          <div
+            className="text-xs shrink-0 text-muted-foreground border border-border/35 rounded-md px-2 py-1"
+            aria-hidden="true"
+          >
+            {entry.type === "voice" ? "Voice" : getMoodLabel(entry.mood)}
           </div>
           <div className="flex-1 min-w-0">
             {entry.title && (
@@ -250,9 +256,6 @@ export function JournalEntryCard({
       {entry.aiSummary && (
         <div className="mb-3 p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="flex items-start gap-2">
-            <span className="text-sm" aria-hidden="true">
-              ✨
-            </span>
             <div className="flex-1">
               <p className="text-xs font-semibold text-muted-foreground mb-1">
                 AI Summary

@@ -20,15 +20,12 @@ export function DashboardCard({
   return (
     <div
       className={cn(
-        "relative group glass-strong rounded-2xl transition-all duration-300 hover-elevate animate-fade-in",
+        "relative rounded-xl border border-structural bg-card transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200",
         isXs ? "p-3" : isSm ? "p-4" : "p-6",
         className,
       )}
     >
-      {/* Premium gradient overlay on hover */}
-      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none bg-gradient-ambient" />
-
-      <div className="relative z-10">
+      <div>
         <div
           className={cn(
             "flex items-start justify-between gap-4",
@@ -40,7 +37,7 @@ export function DashboardCard({
             <div>
               <h3
                 className={cn(
-                  "font-bold text-foreground",
+                  "font-medium text-foreground",
                   isXs ? "text-base" : isSm ? "text-lg" : "text-xl",
                 )}
               >
@@ -54,7 +51,7 @@ export function DashboardCard({
           {headerAction}
         </div>
 
-        <div className="text-foreground/80">{children}</div>
+        <div className="text-foreground/85">{children}</div>
         {footer && (
           <div
             className={cn(

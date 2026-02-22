@@ -28,7 +28,16 @@ const COLOR_OPTIONS = [
   "var(--palette-8)", // orange
 ];
 
-const ICON_OPTIONS = ["💪", "📚", "🏃", "💧", "🧘", "🎯", "✍️", "🎨"];
+const ICON_OPTIONS = [
+  "Fitness",
+  "Reading",
+  "Running",
+  "Hydration",
+  "Meditation",
+  "Focus",
+  "Writing",
+  "Creative",
+];
 
 export default function HabitModal({
   isOpen,
@@ -147,19 +156,19 @@ export default function HabitModal({
             Icon
           </legend>
           <div className="flex gap-2 flex-wrap">
-            {ICON_OPTIONS.map((emojiIcon) => (
+            {ICON_OPTIONS.map((iconLabel) => (
               <button
                 type="button"
-                key={emojiIcon}
-                onClick={() => setIcon(emojiIcon)}
-                className={`w-12 h-12 text-2xl rounded-lg border-2 transition-all ${
-                  icon === emojiIcon
+                key={iconLabel}
+                onClick={() => setIcon(iconLabel)}
+                className={`px-3 h-10 text-xs font-medium rounded-lg border-2 transition-[color,background-color,border-color,opacity,box-shadow,transform] ${
+                  icon === iconLabel
                     ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 scale-110"
                     : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
                 }`}
-                aria-label={`Select icon ${emojiIcon}`}
+                aria-label={`Select icon ${iconLabel}`}
               >
-                {emojiIcon}
+                {iconLabel}
               </button>
             ))}
           </div>
@@ -221,7 +230,7 @@ export default function HabitModal({
                 type="button"
                 key={option.value}
                 onClick={() => setFrequency(option.value)}
-                className={`flex-1 px-4 py-2 rounded-lg border-2 font-medium transition-all ${
+                className={`flex-1 px-4 py-2 rounded-lg border-2 font-medium transition-[color,background-color,border-color,opacity,box-shadow,transform] ${
                   frequency === option.value
                     ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
                     : "border-gray-300 dark:border-gray-600 text-muted-foreground dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500"
@@ -244,7 +253,7 @@ export default function HabitModal({
                 type="button"
                 key={colorOption}
                 onClick={() => setColor(colorOption)}
-                className={`w-10 h-10 rounded-lg border-2 transition-all ${
+                className={`w-10 h-10 rounded-lg border-2 transition-[color,background-color,border-color,opacity,box-shadow,transform] ${
                   color === colorOption
                     ? "border-border dark:border-white scale-110"
                     : "border-transparent hover:border-gray-400 dark:hover:border-gray-500"
@@ -263,13 +272,11 @@ export default function HabitModal({
             variant="primary"
             onClick={handleSubmit}
             className="flex-1"
-            icon="✓"
           />
           <ActionButton
             label="Cancel"
             variant="secondary"
             onClick={handleClose}
-            icon="✕"
           />
         </div>
       </div>

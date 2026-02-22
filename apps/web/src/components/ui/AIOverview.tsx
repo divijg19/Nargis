@@ -38,7 +38,7 @@ export function AIOverview({ className = "" }: AIOverviewProps) {
     const insights: Array<{
       type: "success" | "warning" | "info" | "suggestion";
       text: string;
-      icon: string;
+      badge: string;
     }> = [];
 
     // Task insights
@@ -51,20 +51,20 @@ export function AIOverview({ className = "" }: AIOverviewProps) {
     if (completedToday > 0 && todayTasks.length === completedToday) {
       insights.push({
         type: "success",
-        text: `Amazing! You've completed all ${completedToday} tasks today! 🎉`,
-        icon: "✅",
+        text: `Amazing! You've completed all ${completedToday} tasks today!`,
+        badge: "Success",
       });
     } else if (incompleteTasks > 5) {
       insights.push({
         type: "warning",
         text: `You have ${incompleteTasks} tasks pending. Consider breaking them into smaller chunks.`,
-        icon: "⚠️",
+        badge: "Warning",
       });
     } else if (taskCompletionRate >= 70) {
       insights.push({
         type: "success",
         text: `Great progress! ${taskCompletionRate}% of your tasks are complete.`,
-        icon: "📈",
+        badge: "Success",
       });
     }
 
@@ -78,20 +78,20 @@ export function AIOverview({ className = "" }: AIOverviewProps) {
     if (todayProgress.length > 0 && habitCompletionRate === 100) {
       insights.push({
         type: "success",
-        text: `Perfect! All ${todayProgress.length} habits completed today! Keep the streak going! 🔥`,
-        icon: "⚡",
+        text: `Perfect! All ${todayProgress.length} habits completed today! Keep the streak going!`,
+        badge: "Success",
       });
     } else if (todayProgress.length > 0 && completedHabits === 0) {
       insights.push({
         type: "suggestion",
         text: "No habits completed yet today. Start with just one to build momentum!",
-        icon: "🎯",
+        badge: "Tip",
       });
     } else if (habitCompletionRate >= 50 && todayProgress.length > 0) {
       insights.push({
         type: "info",
         text: `${completedHabits}/${todayProgress.length} habits done. You're ${100 - habitCompletionRate}% away from a perfect day!`,
-        icon: "🔥",
+        badge: "Info",
       });
     }
 
@@ -100,19 +100,19 @@ export function AIOverview({ className = "" }: AIOverviewProps) {
       insights.push({
         type: "suggestion",
         text: "Try a focus session to tackle your tasks with deep concentration.",
-        icon: "🍅",
+        badge: "Tip",
       });
     } else if (todaySessionsCount >= 4) {
       insights.push({
         type: "success",
         text: `Excellent focus today! ${todaySessionsCount} sessions completed (${totalFocusMinutes} minutes).`,
-        icon: "🎯",
+        badge: "Success",
       });
     } else if (todaySessionsCount > 0) {
       insights.push({
         type: "info",
         text: `${todaySessionsCount} focus sessions done today. Keep the momentum!`,
-        icon: "🍅",
+        badge: "Info",
       });
     }
 
@@ -122,7 +122,7 @@ export function AIOverview({ className = "" }: AIOverviewProps) {
       insights.push({
         type: "suggestion",
         text: `You have ${activeGoals} active ${activeGoals === 1 ? "goal" : "goals"}. Ready to create tasks to move forward?`,
-        icon: "🎯",
+        badge: "Tip",
       });
     }
 
@@ -132,13 +132,13 @@ export function AIOverview({ className = "" }: AIOverviewProps) {
       insights.push({
         type: "info",
         text: "Morning is great for tackling your most important tasks when energy is high!",
-        icon: "🌅",
+        badge: "Info",
       });
     } else if (hour >= 14 && hour < 16 && todaySessionsCount === 0) {
       insights.push({
         type: "suggestion",
         text: "Post-lunch is a good time for a focused work session.",
-        icon: "☀️",
+        badge: "Tip",
       });
     }
 
@@ -147,7 +147,7 @@ export function AIOverview({ className = "" }: AIOverviewProps) {
       insights.push({
         type: "info",
         text: "Start your day by reviewing your tasks and setting your intentions.",
-        icon: "🌟",
+        badge: "Info",
       });
     }
 
@@ -208,8 +208,8 @@ export function AIOverview({ className = "" }: AIOverviewProps) {
     <div className={`space-y-4 ${className}`}>
       {/* Summary Header */}
       <div className="flex items-center gap-3 p-4 rounded-xl bg-linear-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800">
-        <div className="text-2xl shrink-0" aria-hidden="true">
-          ✨
+        <div className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-300 shrink-0">
+          AI
         </div>
         <div className="flex-1">
           <h3 className="text-sm font-semibold text-foreground mb-0.5">
@@ -224,11 +224,11 @@ export function AIOverview({ className = "" }: AIOverviewProps) {
         {insights.map((insight, index) => (
           <div
             key={`${insight.type}-${index}`}
-            className={`p-3 rounded-lg border transition-all hover:shadow-md ${getInsightColors(insight.type)}`}
+            className={`p-3 rounded-lg border transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:shadow-md ${getInsightColors(insight.type)}`}
           >
             <div className="flex items-start gap-2">
-              <span className="text-base shrink-0" aria-hidden="true">
-                {insight.icon}
+              <span className="text-[10px] font-semibold uppercase tracking-wide shrink-0 mt-1">
+                {insight.badge}
               </span>
               <p className="text-sm leading-relaxed">{insight.text}</p>
             </div>

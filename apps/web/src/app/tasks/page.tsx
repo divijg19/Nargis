@@ -59,27 +59,20 @@ export default function TasksPage() {
 
   return (
     <RequireAuth>
-      <div className="h-full overflow-hidden flex flex-col bg-app-light transition-all duration-500">
-        {/* Premium ambient overlay */}
-        <div className="absolute inset-0 bg-linear-to-r from-transparent via-blue-500/5 to-transparent dark:via-blue-400/10 pointer-events-none" />
-
+      <div className="h-full overflow-hidden flex flex-col bg-app-light transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-300">
         {/* Premium Header */}
-        <div className="w-full max-w-300 2xl:max-w-350 mx-auto px-3 sm:px-4 lg:px-8 py-4">
+        <div className="w-full max-w-300 2xl:max-w-350 mx-auto px-3 sm:px-4 lg:px-8 py-3">
           <div className="animate-fade-in">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 md:gap-6 mb-3">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                  <span className="bg-linear-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                    Tasks
-                  </span>
-                  <span className="text-slate-900 dark:text-white"> ✓</span>
+                <h1 className="text-3xl md:text-4xl font-semibold mb-2 text-foreground">
+                  Tasks
                 </h1>
-                <p className="text-lg text-slate-600 dark:text-slate-300">
+                <p className="text-base text-muted-foreground">
                   Organize and track your work
                 </p>
               </div>
               <ActionButton
-                icon="➕"
                 label="New Task"
                 variant="primary"
                 onClick={() => setIsModalOpen(true)}
@@ -92,7 +85,7 @@ export default function TasksPage() {
         <div className="relative flex-1 min-h-0 lg:grid lg:grid-cols-[3rem_16rem_0rem_1fr_0rem_16rem_3rem] lg:gap-0 xl:grid-cols-[4rem_16rem_0rem_1fr_0rem_16rem_4rem] 2xl:grid-cols-[6rem_20rem_0rem_1fr_0rem_24rem_6rem]">
           {/* Column 1: stacked summary stats - left rail */}
           <aside className="hidden lg:flex flex-col w-64 xl:w-72 justify-self-end space-y-4 lg:col-start-2 lg:col-end-3">
-            <div className="glass bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl p-2.5 border border-slate-200/60 dark:border-slate-700/60 shadow-lg hover:shadow-xl transition-all duration-300 hover-elevate">
+            <div className="rounded-xl p-2.5 border border-border/25 bg-card">
               <div className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                 {tasks.length}
               </div>
@@ -101,29 +94,29 @@ export default function TasksPage() {
               </div>
             </div>
 
-            <div className="glass bg-linear-to-br from-blue-50/90 to-indigo-50/90 dark:from-blue-900/20 dark:to-indigo-900/20 backdrop-blur-xl rounded-2xl p-2.5 border border-blue-200/60 dark:border-blue-800/60 shadow-lg hover:shadow-xl transition-all duration-300 hover-elevate">
-              <div className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+            <div className="rounded-xl p-2.5 border border-border/25 bg-card">
+              <div className="text-xl font-bold text-foreground mb-2">
                 {todayTasks.length}
               </div>
-              <div className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+              <div className="text-sm text-muted-foreground font-medium">
                 Due Today
               </div>
             </div>
 
-            <div className="glass bg-linear-to-br from-green-50/90 to-emerald-50/90 dark:from-green-900/20 dark:to-emerald-900/20 backdrop-blur-xl rounded-2xl p-2.5 border border-green-200/60 dark:border-green-800/60 shadow-lg hover:shadow-xl transition-all duration-300 hover-elevate">
-              <div className="text-xl font-bold text-green-600 dark:text-green-400 mb-2">
+            <div className="rounded-xl p-2.5 border border-border/25 bg-card">
+              <div className="text-xl font-bold text-foreground mb-2">
                 {completedCount}
               </div>
-              <div className="text-sm text-green-700 dark:text-green-300 font-medium">
+              <div className="text-sm text-muted-foreground font-medium">
                 Completed
               </div>
             </div>
 
-            <div className="glass bg-linear-to-br from-purple-50/90 to-violet-50/90 dark:from-purple-900/20 dark:to-violet-900/20 backdrop-blur-xl rounded-2xl p-2.5 border border-purple-200/60 dark:border-purple-800/60 shadow-lg hover:shadow-xl transition-all duration-300 hover-elevate">
-              <div className="text-xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+            <div className="rounded-xl p-2.5 border border-border/25 bg-card">
+              <div className="text-xl font-bold text-foreground mb-2">
                 {completionRate}%
               </div>
-              <div className="text-sm text-purple-700 dark:text-purple-300 font-medium">
+              <div className="text-sm text-muted-foreground font-medium">
                 Complete
               </div>
             </div>
@@ -133,7 +126,7 @@ export default function TasksPage() {
           <main className="w-full px-3 sm:px-4 lg:px-8 space-y-5 pb-10 lg:col-start-4 lg:col-end-5 h-full overflow-auto">
             {/* Mobile-only summary stats */}
             <div className="lg:hidden flex flex-col space-y-4">
-              <div className="glass bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl p-2.5 border border-slate-200/60 dark:border-slate-700/60 shadow-lg hover:shadow-xl transition-all duration-300 hover-elevate">
+              <div className="rounded-xl p-2.5 border border-border/25 bg-card">
                 <div className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                   {tasks.length}
                 </div>
@@ -142,29 +135,29 @@ export default function TasksPage() {
                 </div>
               </div>
 
-              <div className="glass bg-linear-to-br from-blue-50/90 to-indigo-50/90 dark:from-blue-900/20 dark:to-indigo-900/20 backdrop-blur-xl rounded-2xl p-2.5 border border-blue-200/60 dark:border-blue-800/60 shadow-lg hover:shadow-xl transition-all duration-300 hover-elevate">
-                <div className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+              <div className="rounded-xl p-2.5 border border-border/25 bg-card">
+                <div className="text-xl font-bold text-foreground mb-2">
                   {todayTasks.length}
                 </div>
-                <div className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                <div className="text-sm text-muted-foreground font-medium">
                   Due Today
                 </div>
               </div>
 
-              <div className="glass bg-linear-to-br from-green-50/90 to-emerald-50/90 dark:from-green-900/20 dark:to-emerald-900/20 backdrop-blur-xl rounded-2xl p-2.5 border border-green-200/60 dark:border-green-800/60 shadow-lg hover:shadow-xl transition-all duration-300 hover-elevate">
-                <div className="text-xl font-bold text-green-600 dark:text-green-400 mb-2">
+              <div className="rounded-xl p-2.5 border border-border/25 bg-card">
+                <div className="text-xl font-bold text-foreground mb-2">
                   {completedCount}
                 </div>
-                <div className="text-sm text-green-700 dark:text-green-300 font-medium">
+                <div className="text-sm text-muted-foreground font-medium">
                   Completed
                 </div>
               </div>
 
-              <div className="glass bg-linear-to-br from-purple-50/90 to-violet-50/90 dark:from-purple-900/20 dark:to-violet-900/20 backdrop-blur-xl rounded-2xl p-2.5 border border-purple-200/60 dark:border-purple-800/60 shadow-lg hover:shadow-xl transition-all duration-300 hover-elevate">
-                <div className="text-xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+              <div className="rounded-xl p-2.5 border border-border/25 bg-card">
+                <div className="text-xl font-bold text-foreground mb-2">
                   {completionRate}%
                 </div>
-                <div className="text-sm text-purple-700 dark:text-purple-300 font-medium">
+                <div className="text-sm text-muted-foreground font-medium">
                   Complete
                 </div>
               </div>
@@ -172,7 +165,7 @@ export default function TasksPage() {
 
             {todayTasks.length > 0 && (
               <DashboardCard
-                title="📅 Today's Focus"
+                title="Today's Focus"
                 size="xs"
                 headerAction={
                   <span className="text-sm text-muted-foreground">

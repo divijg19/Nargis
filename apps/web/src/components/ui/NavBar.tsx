@@ -2,36 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { RegisterModal } from "@/components/auth/RegisterModal";
 import { useAuth } from "@/contexts/AuthContext";
-// using VoiceInputButton's built-in status inline; no separate ConnectionStatusIndicator import
+import { AccountDrawer } from "./AccountDrawer";
+import { AvatarButton } from "./AvatarButton";
 import { ThemeToggle } from "./ThemeToggle";
-import { VoiceInputButton } from "./VoiceInputButton";
-
-function InlineVoice() {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="hidden sm:flex items-center">
-        <VoiceInputButton
-          size="sm"
-          showStatus={true}
-          statusInline={true}
-          iconTranslateY={5}
-          iconSizeClass="w-6 h-6"
-        />
-      </div>
-    </div>
-  );
-}
 
 const navigationItems = [
-  { href: "/dashboard", label: "Dashboard", icon: "📊", requiresAuth: true },
-  { href: "/journal", label: "Journal", icon: "📔", requiresAuth: true },
-  { href: "/tasks", label: "Tasks", icon: "✓", requiresAuth: true },
-  { href: "/habits", label: "Habits", icon: "🔥", requiresAuth: true },
-  { href: "/pomodoro", label: "Focus", icon: "🍅", requiresAuth: true },
+  { href: "/dashboard", label: "Dashboard", requiresAuth: true },
+  { href: "/journal", label: "Journal", requiresAuth: true },
+  { href: "/tasks", label: "Tasks", requiresAuth: true },
+  { href: "/habits", label: "Habits", requiresAuth: true },
+  { href: "/pomodoro", label: "Focus", requiresAuth: true },
 ];
 
 type NavBarProps = {
@@ -40,13 +24,11 @@ type NavBarProps = {
 
 export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
   const pathname = usePathname();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const [accountDrawerOpen, setAccountDrawerOpen] = useState(false);
 
   const handleAuthSuccess = () => {
     // Modal will close automatically, can add toast here if desired
@@ -62,271 +44,183 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
     setLoginModalOpen(true);
   };
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-
-      // Update scrolled state for background opacity
-      setIsScrolled(currentScrollY > 20);
-
-      // Hide/show navbar based on scroll direction
-      if (currentScrollY < 100) {
-        // Always show at top
-        setIsVisible(true);
-      } else if (currentScrollY > lastScrollY && currentScrollY > 200) {
-        // Scrolling down - hide
-        setIsVisible(false);
-        setMobileMenuOpen(false);
-      } else if (currentScrollY < lastScrollY) {
-        // Scrolling up - show
-        setIsVisible(true);
-      }
-
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY]);
-
   return (
     <>
       <a
         href="#maincontent"
-        className="sr-only focus:not-sr-only fixed top-4 left-1/2 -translate-x-1/2 z-60 bg-primary text-primary-foreground px-4 py-2 rounded-xl font-medium shadow-lg transition-all"
+        className="sr-only focus:not-sr-only fixed top-2 left-1/2 -translate-x-1/2 z-60 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg font-medium border border-primary/50 transition-[opacity,transform] duration-(--motion-medium)"
       >
         Skip to content
       </a>
 
-      <nav
-        className={`
-          fixed top-4 left-4 right-4 z-50 transition-all duration-300 ease-out
-          ${isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}
-        `}
-      >
-        <div className="max-w-4xl mx-auto">
-          <div
-            className={`surface-elevated rounded-2xl transition-all duration-300 ${isScrolled ? "shadow-lg" : "shadow-sm"}`}
-          >
-            <div className="px-4 sm:px-6">
-              <div className="flex items-center justify-between h-12">
-                {/* Logo */}
-                <Link
-                  href="/"
-                  className="flex items-center space-x-3 transition-all duration-200 group"
-                >
-                  <div className="w-7 h-7 rounded-lg icon-surface flex items-center justify-center shadow-sm">
-                    <span className="text-sm font-bold text-primary-foreground">
-                      N
-                    </span>
-                  </div>
-                  <span className="text-sm font-medium text-foreground tracking-tight hidden sm:inline-block">
-                    Nargis
-                  </span>
-                </Link>
+      <nav className="fixed top-3 left-2 right-2 z-50 md:left-[calc(var(--sidebar-active-width)+0.5rem)] md:right-3 rounded-xl border border-structural bg-card/96 backdrop-blur-sm">
+        <div className="pl-2 pr-3 sm:pl-3 sm:pr-4">
+          <div className="h-11 flex items-center justify-between gap-3">
+            {/* Logo */}
+            <Link
+              href="/"
+              className="flex items-center gap-2 transition-[opacity,transform] duration-(--motion-medium)"
+            >
+              <div className="w-6 h-6 rounded-md border border-structural flex items-center justify-center">
+                <span className="text-xs font-semibold text-foreground">N</span>
+              </div>
+              <span className="text-sm font-medium text-foreground/95 tracking-tight">
+                Nargis
+              </span>
+            </Link>
 
-                {/* Desktop Navigation */}
-                <div className="hidden md:flex items-center space-x-2">
-                  {navigationItems.map((item) => {
-                    const isActive = pathname === item.href;
-                    const isLocked = item.requiresAuth && !isAuthenticated;
-                    const targetHref = isLocked
-                      ? `/login?next=${encodeURIComponent(item.href)}`
-                      : item.href;
-                    return (
-                      <Link
-                        key={item.href}
-                        href={targetHref}
-                        aria-current={isActive ? "page" : undefined}
-                        title={isLocked ? "Sign in to access" : undefined}
-                        className={`relative px-3 py-1 rounded-lg text-sm font-semibold transition-all duration-200 group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background
-						  ${isActive ? "text-primary bg-primary-subtle shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-hover/40"}`}
-                      >
-                        <span
-                          className="mr-2 icon-surface hover-elevate"
-                          aria-hidden
-                        >
-                          {item.icon}
+            <div className="ml-auto flex items-center gap-2 sm:gap-3">
+              <div className="hidden md:flex items-center gap-1">
+                {navigationItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  const isLocked = item.requiresAuth && !isAuthenticated;
+                  const targetHref = isLocked
+                    ? `/login?next=${encodeURIComponent(item.href)}`
+                    : item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={targetHref}
+                      aria-current={isActive ? "page" : undefined}
+                      title={isLocked ? "Sign in to access" : undefined}
+                      className={`relative px-2.5 py-1 rounded-md text-sm font-normal transition-[opacity,transform] duration-(--motion-medium) focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                        isActive
+                          ? "text-primary bg-primary-subtle"
+                          : "text-foreground/80 hover:text-foreground hover:bg-hover/35"
+                      }`}
+                    >
+                      {item.label}
+                      {isLocked && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          Locked
                         </span>
-                        {item.label}
-                        {isLocked && (
-                          <span
-                            className="ml-2 text-xs text-muted-foreground"
-                            aria-hidden
-                          >
-                            🔒
-                          </span>
-                        )}
-                        {isActive && (
-                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
-
-                {/* Theme Toggle & Mobile Menu */}
-                <div className="flex items-center space-x-3">
-                  {/* Voice button (compact) with inline status */}
-                  <InlineVoice />
-
-                  {/* Auth buttons removed from navbar; floating control added separately */}
-
-                  <div className="p-1 rounded-md border-border/40 bg-background/60">
-                    <ThemeToggle />
-                  </div>
-
-                  {/* Mobile menu button - toggles nav links */}
-                  <button
-                    type="button"
-                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    className="md:hidden p-2 rounded-xl hover:bg-hover/50 transition-all duration-200 active:scale-95"
-                    aria-label="Toggle mobile menu"
-                    aria-expanded={mobileMenuOpen}
-                  >
-                    <svg
-                      className="w-5 h-5 transition-transform duration-200"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                      style={{
-                        transform: mobileMenuOpen
-                          ? "rotate(90deg)"
-                          : "rotate(0deg)",
-                      }}
-                    >
-                      {mobileMenuOpen ? (
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      ) : (
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 6h16M4 12h16M4 18h16"
-                        />
                       )}
-                    </svg>
-                  </button>
-
-                  {/* Mobile sidebar toggle (hamburger) */}
-                  <button
-                    type="button"
-                    onClick={() => onMobileSidebarToggle?.()}
-                    className="md:hidden p-2 rounded-xl hover:bg-hover/50 transition-all duration-200 active:scale-95"
-                    aria-label="Open sidebar"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      aria-hidden
-                    >
-                      <title>Open sidebar</title>
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 6h16M4 12h16M4 18h16"
-                      />
-                    </svg>
-                  </button>
-                </div>
+                    </Link>
+                  );
+                })}
               </div>
 
-              {/* Mobile Navigation */}
-              {mobileMenuOpen && (
-                <div className="md:hidden border-t border-border/30 py-3 animate-in slide-in-from-top-2 duration-200">
-                  <div className="space-y-1">
-                    {navigationItems.map((item) => {
-                      const isActive = pathname === item.href;
-                      const isLocked = item.requiresAuth && !isAuthenticated;
-                      const targetHref = isLocked
-                        ? `/login?next=${encodeURIComponent(item.href)}`
-                        : item.href;
-                      return (
-                        <Link
-                          key={item.href}
-                          href={targetHref}
-                          onClick={() => setMobileMenuOpen(false)}
-                          aria-current={isActive ? "page" : undefined}
-                          title={isLocked ? "Sign in to access" : undefined}
-                          className={`block px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background
-							  ${isActive ? "bg-primary-subtle text-primary" : "text-muted-foreground hover:text-foreground hover:bg-hover/40"}
-							`}
-                        >
-                          <span className="mr-3" aria-hidden>
-                            {item.icon}
-                          </span>
-                          <span className="align-middle">{item.label}</span>
-                          {isLocked && (
-                            <span
-                              className="ml-2 text-xs text-muted-foreground"
-                              aria-hidden
-                            >
-                              🔒
-                            </span>
-                          )}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              <div className="p-1 rounded-md bg-background/80">
+                <ThemeToggle />
+              </div>
+
+              <AvatarButton
+                onClick={() => setAccountDrawerOpen(true)}
+                label="Open account drawer"
+              />
+
+              {/* Mobile menu button - toggles nav links */}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden p-2 rounded-md border border-structural/70 text-foreground/90 hover:bg-hover/50 transition-[opacity,transform] duration-(--motion-medium) active:scale-95"
+                aria-label="Toggle mobile menu"
+                aria-expanded={mobileMenuOpen}
+              >
+                <svg
+                  className="w-5 h-5 transition-transform duration-(--motion-medium)"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  style={{
+                    transform: mobileMenuOpen
+                      ? "rotate(90deg)"
+                      : "rotate(0deg)",
+                  }}
+                >
+                  {mobileMenuOpen ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  )}
+                </svg>
+              </button>
+
+              {/* Mobile sidebar toggle (hamburger) */}
+              <button
+                type="button"
+                onClick={() => onMobileSidebarToggle?.()}
+                className="md:hidden p-2 rounded-md border border-structural/70 text-foreground/90 hover:bg-hover/50 transition-[opacity,transform] duration-(--motion-medium) active:scale-95"
+                aria-label="Open sidebar"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden
+                >
+                  <title>Open sidebar</title>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </button>
             </div>
           </div>
+
+          {/* Mobile Navigation */}
+          {mobileMenuOpen && (
+            <div className="md:hidden pt-2 pb-3 transition-[opacity,transform] duration-(--motion-medium)">
+              <div className="space-y-1">
+                {navigationItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  const isLocked = item.requiresAuth && !isAuthenticated;
+                  const targetHref = isLocked
+                    ? `/login?next=${encodeURIComponent(item.href)}`
+                    : item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={targetHref}
+                      onClick={() => setMobileMenuOpen(false)}
+                      aria-current={isActive ? "page" : undefined}
+                      title={isLocked ? "Sign in to access" : undefined}
+                      className={`block px-3 py-2 rounded-lg text-sm font-normal transition-[opacity,transform] duration-(--motion-medium) focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background
+                      ${isActive ? "bg-primary-subtle text-primary" : "text-muted-foreground hover:text-foreground hover:bg-hover/40"}
+                    `}
+                    >
+                      <span className="align-middle">{item.label}</span>
+                      {isLocked && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          Locked
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
-      {/* Floating auth control (separate from navbar) */}
-      <div className="fixed top-4 right-24 z-60">
-        {isAuthenticated ? (
-          <div className="inline-flex items-center h-12 rounded-2xl shadow-sm overflow-hidden bg-background">
-            <span className="px-4 text-sm font-medium h-full flex items-center text-foreground">
-              {user?.name || user?.email}
-            </span>
-            <div className="w-px bg-border/40 h-6" aria-hidden />
-            <button
-              type="button"
-              onClick={logout}
-              className="px-4 text-sm font-medium h-full flex items-center bg-primary text-primary-foreground hover:bg-primary/80 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            >
-              Logout
-            </button>
-          </div>
-        ) : (
-          <div className="inline-flex items-center h-12 rounded-2xl shadow-sm overflow-hidden bg-transparent px-2 gap-0 justify-center">
-            <button
-              type="button"
-              onClick={() => setLoginModalOpen(true)}
-              className="btn btn-primary px-4 py-1 text-sm font-medium h-9 flex items-center rounded-lg justify-center"
-              aria-label="Sign in"
-            >
-              Sign In
-            </button>
-
-            <div
-              className="w-px bg-primary-foreground/30 h-6 mx-0.5"
-              aria-hidden
-            />
-
-            <button
-              type="button"
-              onClick={() => setRegisterModalOpen(true)}
-              className="btn btn-primary px-3 py-1 text-sm font-medium h-9 flex items-center rounded-lg justify-center"
-              aria-label="Sign up"
-            >
-              Sign Up
-            </button>
-          </div>
-        )}
-      </div>
+      <AccountDrawer
+        open={accountDrawerOpen}
+        onClose={() => setAccountDrawerOpen(false)}
+        onOpenLogin={() => {
+          setAccountDrawerOpen(false);
+          setLoginModalOpen(true);
+        }}
+        onOpenRegister={() => {
+          setAccountDrawerOpen(false);
+          setRegisterModalOpen(true);
+        }}
+      />
 
       {/* Auth Modals */}
       <LoginModal

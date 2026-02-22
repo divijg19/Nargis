@@ -175,13 +175,11 @@ export function TaskModal({
             variant="primary"
             onClick={handleSubmit}
             className="flex-1"
-            icon="✓"
           />
           <ActionButton
             label="Cancel"
             variant="secondary"
             onClick={handleClose}
-            icon="✕"
           />
         </div>
       </div>

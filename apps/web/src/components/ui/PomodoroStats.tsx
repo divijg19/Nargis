@@ -221,7 +221,7 @@ export function PomodoroStats({ sessions, className }: PomodoroStatsProps) {
                 <div className="w-full flex items-end justify-center h-24 mb-2">
                   <div
                     className={cn(
-                      "w-full rounded-t-lg transition-all duration-300 hover:opacity-80 relative group",
+                      "w-full rounded-t-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-300 hover:opacity-80 relative group",
                       isToday
                         ? "bg-blue-500 dark:bg-blue-400"
                         : day.minutes > 0
