@@ -90,6 +90,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
     localStorage.setItem("sidebarCollapsed", String(collapsed));
   }, [collapsed]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty(
+      "--sidebar-active-width",
+      collapsed
+        ? "var(--sidebar-width-collapsed)"
+        : "var(--sidebar-width-expanded)",
+    );
+    return () => {
+      root.style.setProperty(
+        "--sidebar-active-width",
+        "var(--sidebar-width-expanded)",
+      );
+    };
+  }, [collapsed]);
+
   return (
     <>
       <SidebarDesktop

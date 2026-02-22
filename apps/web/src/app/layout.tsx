@@ -72,7 +72,11 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrains_mono.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${jetbrains_mono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <Script id="theme-init" strategy="beforeInteractive">
           {`try {

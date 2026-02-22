@@ -313,13 +313,13 @@ body {
   background:
     radial-gradient(
       circle at 20% 20%,
-      color-mix(in srgb, var(--primary, var(--color-primary)) 8%, transparent),
-      transparent 60%
+      color-mix(in srgb, var(--primary, var(--color-primary)) 4%, transparent),
+      transparent 68%
     ),
     radial-gradient(
       circle at 82% 12%,
-      color-mix(in srgb, var(--color-accent) 7%, transparent),
-      transparent 56%
+      color-mix(in srgb, var(--color-accent) 3%, transparent),
+      transparent 64%
     ),
     var(--color-background);
   color: var(--color-foreground);
@@ -448,8 +448,8 @@ body {
 .gradient-onboarding-text {
   background: linear-gradient(
     90deg,
-    color-mix(in srgb, var(--primary, var(--color-primary)) 90%, white),
-    color-mix(in srgb, var(--primary, var(--color-primary)) 60%, white)
+    color-mix(in srgb, var(--primary, var(--color-primary)) 80%, white),
+    color-mix(in srgb, var(--primary, var(--color-primary)) 55%, white)
   );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -494,6 +494,9 @@ body {
 :root {
   --app-header-offset: 96px; /* default header safe area */
   --app-footer-offset: 88px; /* default footer safe area */
+  --sidebar-width-collapsed: 72px;
+  --sidebar-width-expanded: 264px;
+  --sidebar-active-width: var(--sidebar-width-expanded);
 }
 
 .app-viewport-available {
@@ -1377,15 +1380,15 @@ body {
 
 /* Sidebar structural contract (Phase 2) */
 aside.sidebar-desktop[data-collapsed="true"] {
-  width: 72px;
+  width: var(--sidebar-width-collapsed);
 }
 
 aside.sidebar-desktop[data-collapsed="false"] {
-  width: 240px;
+  width: var(--sidebar-width-expanded);
 }
 
 aside.sidebar-desktop {
-  transition: none;
+  transition: width var(--motion-medium) var(--motion-ease);
 }
 
 aside.sidebar-desktop[data-collapsed="true"] .nav-label {
@@ -1394,28 +1397,20 @@ aside.sidebar-desktop[data-collapsed="true"] .nav-label {
 
 /* Single global floating voice control (Phase 1) */
 .voice-control-shell {
-  position: fixed;
-  left: 50%;
-  bottom: 1rem;
-  transform: translateX(-50%);
-  z-index: 45;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-@media (min-width: 1024px) {
-  .voice-control-shell {
-    left: auto;
-    right: 1rem;
-    bottom: 1rem;
-    transform: none;
-  }
+.voice-control-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
 }
 
 .voice-control {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
   background: var(--color-card);
@@ -1438,8 +1433,8 @@ aside.sidebar-desktop[data-collapsed="true"] .nav-label {
 }
 
 .voice-control-icon {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 .voice-control-meta {
@@ -1451,18 +1446,21 @@ aside.sidebar-desktop[data-collapsed="true"] .nav-label {
 }
 
 .onboarding-info-btn {
-  position: fixed;
-  z-index: 60;
-  width: 36px;
-  height: 36px;
+  position: static;
+  width: 40px;
+  height: 40px;
   border-radius: 999px;
   border: 1px solid
     color-mix(in srgb, var(--text, var(--color-foreground)) 6%, transparent);
   background: var(--color-card);
   color: var(--color-foreground);
+  opacity: 0.92;
+  box-shadow: none;
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
+  margin-left: 0.5rem;
   transition:
     transform var(--motion-medium, 180ms)
     var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
@@ -1470,28 +1468,24 @@ aside.sidebar-desktop[data-collapsed="true"] .nav-label {
     var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1));
 }
 
+.onboarding-info-btn:focus-visible {
+  outline: 2px solid var(--color-focus, var(--color-primary));
+  outline-offset: 2px;
+}
+
 .onboarding-info-btn:hover {
-  transform: scale(1.03);
-  opacity: 0.95;
+  transform: translateY(-1px);
+  opacity: 1;
+  background: color-mix(in srgb, var(--color-hover) 65%, var(--color-card));
 }
 
-@media (max-width: 1023px) {
-  .onboarding-info-btn {
-    left: 50%;
-    bottom: 4.25rem;
-    transform: translateX(-50%);
-  }
-
-  .onboarding-info-btn:hover {
-    transform: translateX(-50%) scale(1.03);
-  }
+.footer-conversation-shell {
+  position: relative;
 }
 
-@media (min-width: 1024px) {
-  .onboarding-info-btn {
-    right: 1.35rem;
-    bottom: 4.75rem;
-  }
+.footer-voice-anchor {
+  position: relative;
+  z-index: 1;
 }
 
 .border-structural {
@@ -1511,6 +1505,11 @@ aside.sidebar-desktop[data-collapsed="true"] .nav-label {
 
 .border-structural-bottom {
   border-bottom: 1px solid
+    color-mix(in srgb, var(--text, var(--color-foreground)) 6%, transparent);
+}
+
+.border-structural-top {
+  border-top: 1px solid
     color-mix(in srgb, var(--text, var(--color-foreground)) 6%, transparent);
 }
 

@@ -13,7 +13,7 @@ export function AvatarButton({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-card border border-structural text-foreground opacity-95 transition-[transform,opacity] duration-(--motion-medium) hover:scale-[1.03] hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border/35 text-foreground opacity-95 transition-[transform,opacity] duration-(--motion-medium) hover:opacity-100 hover:bg-hover/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
       aria-label={label}
       title={label}
     >

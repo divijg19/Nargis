@@ -31,9 +31,15 @@ export function SidebarDesktop({
   return (
     <aside
       data-collapsed={collapsed ? "true" : "false"}
-      className="sidebar-desktop hidden md:flex flex-col h-screen pt-3 bg-surface/75 border-structural-right"
+      className="sidebar-desktop hidden md:flex flex-col h-full pt-2 bg-surface/75 border-structural-right overflow-y-auto"
     >
-      <div className="px-3 pb-2 pt-2 flex items-center justify-start gap-2">
+      <div
+        className={
+          collapsed
+            ? "px-2 pb-2 pt-2 flex items-center justify-center"
+            : "px-3 pb-2 pt-2 flex items-center justify-start gap-2"
+        }
+      >
         <button
           ref={collapseButtonRef}
           type="button"
@@ -51,7 +57,13 @@ export function SidebarDesktop({
         </button>
       </div>
 
-      <div className="p-3 flex items-center">
+      <div
+        className={
+          collapsed
+            ? "p-2 flex items-center justify-center"
+            : "p-3 flex items-center"
+        }
+      >
         <button
           ref={newSessionButtonRef}
           type="button"
@@ -69,7 +81,7 @@ export function SidebarDesktop({
         </button>
       </div>
 
-      <div className="px-3 py-2">
+      <div className={collapsed ? "px-2 py-2" : "px-3 py-2"}>
         {!collapsed && (
           <h3 className="nav-label text-sm font-normal mb-2 text-muted-foreground">
             Get Started

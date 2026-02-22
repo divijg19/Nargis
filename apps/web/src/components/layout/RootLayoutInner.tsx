@@ -5,9 +5,7 @@ import { useState } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import { Footer } from "@/components/ui/Footer";
 import { NavBar } from "@/components/ui/NavBar";
-import { OnboardingOverlay } from "@/components/ui/OnboardingOverlay";
 import { ToastViewport } from "@/components/ui/Toasts";
-import { VoiceControl } from "@/components/ui/VoiceControl";
 
 export default function RootLayoutInner({
   children,
@@ -17,32 +15,34 @@ export default function RootLayoutInner({
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen">
-      <Sidebar
-        mobileOpen={mobileSidebarOpen}
-        onMobileClose={() => setMobileSidebarOpen(false)}
-      />
-      <div className="flex-1 flex flex-col overflow-hidden">
+    <>
+      <div className="h-screen grid grid-rows-[auto_1fr_auto] overflow-hidden">
         <NavBar onMobileSidebarToggle={() => setMobileSidebarOpen((s) => !s)} />
 
-        <main
-          id="maincontent"
-          className="flex-1 overflow-y-auto relative pt-16 px-4 sm:px-6"
-        >
-          {children}
-        </main>
+        <div className="min-h-0 grid grid-cols-1 md:grid-cols-[auto_1fr] overflow-hidden">
+          <Sidebar
+            mobileOpen={mobileSidebarOpen}
+            onMobileClose={() => setMobileSidebarOpen(false)}
+          />
+
+          <main
+            id="maincontent"
+            className="min-h-0 overflow-y-auto px-4 sm:px-6 pt-16 pb-24"
+          >
+            {children}
+          </main>
+        </div>
 
         <Footer />
-        <VoiceControl />
-        <OnboardingOverlay />
-        <ToastViewport />
-        <div
-          id="voice-announcements"
-          aria-live="polite"
-          aria-atomic="true"
-          className="sr-only"
-        />
       </div>
-    </div>
+
+      <ToastViewport />
+      <div
+        id="voice-announcements"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      />
+    </>
   );
 }

@@ -10,7 +10,15 @@ type VoiceState =
   | "streaming"
   | "completed";
 
-export function VoiceControl() {
+type VoiceControlProps = {
+  inline?: boolean;
+  showMeta?: boolean;
+};
+
+export function VoiceControl({
+  inline = false,
+  showMeta = true,
+}: VoiceControlProps) {
   const {
     isListening,
     processing,
@@ -48,7 +56,11 @@ export function VoiceControl() {
   };
 
   return (
-    <div className="voice-control-shell" aria-live="polite" aria-atomic="true">
+    <div
+      className={inline ? "voice-control-inline" : "voice-control-shell"}
+      aria-live="polite"
+      aria-atomic="true"
+    >
       <button
         type="button"
         className="voice-control"
@@ -98,15 +110,17 @@ export function VoiceControl() {
           </svg>
         )}
       </button>
-      <span className="voice-control-meta" aria-hidden="true">
-        {isListening
-          ? "Listening…"
-          : isBusy
-            ? "Processing…"
-            : voiceState === "completed"
-              ? "Completed"
-              : "Voice"}
-      </span>
+      {showMeta && (
+        <span className="voice-control-meta" aria-hidden="true">
+          {isListening
+            ? "Listening…"
+            : isBusy
+              ? "Processing…"
+              : voiceState === "completed"
+                ? "Completed"
+                : "Voice"}
+        </span>
+      )}
     </div>
   );
 }

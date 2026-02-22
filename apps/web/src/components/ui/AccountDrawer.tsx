@@ -17,6 +17,41 @@ function normalizeBaseUrl(url: string) {
   return url.endsWith("/") ? url.slice(0, -1) : url;
 }
 
+function getStatusMeta(status: BackendState): {
+  label: string;
+  dotClassName: string;
+  textClassName: string;
+} {
+  if (status === "online") {
+    return {
+      label: "Online",
+      dotClassName: "bg-success",
+      textClassName: "text-foreground",
+    };
+  }
+  if (status === "checking") {
+    return {
+      label: "Checking",
+      dotClassName: "bg-warning",
+      textClassName: "text-muted-foreground",
+    };
+  }
+  return {
+    label: "Offline",
+    dotClassName: "bg-destructive",
+    textClassName: "text-muted-foreground",
+  };
+}
+
+function formatRelativeMinutes(timestamp: number | null, tick: number) {
+  void tick;
+  if (!timestamp) return "Never";
+  const deltaMs = Date.now() - timestamp;
+  const minutes = Math.max(0, Math.floor(deltaMs / 60000));
+  if (minutes < 1) return "just now";
+  return `${minutes}m ago`;
+}
+
 async function timedFetch(input: string, init?: RequestInit) {
   const startedAt = performance.now();
   const controller = new AbortController();
@@ -61,6 +96,11 @@ export function AccountDrawer({
   const [goStatus, setGoStatus] = useState<BackendState>("checking");
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
   const [busyAction, setBusyAction] = useState<"warm" | "restart" | null>(null);
+  const [lastWarmEventAt, setLastWarmEventAt] = useState<number | null>(null);
+  const [nowTick, setNowTick] = useState(0);
+
+  const pyMeta = getStatusMeta(pyStatus);
+  const goMeta = getStatusMeta(goStatus);
 
   useEffect(() => {
     if (!open) return;
@@ -115,6 +155,14 @@ export function AccountDrawer({
     };
   }, [open, apiBase, gatewayBase]);
 
+  useEffect(() => {
+    if (!open) return;
+    const intervalId = window.setInterval(() => {
+      setNowTick((value) => value + 1);
+    }, 60000);
+    return () => window.clearInterval(intervalId);
+  }, [open]);
+
   const runWarm = async () => {
     setBusyAction("warm");
     try {
@@ -125,6 +173,7 @@ export function AccountDrawer({
         credentials: "include",
       });
       if (!res.ok) throw new Error("warm-failed");
+      setLastWarmEventAt(Date.now());
       push({ message: "Warm request sent", variant: "success" });
     } catch {
       push({ message: "Warm request failed", variant: "error" });
@@ -154,7 +203,7 @@ export function AccountDrawer({
       <button
         type="button"
         aria-label="Close account drawer"
-        className={`fixed inset-0 z-75 bg-black/28 transition-opacity duration-(--motion-medium) ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 z-75 bg-black/26 dark:bg-black/48 transition-opacity duration-(--motion-medium) ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
         onClick={onClose}
       />
 
@@ -162,7 +211,7 @@ export function AccountDrawer({
         role="dialog"
         aria-modal="true"
         aria-label="Account drawer"
-        className={`fixed top-3 bottom-3 right-3 z-80 w-[min(22rem,calc(100vw-1.5rem))] rounded-2xl bg-card border border-structural p-4 overflow-y-auto transition-[opacity,transform] duration-(--motion-medium) ${open ? "translate-x-0 opacity-100 pointer-events-auto" : "translate-x-6 opacity-0 pointer-events-none"}`}
+        className={`fixed top-3 bottom-3 right-3 z-80 w-[min(22rem,calc(100vw-1.5rem))] rounded-2xl bg-card/98 backdrop-blur-sm border border-structural p-4 overflow-y-auto transition-[opacity,transform] duration-(--motion-medium) ${open ? "translate-x-0 opacity-100 pointer-events-auto" : "translate-x-6 opacity-0 pointer-events-none"}`}
         style={{ boxShadow: "var(--shadow-1)" }}
       >
         <div className="flex items-center justify-between mb-4">
@@ -170,7 +219,7 @@ export function AccountDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-structural text-muted-foreground hover:text-foreground transition-[opacity,transform] duration-(--motion-medium) hover:scale-[1.03]"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-structural text-muted-foreground hover:text-foreground hover:bg-hover/20 transition-[opacity,transform] duration-(--motion-medium) hover:-translate-y-px"
             aria-label="Close account drawer"
           >
             <svg
@@ -252,37 +301,63 @@ export function AccountDrawer({
 
         <section>
           <h3 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
-            System
+            System Health
           </h3>
           <div className="rounded-xl border border-structural p-3 space-y-3">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Python backend</span>
-              <span
-                className={
-                  pyStatus === "online"
-                    ? "text-success"
-                    : pyStatus === "checking"
-                      ? "text-muted-foreground"
-                      : "text-destructive"
-                }
-              >
-                {pyStatus}
-              </span>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground">
+                  Python Runtime
+                </p>
+                <div className="mt-1 inline-flex items-center gap-1.5">
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${pyMeta.dotClassName}`}
+                    aria-hidden="true"
+                  />
+                  <span className={`text-xs ${pyMeta.textClassName}`}>
+                    {pyMeta.label}
+                  </span>
+                </div>
+              </div>
+              <div className="shrink-0">
+                <button
+                  type="button"
+                  onClick={runWarm}
+                  disabled={busyAction !== null}
+                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural bg-transparent text-muted-foreground hover:text-foreground hover:-translate-y-px disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
+                >
+                  {busyAction === "warm" ? "Warming…" : "Warm"}
+                </button>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Go backend</span>
-              <span
-                className={
-                  goStatus === "online"
-                    ? "text-success"
-                    : goStatus === "checking"
-                      ? "text-muted-foreground"
-                      : "text-destructive"
-                }
-              >
-                {goStatus}
-              </span>
+
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground">
+                  Go Gateway
+                </p>
+                <div className="mt-1 inline-flex items-center gap-1.5">
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${goMeta.dotClassName}`}
+                    aria-hidden="true"
+                  />
+                  <span className={`text-xs ${goMeta.textClassName}`}>
+                    {goMeta.label}
+                  </span>
+                </div>
+              </div>
+              <div className="shrink-0 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={runRestart}
+                  disabled={busyAction !== null}
+                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural bg-transparent text-muted-foreground hover:text-foreground hover:-translate-y-px disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
+                >
+                  {busyAction === "restart" ? "Restarting…" : "Restart"}
+                </button>
+              </div>
             </div>
+
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">Latency</span>
               <span className="text-foreground">
@@ -290,23 +365,11 @@ export function AccountDrawer({
               </span>
             </div>
 
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                type="button"
-                onClick={runWarm}
-                disabled={busyAction !== null}
-                className="text-xs px-2.5 py-1.5 rounded-md border border-structural text-foreground hover:bg-hover/30 disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
-              >
-                {busyAction === "warm" ? "Warming…" : "Warm"}
-              </button>
-              <button
-                type="button"
-                onClick={runRestart}
-                disabled={busyAction !== null}
-                className="text-xs px-2.5 py-1.5 rounded-md border border-structural text-foreground hover:bg-hover/30 disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
-              >
-                {busyAction === "restart" ? "Restarting…" : "Restart"}
-              </button>
+            <div
+              className="text-[11px] text-muted-foreground"
+              aria-live="polite"
+            >
+              Last warm event: {formatRelativeMinutes(lastWarmEventAt, nowTick)}
             </div>
           </div>
         </section>
