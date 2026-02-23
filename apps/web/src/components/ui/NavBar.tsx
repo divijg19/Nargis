@@ -3,11 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LoginModal } from "@/components/auth/LoginModal";
-import { RegisterModal } from "@/components/auth/RegisterModal";
 import { useAuth } from "@/contexts/AuthContext";
-import { AccountDrawer } from "./AccountDrawer";
-import { AvatarButton } from "./AvatarButton";
 import { ThemeToggle } from "./ThemeToggle";
 
 const navigationItems = [
@@ -26,23 +22,6 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [loginModalOpen, setLoginModalOpen] = useState(false);
-  const [registerModalOpen, setRegisterModalOpen] = useState(false);
-  const [accountDrawerOpen, setAccountDrawerOpen] = useState(false);
-
-  const handleAuthSuccess = () => {
-    // Modal will close automatically, can add toast here if desired
-  };
-
-  const handleSwitchToRegister = () => {
-    setLoginModalOpen(false);
-    setRegisterModalOpen(true);
-  };
-
-  const handleSwitchToLogin = () => {
-    setRegisterModalOpen(false);
-    setLoginModalOpen(true);
-  };
 
   return (
     <>
@@ -53,8 +32,8 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
         Skip to content
       </a>
 
-      <nav className="fixed top-3 left-2 right-2 z-50 md:left-[calc(var(--sidebar-active-width)+0.5rem)] md:right-3 rounded-xl border border-structural bg-card/96 backdrop-blur-sm">
-        <div className="pl-2 pr-3 sm:pl-3 sm:pr-4">
+      <nav className="fixed top-3 left-2 right-15 z-50 md:left-[calc(var(--sidebar-active-width)+0.5rem)] md:right-15 rounded-xl border border-structural bg-card/96 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4">
           <div className="h-11 flex items-center justify-between gap-3">
             {/* Logo */}
             <Link
@@ -83,11 +62,10 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
                       href={targetHref}
                       aria-current={isActive ? "page" : undefined}
                       title={isLocked ? "Sign in to access" : undefined}
-                      className={`relative px-2.5 py-1 rounded-md text-sm font-normal transition-[opacity,transform] duration-(--motion-medium) focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                        isActive
-                          ? "text-primary bg-primary-subtle"
-                          : "text-foreground/80 hover:text-foreground hover:bg-hover/35"
-                      }`}
+                      className={`relative px-2.5 py-1 rounded-md text-sm font-normal transition-[opacity,transform] duration-(--motion-medium) focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${isActive
+                        ? "text-primary bg-primary-subtle"
+                        : "text-foreground/80 hover:text-foreground hover:bg-hover/35"
+                        }`}
                     >
                       {item.label}
                       {isLocked && (
@@ -103,11 +81,6 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
               <div className="p-1 rounded-md bg-background/80">
                 <ThemeToggle />
               </div>
-
-              <AvatarButton
-                onClick={() => setAccountDrawerOpen(true)}
-                label="Open account drawer"
-              />
 
               {/* Mobile menu button - toggles nav links */}
               <button
@@ -208,33 +181,6 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
           )}
         </div>
       </nav>
-
-      <AccountDrawer
-        open={accountDrawerOpen}
-        onClose={() => setAccountDrawerOpen(false)}
-        onOpenLogin={() => {
-          setAccountDrawerOpen(false);
-          setLoginModalOpen(true);
-        }}
-        onOpenRegister={() => {
-          setAccountDrawerOpen(false);
-          setRegisterModalOpen(true);
-        }}
-      />
-
-      {/* Auth Modals */}
-      <LoginModal
-        isOpen={loginModalOpen}
-        onClose={() => setLoginModalOpen(false)}
-        onSuccess={handleAuthSuccess}
-        onSwitchToRegister={handleSwitchToRegister}
-      />
-      <RegisterModal
-        isOpen={registerModalOpen}
-        onClose={() => setRegisterModalOpen(false)}
-        onSuccess={handleAuthSuccess}
-        onSwitchToLogin={handleSwitchToLogin}
-      />
     </>
   );
 }

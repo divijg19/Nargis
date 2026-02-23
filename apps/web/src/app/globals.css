@@ -1388,7 +1388,7 @@ aside.sidebar-desktop[data-collapsed="false"] {
 }
 
 aside.sidebar-desktop {
-  transition: width var(--motion-medium) var(--motion-ease);
+  transition: none;
 }
 
 aside.sidebar-desktop[data-collapsed="true"] .nav-label {
@@ -1460,7 +1460,6 @@ aside.sidebar-desktop[data-collapsed="true"] .nav-label {
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  margin-left: 0.5rem;
   transition:
     transform var(--motion-medium, 180ms)
     var(--motion-ease, cubic-bezier(0.2, 0.8, 0.2, 1)),
