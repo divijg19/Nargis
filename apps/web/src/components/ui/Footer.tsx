@@ -2,7 +2,6 @@
 
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useRealtime } from "@/contexts/RealtimeContext";
-import { OnboardingOverlay } from "./OnboardingOverlay";
 import { VoiceControl } from "./VoiceControl";
 
 export function Footer() {
@@ -75,7 +74,6 @@ export function Footer() {
 
             <div className="footer-voice-anchor relative shrink-0 ml-auto flex items-center justify-end">
               <VoiceControl inline showMeta={false} />
-              <OnboardingOverlay />
             </div>
           </form>
         </div>
