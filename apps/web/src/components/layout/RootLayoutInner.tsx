@@ -41,7 +41,7 @@ export default function RootLayoutInner({
       <div className="h-screen grid grid-rows-[auto_1fr_auto] overflow-hidden">
         <NavBar onMobileSidebarToggle={() => setMobileSidebarOpen((s) => !s)} />
 
-        <div className="min-h-0 grid grid-cols-1 md:grid-cols-[auto_1fr] overflow-hidden">
+        <div className="min-h-0 grid grid-cols-1 md:grid-cols-[var(--sidebar-width-expanded)_1fr] overflow-hidden">
           <Sidebar
             mobileOpen={mobileSidebarOpen}
             onMobileClose={() => setMobileSidebarOpen(false)}

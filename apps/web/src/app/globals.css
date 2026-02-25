@@ -18,8 +18,8 @@
   --color-muted-foreground: #334155; /* slightly darker for improved contrast on light surfaces */
   --color-card: #ffffff;
   --color-card-foreground: #0f172a;
-  --color-border: #d6dde6; /* slightly deeper for accessible separation */
-  --color-background: #fefefe;
+  --color-border: #cbd5e1; /* stronger structural clarity on light surfaces */
+  --color-background: #fcfaf8;
   --color-foreground: #0f172a;
   --color-focus: rgba(123, 44, 191, 0.22);
   --text: var(--color-foreground);
@@ -30,8 +30,8 @@
   --radius-sm: 6px;
   --radius-md: 12px;
   --radius-lg: 18px;
-  --shadow-1: 0 6px 18px rgba(2, 6, 23, 0.06);
-  --shadow-2: 0 18px 40px rgba(2, 6, 23, 0.1);
+  --shadow-1: 0 10px 26px rgba(2, 6, 23, 0.08);
+  --shadow-2: 0 24px 56px rgba(2, 6, 23, 0.14);
 
   /* Semantic colors - refined */
   --color-success: #059669;
@@ -470,12 +470,23 @@ body {
 /* App background utility: a subtle, neutral light gradient with a dark-mode counterpart.
    Use by applying `bg-app-light` to page/root containers. Keeps transitions consistent. */
 .bg-app-light {
-  background-image: linear-gradient(
-    180deg,
-    var(--color-bg-from, #ffffff),
-    var(--color-bg-via, #f8fafc),
-    rgba(241, 245, 249, 0.1)
-  );
+  background-image:
+    radial-gradient(
+      circle at 14% 12%,
+      color-mix(in srgb, var(--color-primary) 12%, transparent),
+      transparent 46%
+    ),
+    radial-gradient(
+      circle at 88% 10%,
+      color-mix(in srgb, var(--color-accent) 10%, transparent),
+      transparent 44%
+    ),
+    linear-gradient(
+      160deg,
+      var(--color-bg-from, #fffdf9) 0%,
+      var(--color-bg-via, #f8fafc) 52%,
+      #f3f4f6 100%
+    );
 }
 .dark .bg-app-light {
   /* centralized dark background gradient used across pages */
@@ -495,7 +506,7 @@ body {
   --app-header-offset: 96px; /* default header safe area */
   --app-footer-offset: 88px; /* default footer safe area */
   --sidebar-width-collapsed: 72px;
-  --sidebar-width-expanded: 264px;
+  --sidebar-width-expanded: 300px;
   --sidebar-active-width: var(--sidebar-width-expanded);
 }
 
@@ -1412,9 +1423,10 @@ aside.sidebar-desktop[data-collapsed="true"] .nav-label {
   width: 40px;
   height: 40px;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
-  background: var(--color-card);
-  color: var(--color-foreground);
+  border: 1px solid
+    color-mix(in srgb, var(--color-primary) 60%, var(--color-border));
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
   box-shadow: none;
   display: inline-flex;
   align-items: center;
@@ -1513,8 +1525,13 @@ aside.sidebar-desktop[data-collapsed="true"] .nav-label {
 }
 
 html[data-voice-state="idle"] .voice-control {
-  background: var(--color-card);
-  color: var(--color-foreground);
+  background: var(--color-primary);
+  border-color: color-mix(
+    in srgb,
+    var(--color-primary) 60%,
+    var(--color-border)
+  );
+  color: var(--color-primary-foreground);
 }
 
 html[data-voice-state="listening"] .voice-control {
@@ -1532,22 +1549,34 @@ html[data-voice-state="listening"] .voice-control {
 }
 
 html[data-voice-state="processing"] .voice-control {
-  background: var(--color-card);
-  border-color: color-mix(in srgb, var(--color-border) 40%, transparent);
-  color: var(--color-foreground);
+  background: var(--color-primary);
+  border-color: color-mix(
+    in srgb,
+    var(--color-primary) 60%,
+    var(--color-border)
+  );
+  color: var(--color-primary-foreground);
 }
 
 html[data-voice-state="streaming"] .voice-control {
-  background: var(--color-card);
-  border-color: color-mix(in srgb, var(--color-border) 40%, transparent);
-  color: var(--color-foreground);
+  background: var(--color-primary);
+  border-color: color-mix(
+    in srgb,
+    var(--color-primary) 60%,
+    var(--color-border)
+  );
+  color: var(--color-primary-foreground);
   animation: none;
 }
 
 html[data-voice-state="completed"] .voice-control {
-  background: var(--color-card);
-  border-color: color-mix(in srgb, var(--color-border) 40%, transparent);
-  color: var(--color-foreground);
+  background: var(--color-primary);
+  border-color: color-mix(
+    in srgb,
+    var(--color-primary) 60%,
+    var(--color-border)
+  );
+  color: var(--color-primary-foreground);
 }
 
 @keyframes voice-control-pulse {
