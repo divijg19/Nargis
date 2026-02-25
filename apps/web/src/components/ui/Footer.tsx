@@ -45,9 +45,9 @@ export function Footer() {
   return (
     <footer
       ref={footerRef}
-      className="fixed bottom-3 left-2 right-0 z-40 md:left-[calc(var(--sidebar-active-width)+0.5rem)] rounded-xl border border-structural bg-card backdrop-blur-sm"
+      className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 w-[min(54rem,calc(100vw-4.5rem))] md:ml-[calc(var(--sidebar-width-expanded)/2)] md:w-[min(54rem,calc(100vw-var(--sidebar-width-expanded)-4.5rem))] rounded-xl border border-structural bg-card backdrop-blur-sm"
     >
-      <div className="pl-2 pr-1 sm:pl-3 sm:pr-1">
+      <div className="px-2.5 sm:px-3">
         <div className="w-full max-w-none ml-auto py-3.5">
           <form
             onSubmit={handleSubmit}

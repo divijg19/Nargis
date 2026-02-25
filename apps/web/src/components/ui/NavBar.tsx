@@ -32,9 +32,9 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
         Skip to content
       </a>
 
-      <nav className="fixed top-3 left-2 right-15 z-50 md:left-[calc(var(--sidebar-active-width)+0.5rem)] md:right-15 rounded-xl border border-structural bg-card/96 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4">
-          <div className="h-11 flex items-center justify-between gap-3">
+      <nav className="fixed top-3 left-1/2 -translate-x-1/2 z-50 w-[min(54rem,calc(100vw-4.5rem))] md:ml-[calc(var(--sidebar-width-expanded)/2)] md:w-[min(54rem,calc(100vw-var(--sidebar-width-expanded)-4.5rem))] rounded-xl border border-structural bg-card/96 backdrop-blur-sm">
+        <div className="px-2.5 sm:px-3">
+          <div className="h-11 flex items-center justify-between gap-2.5 sm:gap-3">
             {/* Logo */}
             <Link
               href="/"
@@ -48,7 +48,7 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
               </span>
             </Link>
 
-            <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <div className="ml-auto flex items-center gap-2 sm:gap-2.5">
               <div className="hidden md:flex items-center gap-1">
                 {navigationItems.map((item) => {
                   const isActive = pathname === item.href;
