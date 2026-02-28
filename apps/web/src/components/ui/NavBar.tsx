@@ -86,7 +86,7 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 rounded-md border border-structural/70 text-foreground/90 hover:bg-hover/50 transition-[opacity,transform] duration-(--motion-medium) active:scale-95"
+                className="md:hidden p-2 rounded-md border border-structural text-foreground/90 hover:bg-hover/50 transition-[opacity,transform] duration-(--motion-medium) active:scale-95"
                 aria-label="Toggle mobile menu"
                 aria-expanded={mobileMenuOpen}
               >

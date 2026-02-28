@@ -2,26 +2,32 @@
 
 /* Refined color palette for seamless light/dark themes */
 :root {
+  /* App background gradient - Ember Dawn premium */
+  --gradient-app-bg: linear-gradient(
+    120deg,
+    #fff3e6 0%,
+    #ff7c4d 25%,
+    #ff7c4d 55%,
+    #b85cff 80%,
+    #ff7c4d 100%
+  );
   /* Light theme - Premium, warm, inviting */
   /* Light-theme primary aligned with the warmed Nargis palette */
-  --color-primary: #7b2cbf;
-  --color-primary-foreground: #ffffff;
-  /* RGB helper for shadows/glows */
-  --color-primary-rgb: 123, 44, 191;
-  --color-secondary: #6b7280;
-  --color-secondary-foreground: #111827;
-  --color-accent: #ff7aab;
-  --color-accent-foreground: #ffffff;
-  --color-muted: #f8fafc;
-  /* Neutral muted foreground for labels and secondary text */
-  /* Muted foreground adjusted for better contrast on light backgrounds */
-  --color-muted-foreground: #334155; /* slightly darker for improved contrast on light surfaces */
-  --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
-  --color-border: #cbd5e1; /* stronger structural clarity on light surfaces */
-  --color-background: #fcfaf8;
-  --color-foreground: #0f172a;
-  --color-focus: rgba(123, 44, 191, 0.22);
+  --color-primary: #b85cff; /* Ember violet */
+  --color-primary-foreground: #fff3e6;
+  --color-primary-rgb: 184, 92, 255;
+  --color-secondary: #ff7c4d; /* Ember orange */
+  --color-secondary-foreground: #fff3e6;
+  --color-accent: #ff5eae; /* Ember pink */
+  --color-accent-foreground: #fff3e6;
+  --color-muted: #f7e9ff; /* Soft lavender mist */
+  --color-muted-foreground: #4a2d5c;
+  --color-card: #fff3e6; /* Dawn cream */
+  --color-card-foreground: #3a1a2d;
+  --color-border: #c88cff; /* Premium lavender border */
+  --color-background: #fbeffb; /* Ember dawn haze */
+  --color-foreground: #3a1a2d;
+  --color-focus: rgba(162, 89, 255, 0.22);
   --text: var(--color-foreground);
   --surface: var(--color-card);
   --primary: var(--color-primary);
@@ -30,8 +36,10 @@
   --radius-sm: 6px;
   --radius-md: 12px;
   --radius-lg: 18px;
-  --shadow-1: 0 10px 26px rgba(2, 6, 23, 0.08);
-  --shadow-2: 0 24px 56px rgba(2, 6, 23, 0.14);
+  --shadow-1:
+    0 8px 24px rgba(162, 89, 255, 0.07), 0 1.5px 6px rgba(255, 107, 74, 0.04);
+  --shadow-2:
+    0 18px 48px rgba(162, 89, 255, 0.13), 0 3px 12px rgba(255, 107, 74, 0.07);
 
   /* Semantic colors - refined */
   --color-success: #059669;
@@ -56,26 +64,32 @@
   --color-hover: #f1f5f9;
   --color-active: #e2e8f0;
 
-  /* Gradients */
+  /* Gradients - Ember Dawn premium */
   --gradient-brand: linear-gradient(
     135deg,
-    #7b2cbf 0%,
-    #ff6b4a 60%,
-    #ffb86b 100%
+    #b85cff 0%,
+    #ff7c4d 30%,
+    #ff5eae 60%,
+    #fff3e6 100%
   );
-  /* Nargis highlight gradient (light) - warmed with red/orange pinch */
   --gradient-nargis: linear-gradient(
-    90deg,
-    #ff6b4a 0%,
-    #ff7aab 40%,
-    #ffb86b 100%
+    120deg,
+    #b85cff 0%,
+    #ff5eae 40%,
+    #ff7c4d 70%,
+    #fff3e6 100%
   );
-  --gradient-surface: linear-gradient(135deg, #ffffff 0%, #fff9f6 100%);
+  --gradient-surface: linear-gradient(
+    135deg,
+    #fff3e6 0%,
+    #fbeffb 60%,
+    #f7e9ff 100%
+  );
   --gradient-ambient: linear-gradient(
     135deg,
-    #fffaf8 0%,
-    #fff4e6 50%,
-    #ffe9d6 100%
+    #fbeffb 0%,
+    #fff3e6 60%,
+    #ff7c4d 100%
   );
 }
 
@@ -473,19 +487,19 @@ body {
   background-image:
     radial-gradient(
       circle at 14% 12%,
-      color-mix(in srgb, var(--color-primary) 12%, transparent),
+      color-mix(in srgb, var(--color-primary) 22%, transparent),
       transparent 46%
     ),
     radial-gradient(
       circle at 88% 10%,
-      color-mix(in srgb, var(--color-accent) 10%, transparent),
+      color-mix(in srgb, var(--color-accent) 18%, transparent),
       transparent 44%
     ),
     linear-gradient(
       160deg,
-      var(--color-bg-from, #fffdf9) 0%,
-      var(--color-bg-via, #f8fafc) 52%,
-      #f3f4f6 100%
+      var(--color-bg-from, #f9f4ff) 0%,
+      var(--color-bg-via, #ffe9d6) 52%,
+      #ffb86b 100%
     );
 }
 .dark .bg-app-light {
@@ -1501,7 +1515,17 @@ aside.sidebar-desktop[data-collapsed="true"] .nav-label {
 
 .border-structural {
   border-style: solid;
-  border-width: 1px;
+  border-width: 0.5px;
+  /* Thicker border for navbar/footer and special buttons */
+  .border-structural-thick {
+    border-style: solid;
+    border-width: 0.85px;
+    border-color: color-mix(
+      in srgb,
+      var(--text, var(--color-foreground)) 12%,
+      transparent
+    );
+  }
   border-color: color-mix(
     in srgb,
     var(--text, var(--color-foreground)) 6%,

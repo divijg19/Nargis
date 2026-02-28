@@ -203,7 +203,7 @@ export function AccountDrawer({
       <button
         type="button"
         aria-label="Close account drawer"
-        className={`fixed inset-0 z-75 bg-black/6 dark:bg-black/48 transition-opacity duration-(--motion-medium) ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 z-75 bg-black/8 dark:bg-black/48 transition-opacity duration-(--motion-medium) ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
         onClick={onClose}
       />
 
@@ -211,11 +211,11 @@ export function AccountDrawer({
         role="dialog"
         aria-modal="true"
         aria-label="Account drawer"
-        className={`fixed top-3 bottom-3 right-3 z-80 w-[min(22rem,calc(100vw-1.5rem))] rounded-2xl bg-card dark:bg-card/98 backdrop-blur-sm border border-structural ring-1 ring-black/10 dark:ring-white/10 p-4 overflow-y-auto transition-[opacity,transform] duration-(--motion-medium) ${open ? "translate-x-0 opacity-100 pointer-events-auto" : "translate-x-6 opacity-0 pointer-events-none"}`}
-        style={{ boxShadow: "var(--shadow-2)" }}
+        className={`fixed top-3 bottom-3 right-3 z-80 w-[min(22rem,calc(100vw-1.5rem))] rounded-2xl bg-linear-to-br from-(--color-background) via-(--color-card) to-(--color-primary) dark:bg-card/98 backdrop-blur-xl border border-border ring-1 ring-black/10 dark:ring-white/10 p-4 overflow-y-auto transition-[opacity,transform] duration-(--motion-medium) border-structural ${open ? "translate-x-0 opacity-100 pointer-events-auto" : "translate-x-6 opacity-0 pointer-events-none"}`}
+        style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)" }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-foreground">Account</h2>
+          <h2 className="text-sm font-semibold text-primary">Account</h2>
           <button
             type="button"
             onClick={onClose}
@@ -240,38 +240,36 @@ export function AccountDrawer({
         </div>
 
         <section className="mb-5">
-          <h3 className="text-xs uppercase tracking-wide text-foreground/80 dark:text-muted-foreground mb-2">
-            Profile
-          </h3>
+          <h3 className="text-xs uppercase tracking-wide text-primary font-semibold mb-2">Profile</h3>
           {isAuthenticated ? (
-            <div className="rounded-xl border border-structural bg-background/96 dark:bg-background/35 p-3">
-              <p className="text-sm font-medium text-foreground">
+            <div className="rounded-xl border border-border bg-linear-to-br from-(--color-surface) via-(--color-background) to-(--color-card) dark:bg-background/35 p-3">
+              <p className="text-sm font-medium text-primary">
                 {user?.name || "Nargis user"}
               </p>
-              <p className="text-xs text-foreground/75 dark:text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {user?.email}
               </p>
               <button
                 type="button"
                 onClick={logout}
-                className="mt-3 text-xs px-2.5 py-1.5 rounded-md border border-structural bg-background/80 text-foreground hover:bg-hover/40 transition-[opacity,transform] duration-(--motion-medium)"
+                className="mt-3 text-xs px-2.5 py-1.5 rounded-md border border-structural-thick bg-background/80 text-primary hover:bg-hover/40 transition-[opacity,transform] duration-(--motion-medium)"
               >
                 Logout
               </button>
             </div>
           ) : (
-            <div className="rounded-xl border border-structural bg-background/96 dark:bg-background/35 p-3 flex items-center gap-2">
+            <div className="rounded-xl border border-structural bg-linear-to-br from-(--color-surface) via-(--color-background) to-(--color-card) dark:bg-background/35 p-3 flex items-center gap-2">
               <button
                 type="button"
                 onClick={onOpenLogin}
-                className="text-xs px-2.5 py-1.5 rounded-md border border-structural bg-primary text-primary-foreground hover:opacity-95 transition-[opacity,transform] duration-(--motion-medium)"
+                className="text-xs px-2.5 py-1.5 rounded-md border border-structural-thick bg-primary text-primary-foreground hover:opacity-95 transition-[opacity,transform] duration-(--motion-medium)"
               >
                 Sign In
               </button>
               <button
                 type="button"
                 onClick={onOpenRegister}
-                className="text-xs px-2.5 py-1.5 rounded-md border border-structural bg-background/80 text-foreground hover:bg-hover/40 transition-[opacity,transform] duration-(--motion-medium)"
+                className="text-xs px-2.5 py-1.5 rounded-md border border-structural-thick bg-background/80 text-primary hover:bg-hover/40 transition-[opacity,transform] duration-(--motion-medium)"
               >
                 Sign Up
               </button>
@@ -280,22 +278,16 @@ export function AccountDrawer({
         </section>
 
         <section className="mb-5">
-          <h3 className="text-xs uppercase tracking-wide text-foreground/80 dark:text-muted-foreground mb-2">
-            Preferences
-          </h3>
-          <div className="rounded-xl border border-structural bg-background/96 dark:bg-background/35 p-3 text-xs text-foreground/75 dark:text-muted-foreground">
-            Theme and interaction preferences stay synced with your current
-            workspace.
+          <h3 className="text-xs uppercase tracking-wide text-primary font-semibold mb-2">Preferences</h3>
+          <div className="rounded-xl border border-structural bg-linear-to-br from-(--color-surface) via-(--color-background) to-(--color-card) dark:bg-background/35 p-3 text-xs text-muted-foreground">
+            Theme and interaction preferences stay synced with your current workspace.
           </div>
         </section>
 
         <section className="mb-5">
-          <h3 className="text-xs uppercase tracking-wide text-foreground/80 dark:text-muted-foreground mb-2">
-            Memory
-          </h3>
-          <div className="rounded-xl border border-structural bg-background/96 dark:bg-background/35 p-3 text-xs text-foreground/75 dark:text-muted-foreground">
-            Conversation memory and productivity context are available in your
-            active session.
+          <h3 className="text-xs uppercase tracking-wide text-primary font-semibold mb-2">Memory</h3>
+          <div className="rounded-xl border border-structural bg-linear-to-br from-(--color-surface) via-(--color-background) to-(--color-card) dark:bg-background/35 p-3 text-xs text-muted-foreground">
+            Conversation memory and productivity context are available in your active session.
           </div>
         </section>
 
@@ -324,7 +316,7 @@ export function AccountDrawer({
                   type="button"
                   onClick={runWarm}
                   disabled={busyAction !== null}
-                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural bg-background/80 dark:bg-background/30 text-foreground hover:-translate-y-px disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
+                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural-thick bg-background/80 dark:bg-background/30 text-foreground hover:-translate-y-px disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
                 >
                   {busyAction === "warm" ? "Warming…" : "Warm"}
                 </button>
@@ -351,7 +343,7 @@ export function AccountDrawer({
                   type="button"
                   onClick={runRestart}
                   disabled={busyAction !== null}
-                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural bg-background/80 dark:bg-background/30 text-foreground hover:-translate-y-px disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
+                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural-thick bg-background/80 dark:bg-background/30 text-foreground hover:-translate-y-px disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
                 >
                   {busyAction === "restart" ? "Restarting…" : "Restart"}
                 </button>
