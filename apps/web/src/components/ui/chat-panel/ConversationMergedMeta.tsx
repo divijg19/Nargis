@@ -24,7 +24,7 @@ export function ConversationMergedMeta({
   return (
     <>
       {shouldShowSignInNudge && (
-        <div className="mb-3 rounded-xl border border-border/20 bg-surface-elevated/70 p-3 flex items-center justify-between gap-3">
+        <div className="mb-3 rounded-xl border border-structural bg-surface-elevated/70 p-3 flex items-center justify-between gap-3">
           <div className="text-xs text-muted-foreground">
             You’re in guest mode — sign in to save history.
           </div>
