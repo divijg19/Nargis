@@ -53,25 +53,34 @@ export function ConversationContent({
           aria-live="polite"
           aria-relevant="additions"
         >
-          {messages.map((m, i) => (
-            <div
-              key={`${m.ts}-${m.role}-${i}`}
-              className={
-                m.role === "user"
-                  ? "flex justify-start pl-4 sm:pl-6"
-                  : "flex justify-start"
-              }
-            >
-              <div className="max-w-[86%]">
-                <Message
-                  role={m.role}
-                  text={m.text}
-                  ts={m.ts}
-                  thoughts={m.thoughts}
-                />
-              </div>
-            </div>
-          ))}
+          {(() => {
+            const messageCounts = new Map<string, number>();
+            return messages.map((m) => {
+              const baseKey = `${m.ts}-${m.role}-${m.text}`;
+              const nextCount = (messageCounts.get(baseKey) ?? 0) + 1;
+              messageCounts.set(baseKey, nextCount);
+
+              return (
+                <div
+                  key={`${baseKey}-${nextCount}`}
+                  className={
+                    m.role === "user"
+                      ? "flex justify-start pl-4 sm:pl-6"
+                      : "flex justify-start"
+                  }
+                >
+                  <div className="max-w-[86%]">
+                    <Message
+                      role={m.role}
+                      text={m.text}
+                      ts={m.ts}
+                      thoughts={m.thoughts}
+                    />
+                  </div>
+                </div>
+              );
+            });
+          })()}
         </div>
       ) : (
         <>

@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { RegisterModal } from "@/components/auth/RegisterModal";
 import Sidebar from "@/components/layout/Sidebar";
@@ -21,6 +21,24 @@ export default function RootLayoutInner({
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [accountDrawerOpen, setAccountDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (window.sessionStorage.getItem("nargis_warm")) {
+      return;
+    }
+
+    window.sessionStorage.setItem("nargis_warm", "1");
+    void fetch("/api/system/warm", {
+      method: "POST",
+      keepalive: true,
+    }).catch(() => {
+      // silent by design
+    });
+  }, []);
 
   const handleAuthSuccess = () => {
     // Modal will close automatically, can add toast here if desired

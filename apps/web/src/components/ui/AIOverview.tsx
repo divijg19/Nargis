@@ -221,9 +221,9 @@ export function AIOverview({ className = "" }: AIOverviewProps) {
 
       {/* Insights */}
       <div className="space-y-2">
-        {insights.map((insight, index) => (
+        {insights.map((insight) => (
           <div
-            key={`${insight.type}-${index}`}
+            key={`${insight.type}-${insight.badge}-${insight.text}`}
             className={`p-3 rounded-lg border transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:shadow-md ${getInsightColors(insight.type)}`}
           >
             <div className="flex items-start gap-2">

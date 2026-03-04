@@ -1,10 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToasts } from "@/contexts/ToastContext";
 
-type BackendState = "checking" | "online" | "offline";
+type ServiceName = "python" | "go";
+type RuntimeState = "active" | "idle" | "unreachable";
+type ActionState = {
+  service: ServiceName;
+  action: "wake" | "restart";
+};
+type RuntimeHealth = {
+  status: RuntimeState;
+  latency: number;
+};
 
 type AccountDrawerProps = {
   open: boolean;
@@ -13,60 +22,159 @@ type AccountDrawerProps = {
   onOpenRegister: () => void;
 };
 
-function normalizeBaseUrl(url: string) {
-  return url.endsWith("/") ? url.slice(0, -1) : url;
-}
-
-function getStatusMeta(status: BackendState): {
+function getStatusMeta(status: RuntimeState): {
   label: string;
   dotClassName: string;
   textClassName: string;
 } {
-  if (status === "online") {
+  if (status === "active") {
     return {
-      label: "Online",
+      label: "Active",
       dotClassName: "bg-success",
       textClassName: "text-foreground",
     };
   }
-  if (status === "checking") {
+  if (status === "idle") {
     return {
-      label: "Checking",
-      dotClassName: "bg-warning",
+      label: "Idle",
+      dotClassName: "bg-muted",
       textClassName: "text-muted-foreground",
     };
   }
   return {
-    label: "Offline",
+    label: "Unreachable",
     dotClassName: "bg-destructive",
-    textClassName: "text-muted-foreground",
+    textClassName: "text-destructive",
   };
 }
 
-function formatRelativeMinutes(timestamp: number | null, tick: number) {
-  void tick;
-  if (!timestamp) return "Never";
-  const deltaMs = Date.now() - timestamp;
-  const minutes = Math.max(0, Math.floor(deltaMs / 60000));
-  if (minutes < 1) return "just now";
-  return `${minutes}m ago`;
+const UNREACHABLE: RuntimeHealth = {
+  status: "unreachable",
+  latency: -1,
+};
+
+function isRuntimeState(value: unknown): value is RuntimeState {
+  return value === "active" || value === "idle" || value === "unreachable";
 }
 
-async function timedFetch(input: string, init?: RequestInit) {
-  const startedAt = performance.now();
-  const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), 3500);
-  try {
-    const res = await fetch(input, {
-      ...init,
-      signal: controller.signal,
-      credentials: "include",
-    });
-    const elapsed = Math.round(performance.now() - startedAt);
-    return { ok: res.ok, elapsed };
-  } finally {
-    window.clearTimeout(timeoutId);
+function coerceRuntimeHealth(input: unknown): RuntimeHealth {
+  if (
+    typeof input === "object" &&
+    input !== null &&
+    "status" in input &&
+    "latency" in input &&
+    isRuntimeState((input as { status: unknown }).status) &&
+    typeof (input as { latency: unknown }).latency === "number"
+  ) {
+    return {
+      status: (input as { status: RuntimeState }).status,
+      latency: (input as { latency: number }).latency,
+    };
   }
+
+  return UNREACHABLE;
+}
+
+function useSystemHealth(open: boolean) {
+  const [pythonStatus, setPythonStatus] = useState<RuntimeHealth>(UNREACHABLE);
+  const [goStatus, setGoStatus] = useState<RuntimeHealth>(UNREACHABLE);
+  const [busyAction, setBusyAction] = useState<ActionState | null>(null);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const response = await fetch("/api/system/status", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error("status-unavailable");
+      }
+
+      const payload = (await response.json()) as {
+        python?: unknown;
+        go?: unknown;
+      };
+
+      setPythonStatus(coerceRuntimeHealth(payload.python));
+      setGoStatus(coerceRuntimeHealth(payload.go));
+    } catch {
+      setPythonStatus(UNREACHABLE);
+      setGoStatus(UNREACHABLE);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    void fetchStatus();
+    const intervalId = window.setInterval(() => {
+      void fetchStatus();
+    }, 30000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [open, fetchStatus]);
+
+  const wake = useCallback(
+    async (service: ServiceName) => {
+      setBusyAction({ service, action: "wake" });
+      try {
+        const response = await fetch("/api/system/warm", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ service }),
+        });
+        return response.ok;
+      } catch {
+        return false;
+      } finally {
+        await fetchStatus();
+        setBusyAction(null);
+      }
+    },
+    [fetchStatus],
+  );
+
+  const restart = useCallback(
+    async (service: ServiceName) => {
+      setBusyAction({ service, action: "restart" });
+      try {
+        const response = await fetch("/api/system/restart", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ service }),
+        });
+
+        return response.ok;
+      } catch {
+        return false;
+      } finally {
+        await fetchStatus();
+        setBusyAction(null);
+      }
+    },
+    [fetchStatus],
+  );
+
+  return {
+    pythonStatus,
+    goStatus,
+    wake,
+    restart,
+    isWaking: (service: ServiceName) =>
+      busyAction?.service === service && busyAction.action === "wake",
+    isRestarting: (service: ServiceName) =>
+      busyAction?.service === service && busyAction.action === "restart",
+    isBusy: (service: ServiceName) => busyAction?.service === service,
+  };
 }
 
 export function AccountDrawer({
@@ -77,125 +185,37 @@ export function AccountDrawer({
 }: AccountDrawerProps) {
   const { user, isAuthenticated, logout } = useAuth();
   const { push } = useToasts();
-  const apiBase = useMemo(
-    () =>
-      normalizeBaseUrl(
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
-      ),
-    [],
-  );
-  const gatewayBase = useMemo(
-    () =>
-      normalizeBaseUrl(
-        process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:8080",
-      ),
-    [],
-  );
+  const {
+    pythonStatus,
+    goStatus,
+    wake,
+    restart,
+    isWaking,
+    isRestarting,
+    isBusy,
+  } = useSystemHealth(open);
 
-  const [pyStatus, setPyStatus] = useState<BackendState>("checking");
-  const [goStatus, setGoStatus] = useState<BackendState>("checking");
-  const [latencyMs, setLatencyMs] = useState<number | null>(null);
-  const [busyAction, setBusyAction] = useState<"warm" | "restart" | null>(null);
-  const [lastWarmEventAt, setLastWarmEventAt] = useState<number | null>(null);
-  const [nowTick, setNowTick] = useState(0);
+  const pyMeta = getStatusMeta(pythonStatus.status);
+  const goMeta = getStatusMeta(goStatus.status);
 
-  const pyMeta = getStatusMeta(pyStatus);
-  const goMeta = getStatusMeta(goStatus);
-
-  useEffect(() => {
-    if (!open) return;
-
-    let mounted = true;
-
-    const checkBackend = async (
-      baseUrl: string,
-      endpoints: string[],
-      setStatus: (s: BackendState) => void,
-    ) => {
-      setStatus("checking");
-      for (const endpoint of endpoints) {
-        try {
-          const { ok, elapsed } = await timedFetch(`${baseUrl}${endpoint}`);
-          if (!mounted) return;
-          if (ok) {
-            setStatus("online");
-            return elapsed;
-          }
-        } catch {
-          // continue trying fallbacks
-        }
-      }
-      if (mounted) setStatus("offline");
-      return null;
-    };
-
-    const run = async () => {
-      const [pyLatency, goLatency] = await Promise.all([
-        checkBackend(apiBase, ["/v1/health", "/health", "/"], setPyStatus),
-        checkBackend(gatewayBase, ["/healthz", "/health", "/"], setGoStatus),
-      ]);
-
-      if (!mounted) return;
-      const samples = [pyLatency, goLatency].filter(
-        (value): value is number => typeof value === "number",
-      );
-      setLatencyMs(
-        samples.length > 0
-          ? Math.round(
-            samples.reduce((sum, value) => sum + value, 0) / samples.length,
-          )
-          : null,
-      );
-    };
-
-    run();
-
-    return () => {
-      mounted = false;
-    };
-  }, [open, apiBase, gatewayBase]);
-
-  useEffect(() => {
-    if (!open) return;
-    const intervalId = window.setInterval(() => {
-      setNowTick((value) => value + 1);
-    }, 60000);
-    return () => window.clearInterval(intervalId);
-  }, [open]);
-
-  const runWarm = async () => {
-    setBusyAction("warm");
-    try {
-      const res = await fetch(`${apiBase}/v1/agent/trigger`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trigger_type: "morning_briefing" }),
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("warm-failed");
-      setLastWarmEventAt(Date.now());
-      push({ message: "Warm request sent", variant: "success" });
-    } catch {
-      push({ message: "Warm request failed", variant: "error" });
-    } finally {
-      setBusyAction(null);
-    }
+  const handleWake = async (service: ServiceName) => {
+    const ok = await wake(service);
+    push({
+      message: ok
+        ? `${service === "python" ? "Python runtime" : "Go gateway"} wake requested`
+        : "Wake request unavailable",
+      variant: ok ? "success" : "warning",
+    });
   };
 
-  const runRestart = async () => {
-    setBusyAction("restart");
-    try {
-      const res = await fetch(`${gatewayBase}/restart`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("restart-failed");
-      push({ message: "Restart request sent", variant: "success" });
-    } catch {
-      push({ message: "Restart request unavailable", variant: "warning" });
-    } finally {
-      setBusyAction(null);
-    }
+  const handleRestart = async (service: ServiceName) => {
+    const ok = await restart(service);
+    push({
+      message: ok
+        ? `${service === "python" ? "Python runtime" : "Go gateway"} restarting`
+        : "Restart request unavailable",
+      variant: ok ? "success" : "warning",
+    });
   };
 
   return (
@@ -212,7 +232,9 @@ export function AccountDrawer({
         aria-modal="true"
         aria-label="Account drawer"
         className={`fixed top-3 bottom-3 right-3 z-80 w-[min(22rem,calc(100vw-1.5rem))] rounded-2xl bg-linear-to-br from-(--color-background) via-(--color-card) to-(--color-primary) dark:bg-card/98 backdrop-blur-xl border border-border ring-1 ring-black/10 dark:ring-white/10 p-4 overflow-y-auto transition-[opacity,transform] duration-(--motion-medium) border-structural ${open ? "translate-x-0 opacity-100 pointer-events-auto" : "translate-x-6 opacity-0 pointer-events-none"}`}
-        style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)" }}
+        style={{
+          boxShadow: "0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)",
+        }}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-primary">Account</h2>
@@ -240,7 +262,9 @@ export function AccountDrawer({
         </div>
 
         <section className="mb-5">
-          <h3 className="text-xs uppercase tracking-wide text-primary font-semibold mb-2">Profile</h3>
+          <h3 className="text-xs uppercase tracking-wide text-primary font-semibold mb-2">
+            Profile
+          </h3>
           {isAuthenticated ? (
             <div className="rounded-xl border border-border bg-linear-to-br from-(--color-surface) via-(--color-background) to-(--color-card) dark:bg-background/35 p-3">
               <p className="text-sm font-medium text-primary">
@@ -278,16 +302,22 @@ export function AccountDrawer({
         </section>
 
         <section className="mb-5">
-          <h3 className="text-xs uppercase tracking-wide text-primary font-semibold mb-2">Preferences</h3>
+          <h3 className="text-xs uppercase tracking-wide text-primary font-semibold mb-2">
+            Preferences
+          </h3>
           <div className="rounded-xl border border-structural bg-linear-to-br from-(--color-surface) via-(--color-background) to-(--color-card) dark:bg-background/35 p-3 text-xs text-muted-foreground">
-            Theme and interaction preferences stay synced with your current workspace.
+            Theme and interaction preferences stay synced with your current
+            workspace.
           </div>
         </section>
 
         <section className="mb-5">
-          <h3 className="text-xs uppercase tracking-wide text-primary font-semibold mb-2">Memory</h3>
+          <h3 className="text-xs uppercase tracking-wide text-primary font-semibold mb-2">
+            Memory
+          </h3>
           <div className="rounded-xl border border-structural bg-linear-to-br from-(--color-surface) via-(--color-background) to-(--color-card) dark:bg-background/35 p-3 text-xs text-muted-foreground">
-            Conversation memory and productivity context are available in your active session.
+            Conversation memory and productivity context are available in your
+            active session.
           </div>
         </section>
 
@@ -310,15 +340,28 @@ export function AccountDrawer({
                     {pyMeta.label}
                   </span>
                 </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {pythonStatus.latency >= 0
+                    ? `${pythonStatus.latency} ms`
+                    : "No response"}
+                </p>
               </div>
-              <div className="shrink-0">
+              <div className="shrink-0 flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={runWarm}
-                  disabled={busyAction !== null}
-                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural-thick bg-background/80 dark:bg-background/30 text-foreground hover:-translate-y-px disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
+                  onClick={() => handleWake("python")}
+                  disabled={isBusy("python")}
+                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural bg-transparent text-foreground hover:bg-hover/20 disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
                 >
-                  {busyAction === "warm" ? "Warming…" : "Warm"}
+                  {isWaking("python") ? "Waking…" : "Wake"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRestart("python")}
+                  disabled={isBusy("python")}
+                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural-thick bg-transparent text-foreground hover:bg-hover/20 disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
+                >
+                  {isRestarting("python") ? "Restarting…" : "Restart"}
                 </button>
               </div>
             </div>
@@ -337,31 +380,30 @@ export function AccountDrawer({
                     {goMeta.label}
                   </span>
                 </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {goStatus.latency >= 0
+                    ? `${goStatus.latency} ms`
+                    : "No response"}
+                </p>
               </div>
               <div className="shrink-0 flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={runRestart}
-                  disabled={busyAction !== null}
-                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural-thick bg-background/80 dark:bg-background/30 text-foreground hover:-translate-y-px disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
+                  onClick={() => handleWake("go")}
+                  disabled={isBusy("go")}
+                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural bg-transparent text-foreground hover:bg-hover/20 disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
                 >
-                  {busyAction === "restart" ? "Restarting…" : "Restart"}
+                  {isWaking("go") ? "Waking…" : "Wake"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRestart("go")}
+                  disabled={isBusy("go")}
+                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural-thick bg-transparent text-foreground hover:bg-hover/20 disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
+                >
+                  {isRestarting("go") ? "Restarting…" : "Restart"}
                 </button>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-foreground/75 dark:text-muted-foreground">Latency</span>
-              <span className="text-foreground">
-                {latencyMs === null ? "—" : `${latencyMs} ms`}
-              </span>
-            </div>
-
-            <div
-              className="text-[11px] text-foreground/75 dark:text-muted-foreground"
-              aria-live="polite"
-            >
-              Last warm event: {formatRelativeMinutes(lastWarmEventAt, nowTick)}
             </div>
           </div>
         </section>

@@ -62,10 +62,11 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
                       href={targetHref}
                       aria-current={isActive ? "page" : undefined}
                       title={isLocked ? "Sign in to access" : undefined}
-                      className={`relative px-2.5 py-1 rounded-md text-sm font-normal transition-[opacity,transform] duration-(--motion-medium) focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${isActive
-                        ? "text-primary bg-primary-subtle"
-                        : "text-foreground/80 hover:text-foreground hover:bg-hover/35"
-                        }`}
+                      className={`relative px-2.5 py-1 rounded-md text-sm font-normal transition-[opacity,transform] duration-(--motion-medium) focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                        isActive
+                          ? "text-primary bg-primary-subtle"
+                          : "text-foreground/80 hover:text-foreground hover:bg-hover/35"
+                      }`}
                     >
                       {item.label}
                       {isLocked && (

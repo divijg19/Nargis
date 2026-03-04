@@ -564,7 +564,7 @@ body {
 
 /* Ensure large SVG timers scale down on small viewports to avoid forcing scroll */
 .app-viewport-available svg {
-  height: calc(
+  max-height: calc(
     100vh -
     var(--app-header-offset) -
     var(--app-footer-offset) -

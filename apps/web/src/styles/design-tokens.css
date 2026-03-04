@@ -121,7 +121,6 @@
   font-size: var(--font-size-body);
   color: var(--color-text);
   background: transparent;
-  border: 1px solid color-mix(in srgb, var(--color-border) 5%, transparent);
   border: 1px solid
     var(
       --border-structural-color,
@@ -132,7 +131,6 @@
 .message--assistant {
   font-size: var(--font-size-body);
   background: transparent;
-  border-color: color-mix(in srgb, var(--color-border) 3%, transparent);
   border-color: var(
     --border-structural-color,
     color-mix(in srgb, var(--text, var(--color-foreground)) 3%, transparent)
@@ -142,7 +140,6 @@
 
 .message--user {
   background: transparent;
-  border-color: color-mix(in srgb, var(--color-border) 5%, transparent);
   border-color: var(
     --border-structural-color,
     color-mix(in srgb, var(--text, var(--color-foreground)) 5%, transparent)

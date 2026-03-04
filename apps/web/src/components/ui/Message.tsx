@@ -32,14 +32,21 @@ export default function Message({ role, text, ts, thoughts }: MessageProps) {
       </div>
       {thoughts && thoughts.length > 0 && (
         <div className="message__thoughts text-xs text-muted-foreground mt-2">
-          {thoughts.map((t, i) => (
-            <div
-              key={`${i}-${String(t).slice(0, 30)}`}
-              className="inline-block mr-2"
-            >
-              {t}
-            </div>
-          ))}
+          {(() => {
+            const thoughtCounts = new Map<string, number>();
+            return thoughts.map((t) => {
+              const nextCount = (thoughtCounts.get(t) ?? 0) + 1;
+              thoughtCounts.set(t, nextCount);
+              return (
+                <div
+                  key={`${role}-${ts ?? "na"}-${t}-${nextCount}`}
+                  className="inline-block mr-2"
+                >
+                  {t}
+                </div>
+              );
+            });
+          })()}
         </div>
       )}
     </div>
