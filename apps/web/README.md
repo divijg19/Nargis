@@ -38,6 +38,14 @@ Set the public URLs the browser should use:
 
 In production, use `https://` + `wss://`.
 
+For system health warm/restart routing through Vercel serverless routes, also set:
+
+- `HF_TOKEN` (server-side only, never expose to client)
+- `HF_PY_SPACE` (for example `username/python-runtime`)
+- `HF_GO_SPACE` (for example `username/go-gateway`)
+- `PY_SPACE_URL` (for example `https://username-python-runtime.hf.space`)
+- `GO_SPACE_URL` (for example `https://username-go-gateway.hf.space`)
+
 ### Development
 
 ```bash
