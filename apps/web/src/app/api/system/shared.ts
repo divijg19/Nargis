@@ -24,12 +24,34 @@ type HfConfig = {
   spaces: Record<ServiceName, string>;
 };
 
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value || value.trim().length === 0) {
-    throw new Error("missing-environment");
+export class MissingEnvironmentError extends Error {
+  missing: string[];
+
+  constructor(missing: string[]) {
+    super("missing-environment");
+    this.name = "MissingEnvironmentError";
+    this.missing = missing;
   }
-  return value;
+}
+
+function requireEnvMany(names: string[]): Record<string, string> {
+  const missing: string[] = [];
+  const values: Record<string, string> = {};
+
+  for (const name of names) {
+    const value = process.env[name];
+    if (!value || value.trim().length === 0) {
+      missing.push(name);
+      continue;
+    }
+    values[name] = value;
+  }
+
+  if (missing.length > 0) {
+    throw new MissingEnvironmentError(missing);
+  }
+
+  return values;
 }
 
 function ensureSlash(value: string): string {
@@ -41,18 +63,20 @@ function joinUrl(baseUrl: string, path: string): string {
 }
 
 export function getSpaceUrls(): SpaceUrls {
+  const values = requireEnvMany(["PY_SPACE_URL", "GO_SPACE_URL"]);
   return {
-    python: requireEnv("PY_SPACE_URL"),
-    go: requireEnv("GO_SPACE_URL"),
+    python: values.PY_SPACE_URL,
+    go: values.GO_SPACE_URL,
   };
 }
 
 export function getHfConfig(): HfConfig {
+  const values = requireEnvMany(["HF_TOKEN", "HF_PY_SPACE", "HF_GO_SPACE"]);
   return {
-    token: requireEnv("HF_TOKEN"),
+    token: values.HF_TOKEN,
     spaces: {
-      python: requireEnv("HF_PY_SPACE"),
-      go: requireEnv("HF_GO_SPACE"),
+      python: values.HF_PY_SPACE,
+      go: values.HF_GO_SPACE,
     },
   };
 }

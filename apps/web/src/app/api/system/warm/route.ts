@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSpaceUrls, warmSpace } from "../shared";
+import { getSpaceUrls, MissingEnvironmentError, warmSpace } from "../shared";
 
 type WarmBody = {
   service?: "python" | "go";
@@ -35,7 +35,16 @@ export async function POST(request: Request) {
       python: "running",
       go: "running",
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof MissingEnvironmentError) {
+      console.error("/api/system/warm missing environment", error.missing);
+      return NextResponse.json(
+        { error: "missing-environment", missing: error.missing },
+        { status: 500 },
+      );
+    }
+
+    console.error("/api/system/warm unavailable", error);
     return NextResponse.json({ error: "system-unavailable" }, { status: 500 });
   }
 }

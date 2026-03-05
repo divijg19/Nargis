@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { restartSpace } from "../shared";
+import { MissingEnvironmentError, restartSpace } from "../shared";
 
 type RestartBody = {
   service?: "python" | "go";
@@ -26,7 +26,16 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ status: "restarting" });
-  } catch {
+  } catch (error) {
+    if (error instanceof MissingEnvironmentError) {
+      console.error("/api/system/restart missing environment", error.missing);
+      return NextResponse.json(
+        { error: "missing-environment", missing: error.missing },
+        { status: 500 },
+      );
+    }
+
+    console.error("/api/system/restart unavailable", error);
     return NextResponse.json({ error: "restart-unavailable" }, { status: 500 });
   }
 }
