@@ -15,6 +15,15 @@ type RuntimeHealth = {
   latency: number;
 };
 
+type SystemActionError = {
+  error?: string;
+  missing?: string[];
+};
+
+type SystemActionResult =
+  | { ok: true }
+  | { ok: false; status?: number; payload?: SystemActionError };
+
 type AccountDrawerProps = {
   open: boolean;
   onClose: () => void;
@@ -120,7 +129,7 @@ function useSystemHealth(open: boolean) {
   }, [open, fetchStatus]);
 
   const wake = useCallback(
-    async (service: ServiceName) => {
+    async (service: ServiceName): Promise<SystemActionResult> => {
       setBusyAction({ service, action: "wake" });
       try {
         const response = await fetch("/api/system/warm", {
@@ -130,9 +139,21 @@ function useSystemHealth(open: boolean) {
           },
           body: JSON.stringify({ service }),
         });
-        return response.ok;
+
+        if (response.ok) {
+          return { ok: true };
+        }
+
+        let payload: SystemActionError | undefined;
+        try {
+          payload = (await response.json()) as SystemActionError;
+        } catch {
+          payload = undefined;
+        }
+
+        return { ok: false, status: response.status, payload };
       } catch {
-        return false;
+        return { ok: false };
       } finally {
         await fetchStatus();
         setBusyAction(null);
@@ -142,7 +163,7 @@ function useSystemHealth(open: boolean) {
   );
 
   const restart = useCallback(
-    async (service: ServiceName) => {
+    async (service: ServiceName): Promise<SystemActionResult> => {
       setBusyAction({ service, action: "restart" });
       try {
         const response = await fetch("/api/system/restart", {
@@ -153,9 +174,20 @@ function useSystemHealth(open: boolean) {
           body: JSON.stringify({ service }),
         });
 
-        return response.ok;
+        if (response.ok) {
+          return { ok: true };
+        }
+
+        let payload: SystemActionError | undefined;
+        try {
+          payload = (await response.json()) as SystemActionError;
+        } catch {
+          payload = undefined;
+        }
+
+        return { ok: false, status: response.status, payload };
       } catch {
-        return false;
+        return { ok: false };
       } finally {
         await fetchStatus();
         setBusyAction(null);
@@ -199,21 +231,31 @@ export function AccountDrawer({
   const goMeta = getStatusMeta(goStatus.status);
 
   const handleWake = async (service: ServiceName) => {
-    const ok = await wake(service);
+    const result = await wake(service);
+    const ok = result.ok;
+    const isMissingEnv =
+      !result.ok && result.payload?.error === "missing-environment";
     push({
       message: ok
         ? `${service === "python" ? "Python runtime" : "Go gateway"} wake requested`
-        : "Wake request unavailable",
+        : isMissingEnv
+          ? "Wake not configured"
+          : "Wake request unavailable",
       variant: ok ? "success" : "warning",
     });
   };
 
   const handleRestart = async (service: ServiceName) => {
-    const ok = await restart(service);
+    const result = await restart(service);
+    const ok = result.ok;
+    const isMissingEnv =
+      !result.ok && result.payload?.error === "missing-environment";
     push({
       message: ok
         ? `${service === "python" ? "Python runtime" : "Go gateway"} restarting`
-        : "Restart request unavailable",
+        : isMissingEnv
+          ? "Restart not configured"
+          : "Restart request unavailable",
       variant: ok ? "success" : "warning",
     });
   };

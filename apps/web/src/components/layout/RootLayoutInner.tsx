@@ -27,11 +27,6 @@ export default function RootLayoutInner({
       return;
     }
 
-    if (window.sessionStorage.getItem("nargis_warm")) {
-      return;
-    }
-
-    window.sessionStorage.setItem("nargis_warm", "1");
     void fetch("/api/system/warm", {
       method: "POST",
       keepalive: true,
