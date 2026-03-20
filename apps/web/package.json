@@ -60,7 +60,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/testing-library__jest-dom": "6.0.0",
     "baseline-browser-mapping": "^2.10.9",
-    "jsdom": "^29.0.0",
+    "jsdom": "^29.0.1",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
