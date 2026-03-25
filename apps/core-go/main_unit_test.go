@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/divijg19/Nargis/gateway/internal/config"
+	"github.com/divijg19/Nargis/core-go/internal/config"
 )
 
 func TestExtractAuthToken_PriorityAndFallbacks(t *testing.T) {

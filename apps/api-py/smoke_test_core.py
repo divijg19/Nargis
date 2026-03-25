@@ -16,6 +16,7 @@ from __future__ import annotations
 import sys
 import traceback
 import uuid
+from typing import Any
 
 from services.memory_service import create_memory, search_memories
 from services.tasks import create_task_service, list_tasks_service
@@ -24,12 +25,12 @@ from storage.models import Memory, Task, User
 
 try:
     # Agent tool import is optional; we only assert it is importable and callable.
-    from agent.tools import RecallArgs, recall_memory_tool
+    from agent.tools import RecallArgs, recall_memory_tool, set_agent_runtime_context
 
     AGENT_TOOL_AVAILABLE = True
 except Exception:
-    recall_memory_tool = None
-    RecallArgs = None
+    recall_memory_tool: Any = None
+    RecallArgs: Any = None
     AGENT_TOOL_AVAILABLE = False
 
 
@@ -163,9 +164,10 @@ def run_smoke():
                         "Tool object is not callable and has no runnable attribute"
                     )
 
-                args = RecallArgs(user_id=user_id, query="smoke test query", limit=1)
+                args = RecallArgs(query="smoke test query", limit=1)
                 try:
-                    resp = _call_tool(recall_memory_tool, args)
+                    with set_agent_runtime_context(user_id, db):
+                        resp = _call_tool(recall_memory_tool, args)
                 except Exception as e:
                     print_fail("Agent recall tool callable", e)
                     failures.append(("Agent recall tool callable", str(e)))

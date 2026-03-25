@@ -16,13 +16,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/divijg19/Nargis/gateway/internal/auth"
-	"github.com/divijg19/Nargis/gateway/internal/bus"
-	"github.com/divijg19/Nargis/gateway/internal/config"
-	"github.com/divijg19/Nargis/gateway/internal/metrics"
-	"github.com/divijg19/Nargis/gateway/internal/orchestrator"
-	"github.com/divijg19/Nargis/gateway/internal/resilience"
-	"github.com/divijg19/Nargis/gateway/internal/vad"
+	"github.com/divijg19/Nargis/core-go/internal/auth"
+	"github.com/divijg19/Nargis/core-go/internal/bus"
+	"github.com/divijg19/Nargis/core-go/internal/config"
+	"github.com/divijg19/Nargis/core-go/internal/metrics"
+	"github.com/divijg19/Nargis/core-go/internal/orchestrator"
+	"github.com/divijg19/Nargis/core-go/internal/resilience"
+	"github.com/divijg19/Nargis/core-go/internal/vad"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -61,7 +61,7 @@ var (
 
 func main() {
 	// 1. Setup Structured Logging
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	logger := newLogger()
 	slog.SetDefault(logger)
 
 	// 2. Load Config
@@ -145,6 +145,27 @@ func main() {
 		slog.Error("Server forced to shutdown", "error", err)
 	}
 	slog.Info("Server exited gracefully")
+}
+
+func newLogger() *slog.Logger {
+	level := new(slog.LevelVar)
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("LOG_LEVEL"))) {
+	case "debug":
+		level.Set(slog.LevelDebug)
+	case "warn", "warning":
+		level.Set(slog.LevelWarn)
+	case "error":
+		level.Set(slog.LevelError)
+	default:
+		level.Set(slog.LevelInfo)
+	}
+
+	opts := &slog.HandlerOptions{Level: level, AddSource: true}
+	if strings.EqualFold(strings.TrimSpace(os.Getenv("LOG_FORMAT")), "text") {
+		return slog.New(slog.NewTextHandler(os.Stdout, opts))
+	}
+
+	return slog.New(slog.NewJSONHandler(os.Stdout, opts))
 }
 
 func getOrchestratorBaseURL() string {

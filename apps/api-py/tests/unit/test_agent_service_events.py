@@ -14,7 +14,7 @@ from services.agent_service import run_agent_pipeline
 
 class _FakeAgentApp:
     async def astream_events(
-        self, _input_payload, version: str = "v1"
+        self, _input_payload, config=None, version: str = "v1"
     ) -> AsyncGenerator[dict, None]:
         # Simulate a tool finishing and a model streaming output.
         yield {

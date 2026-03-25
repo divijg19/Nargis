@@ -5,6 +5,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from sqlalchemy.orm import Session
 
 from agent import graph as agent_graph
+from agent.tools import set_agent_runtime_context
 from services.ai_clients import _get_llm_response
 from services.context import get_system_context
 
@@ -68,55 +69,69 @@ async def run_agent_pipeline(
 
     # Stream events
     response_parts: list[str] = []
-    async for ev in agent_graph.agent_app.astream_events(input_payload, version="v1"):
-        if ev is None:
-            continue
+    tx_ctx = db.begin_nested() if db.in_transaction() else db.begin()
+    agent_config = agent_graph.build_agent_runnable_config(user_id, db)
 
-        kind = ev.get("event")
+    try:
+        with tx_ctx:
+            with set_agent_runtime_context(user_id, db):
+                async for ev in agent_graph.agent_app.astream_events(
+                    input_payload,
+                    config=agent_config,
+                    version="v1",
+                ):
+                    if ev is None:
+                        continue
 
-        if kind == "on_chain_start":
-            # Optional: emit thought about what chain is starting
-            pass
-        elif kind == "on_tool_start":
-            tool_name = ev.get("name")
-            tool_input = ev.get("data", {}).get("input")
-            # Clean up input string if it's a dict
-            if isinstance(tool_input, dict):
-                tool_input = json.dumps(tool_input)
-            yield (
-                json.dumps(
-                    {
-                        "type": "tool_use",
-                        "tool": tool_name,
-                        "input": str(tool_input)[:200],
-                    }
-                )
-                + "\n"
-            ).encode()
-        elif kind == "on_tool_end":
-            tool_name = ev.get("name")
-            tool_output = ev.get("data", {}).get("output")
-            if tool_output is not None:
-                if isinstance(tool_output, (dict, list)):
-                    tool_output = json.dumps(tool_output)
-                result_text = str(tool_output)[:2000]
-                yield (
-                    json.dumps(
-                        {
-                            "type": "tool_result",
-                            "tool": tool_name,
-                            # Canonical key expected by the web app.
-                            "result": result_text,
-                            # Backwards-compatible alias.
-                            "output": result_text,
-                        }
-                    )
-                    + "\n"
-                ).encode()
-        elif kind == "on_chat_model_stream":
-            content = ev.get("data", {}).get("chunk", {}).get("content")
-            if content:
-                response_parts.append(content)
+                    kind = ev.get("event")
+
+                    if kind == "on_chain_start":
+                        # Optional: emit thought about what chain is starting
+                        pass
+                    elif kind == "on_tool_start":
+                        tool_name = ev.get("name")
+                        tool_input = ev.get("data", {}).get("input")
+                        # Clean up input string if it's a dict
+                        if isinstance(tool_input, dict):
+                            tool_input = json.dumps(tool_input)
+                        yield (
+                            json.dumps(
+                                {
+                                    "type": "tool_use",
+                                    "tool": tool_name,
+                                    "input": str(tool_input)[:200],
+                                }
+                            )
+                            + "\n"
+                        ).encode()
+                    elif kind == "on_tool_end":
+                        tool_name = ev.get("name")
+                        tool_output = ev.get("data", {}).get("output")
+                        if tool_output is not None:
+                            if isinstance(tool_output, (dict, list)):
+                                tool_output = json.dumps(tool_output)
+                            result_text = str(tool_output)[:2000]
+                            yield (
+                                json.dumps(
+                                    {
+                                        "type": "tool_result",
+                                        "tool": tool_name,
+                                        # Canonical key expected by the web app.
+                                        "result": result_text,
+                                        # Backwards-compatible alias.
+                                        "output": result_text,
+                                    }
+                                )
+                                + "\n"
+                            ).encode()
+                    elif kind == "on_chat_model_stream":
+                        content = ev.get("data", {}).get("chunk", {}).get("content")
+                        if content:
+                            response_parts.append(content)
+    except Exception as exc:
+        yield (json.dumps({"type": "error", "content": str(exc)}) + "\n").encode()
+        yield (json.dumps({"type": "end", "content": "done"}) + "\n").encode()
+        return
 
     if response_parts:
         # Normalize: emit only assistant text, not raw LLM dict

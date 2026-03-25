@@ -13,7 +13,11 @@ import { buildEvent, emitDomainEvent } from "@/events/dispatcher";
 import { isFlagEnabled } from "@/flags/flags";
 import { useMediaRecorder } from "@/hooks/useMediaRecorder";
 import { sanitizeText } from "@/lib/sanitize";
-import { RealtimeConnection } from "@/realtime/connection";
+import {
+  buildPythonRealtimeWsUrl,
+  RealtimeConnection,
+} from "@/realtime/connection";
+import { authService } from "@/services/auth";
 import type { AgentEvent } from "@/types";
 import { useAuth } from "./AuthContext";
 import { useToasts } from "./ToastContext";
@@ -95,8 +99,6 @@ function normalizeAssistantText(input: unknown): string {
   if (looksLikeJson.test(s)) return sanitizeText(s, 20000, true);
   return s;
 }
-
-const STREAM_DEBOUNCE_MS = 80;
 
 function extractAssistantText(input: unknown): string {
   if (typeof input === "string") return sanitizeText(input, 20000, true);
@@ -200,21 +202,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   // Centralized incoming message handler (used for both real WS messages and
   // dev/testing injections). Kept stable via useCallback so it can be used
   // outside the connection effect.
-  const flushStreamingBuffer = useCallback(() => {
-    const next = normalizeAssistantText(responseBufferRef.current || "");
-    setAiResponse(next || null);
-  }, []);
-
-  const scheduleStreamingBufferFlush = useCallback(() => {
-    if (streamDebounceTimerRef.current) {
-      window.clearTimeout(streamDebounceTimerRef.current);
-    }
-    streamDebounceTimerRef.current = window.setTimeout(() => {
-      flushStreamingBuffer();
-      streamDebounceTimerRef.current = null;
-    }, STREAM_DEBOUNCE_MS);
-  }, [flushStreamingBuffer]);
-
   const commitAssistantBlock = useCallback(
     (rawInput: unknown, thoughts: string[] = []) => {
       const normalized = normalizeAssistantText(extractAssistantText(rawInput));
@@ -326,17 +313,19 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
               return;
             }
             case "response": {
-              // Buffer partial response text; show as transient `aiResponse`.
-              const chunk = sanitizeText(evt.content);
-              // mark stream active
-              streamActiveRef.current = true;
-              // accumulate
-              responseBufferRef.current =
-                (responseBufferRef.current || "") + chunk;
-              // streaming mutates text only (debounced), never inserts siblings
-              scheduleStreamingBufferFlush();
-              // keep processing true until we see `end`
-              setProcessing(true);
+              const finalText = sanitizeText(evt.content);
+              const thoughts = pendingThoughtsRef.current.slice();
+              pendingThoughtsRef.current = [];
+              if (streamDebounceTimerRef.current) {
+                window.clearTimeout(streamDebounceTimerRef.current);
+                streamDebounceTimerRef.current = null;
+              }
+              responseBufferRef.current = "";
+              streamActiveRef.current = false;
+              commitAssistantBlock(finalText, thoughts);
+              setCurrentAgentState(null);
+              setProcessing(false);
+              terminalSeenRef.current = true;
               return;
             }
             case "error":
@@ -431,7 +420,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       }
       // ignore unexpected message shapes
     },
-    [push, scheduleStreamingBufferFlush, commitAssistantBlock],
+    [push, commitAssistantBlock],
   );
 
   // Effect to establish and manage the WebSocket connection on component mount.
@@ -445,17 +434,9 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     const enabled = isFlagEnabled("realtime") || envEnable;
     if (!enabled) return;
 
-    const defaultUrl = (() => {
-      if (typeof window === "undefined") return "ws://localhost:8080/ws";
-      if (process.env.NODE_ENV === "production") {
-        const proto = window.location.protocol === "https:" ? "wss" : "ws";
-        return `${proto}://${window.location.host}/ws`;
-      }
-      return "ws://localhost:8080/ws";
-    })();
-
-    const url = process.env.NEXT_PUBLIC_WS_URL || defaultUrl;
-    // Security: do not append auth tokens to the WS URL.
+    const token = authService.getToken();
+    const url =
+      process.env.NEXT_PUBLIC_WS_URL || buildPythonRealtimeWsUrl(token);
     console.debug("[Realtime] initializing connection");
     const conn = new RealtimeConnection({ url, maxRetries: 6 });
     connectionRef.current = conn;
@@ -612,15 +593,9 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     if (connectionStatus !== "open") {
       let conn = connectionRef.current;
       if (!conn) {
-        const defaultUrl = (() => {
-          if (typeof window === "undefined") return "ws://localhost:8080/ws";
-          if (process.env.NODE_ENV === "production") {
-            const proto = window.location.protocol === "https:" ? "wss" : "ws";
-            return `${proto}://${window.location.host}/ws`;
-          }
-          return "ws://localhost:8080/ws";
-        })();
-        const url = process.env.NEXT_PUBLIC_WS_URL || defaultUrl;
+        const token = authService.getToken();
+        const url =
+          process.env.NEXT_PUBLIC_WS_URL || buildPythonRealtimeWsUrl(token);
         conn = new RealtimeConnection({ url, maxRetries: 6 });
         connectionRef.current = conn;
         conn.onStatus(setConnectionStatus);
@@ -659,13 +634,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Inform the gateway which mode this turn should use.
-    try {
-      connectionRef.current?.send(`MODE:${voiceMode}`);
-    } catch {
-      /* best-effort */
-    }
-
     try {
       // Clear any previous conversation state immediately so the UI resets
       setAiResponse(null);
@@ -681,10 +649,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
           }
         },
         () => {
-          if (connectionRef.current) {
-            connectionRef.current.send("EOS");
-            console.debug("Recording stopped, EOS signal sent.");
-          }
+          // Recording completed; the final blob is already sent above.
         },
       );
     } catch (error) {
