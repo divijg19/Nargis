@@ -8,7 +8,14 @@ that the FastAPI pipeline can invoke.
 from __future__ import annotations
 
 import importlib
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
+
+from sqlalchemy.orm import Session
+
+if TYPE_CHECKING:
+    from langchain_core.runnables import RunnableConfig
+else:  # pragma: no cover - keep runtime import optional
+    RunnableConfig = Any
 
 try:
     from langchain_groq import ChatGroq
@@ -55,6 +62,11 @@ def _load_create_react_agent() -> Any:
 create_agent: Any = _load_create_react_agent()
 
 
+def build_agent_runnable_config(user_id: str, db: Session) -> RunnableConfig:
+    """Build a config object that carries tenant and transaction context to tools."""
+    return cast(RunnableConfig, {"configurable": {"user_id": user_id, "db": db}})
+
+
 # Minimal safe factory that compiles the graph if langgraph is present.
 def _build_agent_app():
     if not (create_agent and ChatGroq):
@@ -73,6 +85,8 @@ def _build_agent_app():
             create_task_tool,
             get_task_details_tool,
             list_tasks_tool,
+            log_habit_tool,
+            log_journal_tool,
             recall_memory_tool,
             start_focus_tool,
             track_habit_tool,
@@ -86,6 +100,8 @@ def _build_agent_app():
         create_habit_tool = None
         track_habit_tool = None
         create_journal_tool = None
+        log_habit_tool = None
+        log_journal_tool = None
         start_focus_tool = None
 
     def lazy_agent():
@@ -103,6 +119,8 @@ def _build_agent_app():
                 create_habit_tool,
                 track_habit_tool,
                 create_journal_tool,
+                log_habit_tool,
+                log_journal_tool,
                 start_focus_tool,
             )
             if t

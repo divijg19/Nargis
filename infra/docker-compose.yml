@@ -24,16 +24,15 @@ services:
       - redis
       - db
 
-  # RENAMED: The Go service is now correctly named 'gateway'.
-  gateway:
+  # Control plane service (Go) for systems and observability concerns.
+  core-go:
     build:
-      # UPDATED: The context path is corrected to the new folder name.
-      context: ../apps/gateway
-    image: nargis-gateway:local # UPDATED: The image name is now consistent.
+      context: ../apps/core-go
+    image: nargis-core-go:local
     ports:
       - "8080:8080"
     environment:
-      # UPDATED: The gateway now only needs one variable to find the Python service.
+      # core-go only needs one variable to find the Python AI orchestrator.
       # It points to the 'api-py' service name within Docker's network.
       - ORCHESTRATOR_URL=http://api-py:8000
       - REDIS_URL=redis://redis:6379
@@ -69,9 +68,9 @@ services:
   #      - NEXT_PUBLIC_API_PY_URL=http://localhost:8000
   #      # This URL is for the real-time connection and is correct.
   #      - NEXT_PUBLIC_WS_URL=ws://localhost:8080/ws
-  #    # ADDED: Explicitly state that the web frontend depends on the gateway.
+  #    # ADDED: Explicitly state that the web frontend depends on core-go.
   #    depends_on:
-  #      - gateway
+  #      - core-go
 
 networks:
   default:

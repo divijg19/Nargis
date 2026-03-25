@@ -17,9 +17,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/divijg19/Nargis/gateway/internal/auth"
-	"github.com/divijg19/Nargis/gateway/internal/orchestrator"
-	"github.com/divijg19/Nargis/gateway/internal/vad"
+	"github.com/divijg19/Nargis/core-go/internal/auth"
+	"github.com/divijg19/Nargis/core-go/internal/orchestrator"
+	"github.com/divijg19/Nargis/core-go/internal/vad"
 	"github.com/gorilla/websocket"
 )
 

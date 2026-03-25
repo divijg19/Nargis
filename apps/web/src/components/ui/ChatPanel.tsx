@@ -31,6 +31,17 @@ type ChatPanelProps = {
   permissionDenied?: boolean;
 };
 
+function ThinkingIndicator({ agentState }: { agentState: string }) {
+  return (
+    <div className="mb-2 rounded-md border border-border/50 bg-muted/35 px-3 py-2">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono animate-pulse">
+        <span className="inline-block h-2 w-2 rounded-full bg-foreground/60" />
+        <span>{agentState}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function ChatPanel({
   compact = false,
   merged = false,
@@ -383,6 +394,10 @@ export default function ChatPanel({
             }
           }}
         />
+
+        {currentAgentState && (
+          <ThinkingIndicator agentState={currentAgentState} />
+        )}
 
         <ConversationActions
           messages={messages || []}

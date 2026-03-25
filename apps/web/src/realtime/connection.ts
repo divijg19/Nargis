@@ -6,6 +6,32 @@ interface RealtimeOptions {
   baseDelayMs?: number;
 }
 
+function toWsBaseUrl(httpBase: string): string {
+  try {
+    const u = new URL(httpBase);
+    u.protocol = u.protocol === "https:" ? "wss:" : "ws:";
+    u.pathname = "";
+    u.search = "";
+    u.hash = "";
+    return u.toString().replace(/\/$/, "");
+  } catch {
+    return "ws://localhost:8000";
+  }
+}
+
+export function buildPythonRealtimeWsUrl(token?: string | null): string {
+  const apiBase =
+    process.env.NEXT_PUBLIC_API_PY_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "http://localhost:8000";
+  const wsBase = toWsBaseUrl(apiBase);
+  const url = new URL(`${wsBase}/ws/v1/chat`);
+  if (token) {
+    url.searchParams.set("token", token);
+  }
+  return url.toString();
+}
+
 type MessageHandler = (data: unknown) => void;
 type StatusHandler = (
   status: "connecting" | "open" | "closed" | "error" | "retrying",
@@ -131,8 +157,19 @@ export class RealtimeConnection {
         this.ws.send(msg as Blob);
         return;
       }
+      if (
+        typeof SharedArrayBuffer !== "undefined" &&
+        // Send SharedArrayBuffer by copying into an ArrayBuffer-backed view
+        msg instanceof SharedArrayBuffer
+      ) {
+        const sab = msg as SharedArrayBuffer;
+        const copy = new Uint8Array(sab.byteLength);
+        copy.set(new Uint8Array(sab));
+        this.ws.send(copy);
+        return;
+      }
       if (msg instanceof ArrayBuffer || ArrayBuffer.isView(msg)) {
-        this.ws.send(msg as ArrayBufferLike);
+        this.ws.send(msg as unknown as BufferSource);
         return;
       }
       if (typeof msg === "string") {

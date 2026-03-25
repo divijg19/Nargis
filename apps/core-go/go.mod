@@ -1,4 +1,4 @@
-module github.com/divijg19/Nargis/gateway
+module github.com/divijg19/Nargis/core-go
 
 go 1.25.8
 
