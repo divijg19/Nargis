@@ -74,7 +74,7 @@ def test_agent_creates_task():
             # Tool call to create a task
             tool_call = {
                 "name": "create_task_tool",
-                "args": {"title": "Buy milk", "user_id": "user-1"},
+                "args": {"title": "Buy milk"},
                 "id": "call_123",
                 "type": "tool_call",
             }
@@ -93,13 +93,16 @@ def test_agent_creates_task():
             if "agent.tools" in sys.modules:
                 del sys.modules["agent.tools"]
             from agent.graph import _build_agent_app
+            from agent.tools import set_agent_runtime_context
 
             app = _build_agent_app()
             assert app is not None
 
             # Run agent
             inputs = {"messages": [HumanMessage(content="Create a task to buy milk")]}
-            app.invoke(inputs)
+            with mock_get_session_now() as db:
+                with set_agent_runtime_context("user-1", db):
+                    app.invoke(inputs)
 
             # Verify DB
             with mock_get_session_now() as db:

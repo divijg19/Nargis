@@ -28,9 +28,33 @@ class _FakeAgentApp:
         }
 
 
+class _DummyTx:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+
+class _FakeDB:
+    def in_transaction(self) -> bool:
+        return False
+
+    def begin(self):
+        return _DummyTx()
+
+    def begin_nested(self):
+        return _DummyTx()
+
+
 @pytest.mark.asyncio
 async def test_run_agent_pipeline_emits_tool_result_with_result_key():
-    fake_graph = SimpleNamespace(agent_app=_FakeAgentApp())
+    fake_graph = SimpleNamespace(
+        agent_app=_FakeAgentApp(),
+        build_agent_runnable_config=lambda user_id, db: {
+            "configurable": {"user_id": user_id, "db": db}
+        },
+    )
 
     with (
         patch("services.agent_service.agent_graph", fake_graph),
@@ -40,9 +64,7 @@ async def test_run_agent_pipeline_emits_tool_result_with_result_key():
         async for b in run_agent_pipeline(
             user_input="hi",
             user_id="u1",
-            db=cast(
-                Session, object()
-            ),  # get_system_context is patched, so db is unused here
+            db=cast(Session, _FakeDB()),
             stream_events=True,
         ):
             chunks.append(b)
