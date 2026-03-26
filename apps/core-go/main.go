@@ -22,6 +22,7 @@ import (
 	"github.com/divijg19/Nargis/core-go/internal/metrics"
 	"github.com/divijg19/Nargis/core-go/internal/orchestrator"
 	"github.com/divijg19/Nargis/core-go/internal/resilience"
+	"github.com/divijg19/Nargis/core-go/internal/scheduler"
 	"github.com/divijg19/Nargis/core-go/internal/vad"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -58,6 +59,28 @@ var (
 	upgrader   websocket.Upgrader
 	audioSem   chan struct{}
 )
+
+func newAPIReverseProxy(orchestratorURL string) (*httputil.ReverseProxy, error) {
+	target, err := url.Parse(orchestratorURL)
+	if err != nil {
+		return nil, err
+	}
+
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	origDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		origDirector(req)
+		req.URL.Scheme = target.Scheme
+		req.URL.Host = target.Host
+		req.Host = target.Host
+	}
+	proxy.ErrorHandler = func(rw http.ResponseWriter, _ *http.Request, e error) {
+		slog.Error("api proxy failed", "error", e)
+		http.Error(rw, "Upstream unavailable", http.StatusBadGateway)
+	}
+
+	return proxy, nil
+}
 
 func main() {
 	// 1. Setup Structured Logging
@@ -98,9 +121,22 @@ func main() {
 		CheckOrigin: func(r *http.Request) bool { return auth.CheckOrigin(r) },
 	}
 
+	apiProxy, err := newAPIReverseProxy(cfg.OrchestratorURL)
+	if err != nil {
+		slog.Error("Failed to initialize API reverse proxy", "error", err)
+		os.Exit(1)
+	}
+
 	// 4. Setup Router
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
+	mux.Handle("/api/v1/", withCORSHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/v1/internal/") {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		auth.JWTMiddleware(apiProxy).ServeHTTP(w, r)
+	})))
 	mux.HandleFunc("/ws", handleConnections)
 	mux.HandleFunc("/health", healthHandler)
 	mux.HandleFunc("/ready", readyHandler)
@@ -124,6 +160,10 @@ func main() {
 		os.Exit(1)
 	}
 	slog.Info("Orchestrator ready", "health_url", healthURL)
+
+	schedulerCtx, schedulerCancel := context.WithCancel(context.Background())
+	defer schedulerCancel()
+	scheduler.Start(schedulerCtx, cfg.OrchestratorURL, 5*time.Minute)
 
 	// 6. Start Server
 	go func() {
@@ -233,6 +273,12 @@ func withCORS(h http.HandlerFunc) http.HandlerFunc {
 
 		h(w, r)
 	}
+}
+
+func withCORSHandler(h http.Handler) http.HandlerFunc {
+	return withCORS(func(w http.ResponseWriter, r *http.Request) {
+		h.ServeHTTP(w, r)
+	})
 }
 
 func proxyAuthHandler(w http.ResponseWriter, r *http.Request) {

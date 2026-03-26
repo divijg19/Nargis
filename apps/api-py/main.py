@@ -29,6 +29,9 @@ from routers import (
     habits as habits_router,
 )
 from routers import (
+    internal as internal_router,
+)
+from routers import (
     journal as journal_router,
 )
 from routers import (
@@ -37,8 +40,6 @@ from routers import (
 from routers import (
     realtime as realtime_router,
 )
-
-# Import routers at module top so all imports are at the top-level (fixes E402)
 from routers import (
     tasks as tasks_router,
 )
@@ -146,6 +147,7 @@ app.include_router(habits_router.router)
 app.include_router(pomodoro_router.router)
 app.include_router(journal_router.router)
 app.include_router(realtime_router.router)
+app.include_router(internal_router.router, prefix="/api")
 
 
 def parse_origins(value: str | None) -> list[str]:

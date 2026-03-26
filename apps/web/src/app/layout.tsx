@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import Script from "next/script";
 import type { ReactNode } from "react";
 import "./globals.css";
 import "../styles/design-tokens.css";
@@ -77,18 +76,7 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrains_mono.variable}`}
       suppressHydrationWarning
     >
-      <head>
-        <Script id="theme-init" strategy="beforeInteractive">
-          {`try {
-              const theme = localStorage.getItem('theme');
-              const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-              const shouldBeDark = theme === 'dark' || (!theme && prefersDark);
-              if (shouldBeDark) {
-                document.documentElement.classList.add('dark');
-              }
-            } catch (e) {}`}
-        </Script>
-      </head>
+      <head />
       <body
         className={`${inter.variable} ${jetbrains_mono.variable} font-sans antialiased min-h-screen`}
       >

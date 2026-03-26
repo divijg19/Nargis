@@ -22,11 +22,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   mobileOpen = false,
   onMobileClose,
 }) => {
-  const [collapsed, setCollapsed] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      localStorage.getItem("sidebarCollapsed") === "true",
-  );
+  const [collapsed, setCollapsed] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const collapseButtonRef = useRef<HTMLButtonElement | null>(null);
   const newSessionButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -85,6 +81,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (collapsed) collapseButtonRef.current?.focus();
     else newSessionButtonRef.current?.focus();
   }, [collapsed]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("sidebarCollapsed");
+      if (saved === "true") {
+        setCollapsed(true);
+      }
+    } catch {
+      /* noop */
+    }
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("sidebarCollapsed", String(collapsed));
