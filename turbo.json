@@ -16,6 +16,15 @@
 			"persistent": true
 		},
 		"lint": {
+			"dependsOn": [
+				"^lint"
+			],
+			"outputs": []
+		},
+		"test": {
+			"dependsOn": [
+				"^test"
+			],
 			"outputs": []
 		},
 		"type-check": {
