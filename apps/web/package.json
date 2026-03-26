@@ -23,11 +23,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "test": "vitest run -c vitest.config.ts",
-    "test:unit": "vitest -c vitest.config.ts",
-    "test:unit:run": "vitest run -c vitest.config.ts",
-    "test:unit:coverage": "vitest run -c vitest.config.ts --coverage",
     "start": "next start",
+    "test": "vitest run -c vitest.config.ts",
+    "coverage": "vitest run -c vitest.config.ts --coverage",
     "test:e2e": "playwright test --config=playwright.config.ts",
     "type-check": "tsc --noEmit",
     "lint": "biome lint . --write",
