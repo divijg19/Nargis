@@ -19,7 +19,7 @@
     "test:core-go": "cd apps/core-go && go test ./...",
     "lint": "bun lint:web && bun lint:api && bun lint:core-go",
     "lint:web": "cd apps/web && bun lint && bun format",
-    "lint:api": "cd apps/api-py && uv run ruff check . && uv run ruff format .",
+    "lint:api": "cd apps/api-py && uv run ruff check . --fix && uv run ruff format .",
     "lint:core-go": "cd apps/core-go && [ -z \"$(find . -name '*.go' -not -path './vendor/*' -print0 | xargs -0 gofmt -l)\" ] && go vet ./...",
     "clean": "turbo clean",
     "type-check": "turbo type-check",
