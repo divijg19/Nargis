@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { ActionButton } from "@/components/ui/ActionButton";
+import { AIBriefingCard } from "@/components/ui/AIBriefingCard";
 import { DashboardCard } from "@/components/ui/DashboardCard";
 import DashboardHero from "@/components/ui/DashboardHero";
 import HabitModal from "@/components/ui/HabitModal";
@@ -13,6 +14,7 @@ import { TaskPreview } from "@/components/ui/TaskPreview";
 import { useHabitStore } from "@/contexts/HabitContext";
 import { usePomodoroStore } from "@/contexts/PomodoroContext";
 import { useTaskStore } from "@/contexts/TaskContext";
+import { getLatestBriefing } from "@/services/endpoints/journal";
 import type { CreateHabitRequest, CreateTaskRequest } from "@/types";
 
 export default function DashboardPage() {
@@ -30,10 +32,48 @@ export default function DashboardPage() {
 
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
+  const [briefingText, setBriefingText] = useState<string | null>(null);
+  const [briefingUpdatedAt, setBriefingUpdatedAt] = useState<
+    Date | undefined
+  >();
+  const [briefingLoading, setBriefingLoading] = useState(true);
+  const [briefingError, setBriefingError] = useState<string | null>(null);
 
   useEffect(() => {
     loadTasks();
   }, [loadTasks]);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadBriefing = async () => {
+      setBriefingLoading(true);
+      setBriefingError(null);
+      try {
+        const briefing = await getLatestBriefing();
+        if (!mounted) return;
+        setBriefingText(briefing?.content ?? null);
+        setBriefingUpdatedAt(briefing?.updatedAt ?? briefing?.createdAt);
+      } catch (error) {
+        if (!mounted) return;
+        setBriefingText(null);
+        setBriefingUpdatedAt(undefined);
+        setBriefingError(
+          error instanceof Error
+            ? error.message
+            : "Unable to load morning briefing.",
+        );
+      } finally {
+        if (mounted) {
+          setBriefingLoading(false);
+        }
+      }
+    };
+
+    loadBriefing();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleCreateTask = (taskData: CreateTaskRequest) => {
     addTask(taskData);
@@ -93,6 +133,13 @@ export default function DashboardPage() {
           <main className="w-full max-w-5xl mx-auto px-3 sm:px-4 lg:px-8 space-y-6 lg:space-y-8 pb-14 lg:pb-16 lg:col-start-4 lg:col-end-5 h-full overflow-auto">
             <div className="app-viewport-available">
               <div className="grid grid-cols-1 gap-4 md:gap-6">
+                <AIBriefingCard
+                  loading={briefingLoading}
+                  content={briefingText}
+                  updatedAt={briefingUpdatedAt}
+                  error={briefingError}
+                />
+
                 {/* Mobile-only stacked left area */}
                 <div className="lg:hidden flex flex-col gap-4">
                   <DashboardCard title="Quick Actions" size="xs">

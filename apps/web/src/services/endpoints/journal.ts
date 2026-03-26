@@ -1,6 +1,6 @@
 import { authService } from "@/services/auth";
 import type { CreateJournalEntryRequest, JournalEntry } from "@/types";
-import { fetchJson } from "../apiClient";
+import { ApiError, fetchJson } from "../apiClient";
 
 type JournalEntryApi = {
   id: string;
@@ -42,6 +42,21 @@ export async function listJournalEntries(): Promise<JournalEntry[]> {
     headers,
   });
   return apiEntries.map(mapApiToEntry);
+}
+
+export async function getLatestBriefing(): Promise<JournalEntry | null> {
+  const headers = authService.getAuthHeaders();
+  try {
+    const apiEntry = await fetchJson<JournalEntryApi>("/v1/journal/briefing", {
+      headers,
+    });
+    return mapApiToEntry(apiEntry);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export async function createJournalEntry(

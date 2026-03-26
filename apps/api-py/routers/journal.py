@@ -10,6 +10,7 @@ from routers.auth import get_current_user
 from services.journal import (
     create_entry_service,
     delete_entry_service,
+    entry_to_dict,
     generate_summary_service,
     get_entry_service,
     list_entries_service,
@@ -91,6 +92,37 @@ async def create_entry(
         )
 
     return created
+
+
+@router.get("/briefing")
+async def get_latest_briefing(
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    entries = (
+        db.query(JournalEntry)
+        .filter(JournalEntry.user_id == current_user["id"])
+        .order_by(JournalEntry.created_at.desc())
+        .limit(100)
+        .all()
+    )
+
+    for entry in entries:
+        title = (entry.title or "").strip().lower()
+        tags = entry.tags if isinstance(entry.tags, list) else []
+        normalized_tags = {str(tag).strip().lower() for tag in tags if str(tag).strip()}
+        if title == "morning briefing" or "system_briefing" in normalized_tags:
+            return entry_to_dict(entry)
+
+    raise HTTPException(
+        status_code=404,
+        detail={
+            "error": {
+                "code": "BRIEFING_NOT_FOUND",
+                "message": "No morning briefing found for this user.",
+            }
+        },
+    )
 
 
 @router.get("/{entry_id}")
