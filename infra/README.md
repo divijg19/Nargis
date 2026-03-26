@@ -8,7 +8,7 @@ docker-compose up --build
 
 This will build and run:
 - api-py (FastAPI) on port 8000
-- api-go (WebSocket) on port 8080
+- core-go (WebSocket) on port 8080
 - postgres on 5432
 - redis on 6379
 - optional web dev server on 3000
