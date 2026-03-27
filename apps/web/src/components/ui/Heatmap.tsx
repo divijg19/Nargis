@@ -1,7 +1,40 @@
 "use client";
 
-import { addDays, format, startOfWeek, subDays } from "date-fns";
 import React from "react";
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function subDays(date: Date, days: number) {
+  return addDays(date, -days);
+}
+
+function startOfWeek(date: Date, weekStartsOn = 0) {
+  const start = new Date(date);
+  const delta = (start.getDay() - weekStartsOn + 7) % 7;
+  start.setDate(start.getDate() - delta);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
+function formatKey(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function formatDateLabel(date: Date) {
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
 type HabitHistoryEntry = {
   date: string;
@@ -60,9 +93,7 @@ export default function Heatmap({ habits, weeks = 12 }: HeatmapProps) {
   // Build array of dates per week columns (7 rows) — ensure consistent 7 entries per column
   const weeksArray = React.useMemo(() => {
     if (!today) return [];
-    const start = startOfWeek(subDays(today, weeks * 7 - 1), {
-      weekStartsOn: 0,
-    });
+    const start = startOfWeek(subDays(today, weeks * 7 - 1), 0);
 
     const cols: (Date | null)[][] = Array.from({ length: weeks }, (_, wi) =>
       Array.from({ length: 7 }, (_, di) => addDays(start, wi * 7 + di)),
@@ -104,15 +135,15 @@ export default function Heatmap({ habits, weeks = 12 }: HeatmapProps) {
         <div className="flex space-x-1 items-start p-2">
           {weeksArray.map((col, ci) => (
             <div
-              key={col[0] ? format(col[0] as Date, "yyyy-MM-dd") : `week-${ci}`}
+              key={col[0] ? formatKey(col[0] as Date) : `week-${ci}`}
               className="grid grid-rows-7 gap-2"
             >
               {col.map((day, ri) => {
-                const key = day ? format(day as Date, "yyyy-MM-dd") : null;
+                const key = day ? formatKey(day as Date) : null;
                 const count = key ? dayCounts.get(key) || 0 : 0;
                 const cls = getColorClass(count);
                 const title = key
-                  ? `${format(new Date(key), "EEEE, MMM d, yyyy")}: ${count} completed`
+                  ? `${formatDateLabel(new Date(key))}: ${count} completed`
                   : "No data";
 
                 return (

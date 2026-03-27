@@ -1,7 +1,12 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { useJournalStore } from "@/contexts/JournalContext";
+import {
+  createJournalEntry,
+  generateAISummary,
+  updateJournalEntry,
+} from "@/services/endpoints/journal";
 import type { CreateJournalEntryRequest, JournalEntry } from "@/types";
 import { cn } from "@/utils";
 
@@ -27,7 +32,20 @@ export function JournalModal({
   entry,
   initialDate,
 }: JournalModalProps) {
-  const { addEntry, updateEntry, getSummary } = useJournalStore();
+  const queryClient = useQueryClient();
+  const createEntryMutation = useMutation({
+    mutationFn: createJournalEntry,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["journal"] });
+    },
+  });
+  const updateEntryMutation = useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<JournalEntry> }) =>
+      updateJournalEntry(id, patch),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["journal"] });
+    },
+  });
   const [type, setType] = useState<"text" | "voice">("text");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -94,7 +112,7 @@ export function JournalModal({
 
     setIsGeneratingSummary(true);
     try {
-      const summary = await getSummary(content);
+      const summary = await generateAISummary(content);
       setAiSummary(summary);
     } catch (error) {
       console.error("Failed to generate summary:", error);
@@ -118,16 +136,22 @@ export function JournalModal({
       };
 
       if (entry) {
-        await updateEntry(entry.id, {
-          ...entryData,
-          aiSummary,
+        await updateEntryMutation.mutateAsync({
+          id: entry.id,
+          patch: {
+            ...entryData,
+            aiSummary,
+          },
         });
       } else {
         // create and optionally backdate the entry when initialDate is provided
-        const created = await addEntry(entryData);
+        const created = await createEntryMutation.mutateAsync(entryData);
         if (initialDate) {
           try {
-            await updateEntry(created.id, { createdAt: initialDate });
+            await updateEntryMutation.mutateAsync({
+              id: created.id,
+              patch: { createdAt: initialDate },
+            });
           } catch (err) {
             // non-fatal: log and continue
             console.error("Failed to set entry date:", err);

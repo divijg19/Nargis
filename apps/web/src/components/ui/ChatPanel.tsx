@@ -1,12 +1,13 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtime } from "@/contexts/RealtimeContext";
-import { useTaskStore } from "@/contexts/TaskContext";
 import { useToasts } from "@/contexts/ToastContext";
 import { sanitizeText } from "@/lib/sanitize";
+import { createTask } from "@/services/endpoints/tasks";
 import { ConversationActions } from "./chat-panel/ConversationActions";
 import { ConversationCollapsedTrigger } from "./chat-panel/ConversationCollapsedTrigger";
 import { ConversationContent } from "./chat-panel/ConversationContent";
@@ -47,6 +48,7 @@ export default function ChatPanel({
   merged = false,
   permissionDenied = false,
 }: ChatPanelProps) {
+  const queryClient = useQueryClient();
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -90,7 +92,12 @@ export default function ChatPanel({
     : safeTranscript.slice(0, DISPLAY_LIMIT);
 
   const { push } = useToasts();
-  const { addTask } = useTaskStore();
+  const createTaskMutation = useMutation({
+    mutationFn: createTask,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
 
   const shouldShowSignInNudge =
     !loading && !isAuthenticated && (messages?.length || 0) > 0;
@@ -138,7 +145,7 @@ export default function ChatPanel({
     const content = sanitizeText(aiResponse ?? transcribedText ?? "");
     if (!content) return;
     try {
-      await addTask({
+      await createTaskMutation.mutateAsync({
         title: content.slice(0, 120),
         description: content,
         priority: "medium",

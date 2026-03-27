@@ -1,4 +1,4 @@
-import { CheckIcon } from "@heroicons/react/24/outline";
+import { Check } from "lucide-react";
 import type { HabitPreviewProps } from "@/types";
 import { cn } from "@/utils";
 
@@ -59,7 +59,7 @@ export function HabitPreview({
             )}
             onClick={() => onUpdateHabit(habit.id, 1)}
           >
-            {isCompletedToday(habit) && <CheckIcon className="w-4 h-4" />}
+            {isCompletedToday(habit) && <Check className="w-4 h-4" />}
           </button>
         </div>
       ))}

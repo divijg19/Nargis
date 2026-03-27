@@ -15,22 +15,60 @@ export class ApiError extends Error implements ApiErrorShape {
   }
 }
 
-const baseUrl = (process.env.NEXT_PUBLIC_API_PY_URL || "").replace(/\/$/, "");
+const apiProxyBase = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
+
+function normalizeApiPath(path: string): string {
+  if (!path) return "/api/v1";
+  if (/^https?:\/\//i.test(path)) return path;
+  if (path.startsWith("/api/v1/")) return path;
+  if (path === "/api/v1") return path;
+  if (path.startsWith("/v1/")) return `/api${path}`;
+  if (path === "/v1") return "/api/v1";
+
+  const withSlash = path.startsWith("/") ? path : `/${path}`;
+  return `/api/v1${withSlash}`;
+}
+
+function getBearerTokenFromStorage(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem("access_token");
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchAPI(
+  path: string,
+  options: RequestInit = {},
+): Promise<Response> {
+  const normalizedPath = normalizeApiPath(path);
+  const url = /^https?:\/\//i.test(normalizedPath)
+    ? normalizedPath
+    : `${apiProxyBase}${normalizedPath}`;
+
+  const headers = new Headers(options.headers || {});
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const token = getBearerTokenFromStorage();
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  return fetch(url, {
+    ...options,
+    headers,
+    credentials: "include",
+  });
+}
 
 export async function fetchJson<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  if (!baseUrl)
-    throw new ApiError({ status: 0, message: "API base URL not configured" });
-  const res = await fetch(baseUrl + path, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-    credentials: "include",
-  });
+  const res = await fetchAPI(path, options);
   if (!res.ok) {
     let body: unknown = null;
     try {

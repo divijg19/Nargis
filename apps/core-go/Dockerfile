@@ -14,7 +14,7 @@ COPY . .
 
 # Build the binary
 # -ldflags="-s -w" strips debug information to reduce binary size
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o gateway .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o server ./cmd/server
 
 # Runtime Stage
 FROM alpine:latest
@@ -29,7 +29,7 @@ RUN adduser -D -g '' nargis
 WORKDIR /app
 
 # Copy the binary from builder
-COPY --from=builder /app/gateway .
+COPY --from=builder /app/server .
 
 # Use the non-root user
 USER nargis
@@ -41,4 +41,4 @@ EXPOSE 7860
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:7860/health || exit 1
 # Run the binary
-CMD ["./gateway"]
+CMD ["./server"]

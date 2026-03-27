@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckIcon, ClipboardDocumentIcon } from "@heroicons/react/24/outline";
+import { Check, Clipboard } from "lucide-react";
 
 export type SidebarPrompt = {
   title: string;
@@ -118,9 +118,9 @@ export function PromptList({
               className="absolute right-2 top-2 p-1 rounded text-muted-foreground hover:text-foreground"
             >
               {copiedIndex === idx ? (
-                <CheckIcon className="w-4 h-4 text-green-400" />
+                <Check className="w-4 h-4 text-green-400" />
               ) : (
-                <ClipboardDocumentIcon className="w-4 h-4" />
+                <Clipboard className="w-4 h-4" />
               )}
             </button>
           </div>

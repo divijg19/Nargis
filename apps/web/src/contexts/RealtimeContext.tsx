@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
   useCallback,
@@ -9,10 +10,12 @@ import {
   useRef,
   useState,
 } from "react";
+import { z } from "zod";
 import { buildEvent, emitDomainEvent } from "@/events/dispatcher";
 import { isFlagEnabled } from "@/flags/flags";
 import { useMediaRecorder } from "@/hooks/useMediaRecorder";
 import { sanitizeText } from "@/lib/sanitize";
+import { useToasts } from "@/lib/toasts";
 import {
   buildPythonRealtimeWsUrl,
   RealtimeConnection,
@@ -20,7 +23,6 @@ import {
 import { authService } from "@/services/auth";
 import type { AgentEvent } from "@/types";
 import { useAuth } from "./AuthContext";
-import { useToasts } from "./ToastContext";
 
 // Narrow incoming messages safely (top-level to avoid hook deps)
 function isAIResponse(obj: unknown): obj is {
@@ -41,6 +43,31 @@ function isTranscriptLLM(
   if (typeof obj !== "object" || obj === null) return false;
   const o = obj as Record<string, unknown>;
   return typeof o.transcript === "string" && "llm" in o;
+}
+
+const agentEventSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("transcript"), content: z.string() }),
+  z.object({ type: z.literal("thought"), content: z.string() }),
+  z.object({
+    type: z.literal("tool_use"),
+    tool: z.string(),
+    input: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("tool_result"),
+    tool: z.string(),
+    result: z.string().optional(),
+    output: z.string().optional(),
+  }),
+  z.object({ type: z.literal("response"), content: z.string() }),
+  z.object({ type: z.literal("error"), content: z.string() }),
+  z.object({ type: z.literal("end"), content: z.string().optional() }),
+]);
+
+function parseAgentEvent(input: unknown): AgentEvent | null {
+  const parsed = agentEventSchema.safeParse(input);
+  if (!parsed.success) return null;
+  return parsed.data as AgentEvent;
 }
 
 // Define the shape of the data that the context will provide to the UI.
@@ -126,6 +153,7 @@ function extractAssistantText(input: unknown): string {
 }
 
 export function RealtimeProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuth();
   const [connectionStatus, setConnectionStatus] =
     useState<RealtimeContextValue["connectionStatus"]>("idle");
@@ -254,126 +282,139 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       console.debug("[Realtime] AI Response Received:", msg);
 
       // NEW: handle AgentEvent NDJSON shape
-      if (typeof msg === "object" && msg !== null) {
-        const maybe = msg as Record<string, unknown>;
-        if ("type" in maybe) {
-          const evt = maybe as AgentEvent;
-          switch (evt.type) {
-            case "transcript": {
-              const t = sanitizeText(evt.content);
-              if (t) {
-                committedAssistantForTurnRef.current = false;
-                setTranscribedText(t);
-                setMessages((cur) => [
-                  ...cur,
-                  { role: "user", text: t, ts: Date.now() },
-                ]);
-              }
-              return;
+      const evt = parseAgentEvent(msg);
+      if (evt) {
+        switch (evt.type) {
+          case "transcript": {
+            const t = sanitizeText(evt.content);
+            if (t) {
+              committedAssistantForTurnRef.current = false;
+              setTranscribedText(t);
+              setMessages((cur) => [
+                ...cur,
+                { role: "user", text: t, ts: Date.now() },
+              ]);
             }
-            case "thought": {
-              const t = String(evt.content || "").trim();
-              if (t) pendingThoughtsRef.current.push(t);
-              // show transient thinking hint
-              setCurrentAgentState(t || "Thinking…");
-              setProcessing(true);
-              // do not append to final history yet
-              return;
+            return;
+          }
+          case "thought": {
+            const t = String(evt.content || "").trim();
+            if (t) pendingThoughtsRef.current.push(t);
+            // show transient thinking hint
+            setCurrentAgentState(t || "Thinking…");
+            setProcessing(true);
+            // do not append to final history yet
+            return;
+          }
+          case "tool_use": {
+            // Safe narrow: only tool_use variant has input
+            const detail =
+              evt.type === "tool_use" && typeof evt.input === "string"
+                ? evt.input
+                : "";
+            const t = detail
+              ? `Using ${evt.tool} (${detail})…`
+              : `Using ${evt.tool}…`;
+            pendingThoughtsRef.current.push(t);
+            setCurrentAgentState(t);
+            setProcessing(true);
+
+            const detect = `${String(evt.tool || "")} ${detail}`.toLowerCase();
+            if (
+              detect.includes("task") ||
+              detect.includes("todo") ||
+              detect.includes("kanban")
+            ) {
+              void queryClient.invalidateQueries({ queryKey: ["tasks"] });
             }
-            case "tool_use": {
-              // Safe narrow: only tool_use variant has input
-              const detail =
-                evt.type === "tool_use" && typeof evt.input === "string"
-                  ? evt.input
+            if (detect.includes("habit") || detect.includes("streak")) {
+              void queryClient.invalidateQueries({ queryKey: ["habits"] });
+            }
+            if (detect.includes("journal") || detect.includes("entry")) {
+              void queryClient.invalidateQueries({ queryKey: ["journal"] });
+            }
+
+            return;
+          }
+          case "tool_result": {
+            // Emit domain event so other contexts can refresh data
+            const toolName = evt.tool;
+            const toolResult =
+              typeof evt.result === "string"
+                ? evt.result
+                : typeof evt.output === "string"
+                  ? evt.output
                   : "";
-              const t = detail
-                ? `Using ${evt.tool} (${detail})…`
-                : `Using ${evt.tool}…`;
-              pendingThoughtsRef.current.push(t);
-              setCurrentAgentState(t);
-              setProcessing(true);
-              return;
+            console.debug("[Realtime] Tool completed:", toolName);
+            emitDomainEvent(
+              buildEvent("remote.tool_completed", {
+                tool: toolName,
+                result: toolResult,
+              }),
+            );
+            return;
+          }
+          case "response": {
+            const finalText = sanitizeText(evt.content);
+            const thoughts = pendingThoughtsRef.current.slice();
+            pendingThoughtsRef.current = [];
+            if (streamDebounceTimerRef.current) {
+              window.clearTimeout(streamDebounceTimerRef.current);
+              streamDebounceTimerRef.current = null;
             }
-            case "tool_result": {
-              // Emit domain event so other contexts can refresh data
-              const toolName = evt.tool;
-              const toolResult =
-                typeof evt.result === "string"
-                  ? evt.result
-                  : typeof evt.output === "string"
-                    ? evt.output
-                    : "";
-              console.debug("[Realtime] Tool completed:", toolName);
-              emitDomainEvent(
-                buildEvent("remote.tool_completed", {
-                  tool: toolName,
-                  result: toolResult,
-                }),
-              );
-              return;
-            }
-            case "response": {
-              const finalText = sanitizeText(evt.content);
+            responseBufferRef.current = "";
+            streamActiveRef.current = false;
+            commitAssistantBlock(finalText, thoughts);
+            setCurrentAgentState(null);
+            setProcessing(false);
+            terminalSeenRef.current = true;
+            return;
+          }
+          case "error":
+            pendingThoughtsRef.current = [];
+            push({ message: String(evt.content), variant: "error" });
+            setCurrentAgentState(null);
+            setProcessing(false);
+            return;
+          case "end":
+            // Upstream signaled end-of-stream; mark terminal observed and
+            // clear processing. Only handle the first terminal event.
+            terminalSeenRef.current = true;
+            setCurrentAgentState(null);
+            // Commit buffered response to message history as a single assistant block
+            try {
+              const rawFinal =
+                responseBufferRef.current || String(evt.content || "");
               const thoughts = pendingThoughtsRef.current.slice();
               pendingThoughtsRef.current = [];
               if (streamDebounceTimerRef.current) {
                 window.clearTimeout(streamDebounceTimerRef.current);
                 streamDebounceTimerRef.current = null;
               }
+              commitAssistantBlock(rawFinal, thoughts);
+            } finally {
+              // Reset streaming state
               responseBufferRef.current = "";
               streamActiveRef.current = false;
-              commitAssistantBlock(finalText, thoughts);
-              setCurrentAgentState(null);
               setProcessing(false);
-              terminalSeenRef.current = true;
-              return;
             }
-            case "error":
-              pendingThoughtsRef.current = [];
-              push({ message: String(evt.content), variant: "error" });
-              setCurrentAgentState(null);
-              setProcessing(false);
-              return;
-            case "end":
-              // Upstream signaled end-of-stream; mark terminal observed and
-              // clear processing. Only handle the first terminal event.
-              terminalSeenRef.current = true;
-              setCurrentAgentState(null);
-              // Commit buffered response to message history as a single assistant block
-              try {
-                const rawFinal =
-                  responseBufferRef.current || String(evt.content || "");
-                const thoughts = pendingThoughtsRef.current.slice();
-                pendingThoughtsRef.current = [];
-                if (streamDebounceTimerRef.current) {
-                  window.clearTimeout(streamDebounceTimerRef.current);
-                  streamDebounceTimerRef.current = null;
-                }
-                commitAssistantBlock(rawFinal, thoughts);
-              } finally {
-                // Reset streaming state
-                responseBufferRef.current = "";
-                streamActiveRef.current = false;
-                setProcessing(false);
+            try {
+              const content = String(evt.content || "").toLowerCase();
+              if (
+                content.includes("canceled") ||
+                content.includes("cancelled")
+              ) {
+                push({
+                  message: "Canceled",
+                  variant: "warning",
+                  type: "stream-canceled",
+                });
               }
-              try {
-                const content = String(evt.content || "").toLowerCase();
-                if (
-                  content.includes("canceled") ||
-                  content.includes("cancelled")
-                ) {
-                  push({
-                    message: "Canceled",
-                    variant: "warning",
-                    type: "stream-canceled",
-                  });
-                }
-              } catch {
-                /* noop */
-              }
-              return;
-            // fallthrough to legacy handlers otherwise
-          }
+            } catch {
+              /* noop */
+            }
+            return;
+          // fallthrough to legacy handlers otherwise
         }
       }
 
@@ -420,7 +461,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       }
       // ignore unexpected message shapes
     },
-    [push, commitAssistantBlock],
+    [push, commitAssistantBlock, queryClient],
   );
 
   // Effect to establish and manage the WebSocket connection on component mount.

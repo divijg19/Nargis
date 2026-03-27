@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useRealtime } from "@/contexts/RealtimeContext";
-import { useToasts } from "@/contexts/ToastContext";
+import { useToasts } from "@/lib/toasts";
 import { VoiceStatusBadge } from "./VoiceStatusBadge";
 
 type VoiceSize = "sm" | "md" | "lg";

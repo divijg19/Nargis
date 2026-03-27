@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { usePomodoroStore } from "@/contexts/PomodoroContext";
+import { useEffect, useState } from "react";
 import type { PomodoroSettings as PomodoroSettingsType } from "@/types";
 import { ActionButton } from "./ActionButton";
 import { Modal } from "./Modal";
@@ -9,11 +8,16 @@ import { Modal } from "./Modal";
 interface PomodoroSettingsProps {
   isOpen: boolean;
   onClose: () => void;
+  settings: PomodoroSettingsType;
+  onUpdateSettings: (next: PomodoroSettingsType) => void;
 }
 
-export function PomodoroSettings({ isOpen, onClose }: PomodoroSettingsProps) {
-  const { settings, updateSettings } = usePomodoroStore();
-
+export function PomodoroSettings({
+  isOpen,
+  onClose,
+  settings,
+  onUpdateSettings,
+}: PomodoroSettingsProps) {
   const [workDuration, setWorkDuration] = useState(settings.workDuration);
   const [shortBreakDuration, setShortBreakDuration] = useState(
     settings.shortBreakDuration,
@@ -30,6 +34,16 @@ export function PomodoroSettings({ isOpen, onClose }: PomodoroSettingsProps) {
   const [autoStartWork, setAutoStartWork] = useState(settings.autoStartWork);
   const [soundEnabled, setSoundEnabled] = useState(settings.soundEnabled);
 
+  useEffect(() => {
+    setWorkDuration(settings.workDuration);
+    setShortBreakDuration(settings.shortBreakDuration);
+    setLongBreakDuration(settings.longBreakDuration);
+    setLongBreakInterval(settings.longBreakInterval);
+    setAutoStartBreaks(settings.autoStartBreaks);
+    setAutoStartWork(settings.autoStartWork);
+    setSoundEnabled(settings.soundEnabled);
+  }, [settings]);
+
   const handleSave = () => {
     const newSettings: PomodoroSettingsType = {
       workDuration,
@@ -40,7 +54,7 @@ export function PomodoroSettings({ isOpen, onClose }: PomodoroSettingsProps) {
       autoStartWork,
       soundEnabled,
     };
-    updateSettings(newSettings);
+    onUpdateSettings(newSettings);
     onClose();
   };
 

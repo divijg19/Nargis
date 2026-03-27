@@ -8,26 +8,25 @@ import { PomodoroSettings } from "@/components/ui/PomodoroSettings";
 import { PomodoroStats } from "@/components/ui/PomodoroStats";
 import { PomodoroTimer } from "@/components/ui/PomodoroTimer";
 import { SessionHistory } from "@/components/ui/SessionHistory";
-import { usePomodoroStore } from "@/contexts/PomodoroContext";
+import { usePomodoroController } from "@/hooks/usePomodoroController";
 
 export default function PomodoroPage() {
   const {
-    startTimer,
-    pauseTimer,
-    resetTimer,
     isRunning,
     progress,
     sessionType,
     todaySessionsCount,
     sessions,
-    loadSessions,
-  } = usePomodoroStore();
+    settings,
+    startTimer,
+    pauseTimer,
+    resetTimer,
+    updateSettings,
+    formattedTime,
+    currentSession,
+  } = usePomodoroController();
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-  useEffect(() => {
-    loadSessions();
-  }, [loadSessions]);
 
   // Keyboard shortcuts for quick control: Space = start/pause, R = reset
   useEffect(() => {
@@ -151,7 +150,18 @@ export default function PomodoroPage() {
                   title=""
                   className="p-5 sm:p-6 lg:p-7 overflow-visible w-full"
                 >
-                  <PomodoroTimer size="lg" showControls={true} />
+                  <PomodoroTimer
+                    size="lg"
+                    showControls={true}
+                    formattedTime={formattedTime}
+                    progress={progress}
+                    sessionType={sessionType}
+                    isRunning={isRunning}
+                    currentSession={currentSession}
+                    onStart={() => startTimer()}
+                    onPause={pauseTimer}
+                    onReset={resetTimer}
+                  />
                 </DashboardCard>
               </div>{" "}
               {/* Right column: controls, stats, guidance and shortcuts - stacked vertically */}
@@ -274,6 +284,8 @@ export default function PomodoroPage() {
         <PomodoroSettings
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
+          settings={settings}
+          onUpdateSettings={updateSettings}
         />
       </div>
     </RequireAuth>

@@ -113,7 +113,14 @@ async def lifespan(app: FastAPI):
     if os.getenv("PRELOAD_STT", "false").lower() == "true":
         from services.ai_clients import ensure_stt_loaded
 
-        await ensure_stt_loaded()
+        try:
+            await ensure_stt_loaded()
+        except (RuntimeError, ImportError) as exc:
+            logging.warning(
+                "Skipping local STT preload because optional ML dependencies "
+                "are unavailable: %s",
+                exc,
+            )
     try:
         yield
     finally:

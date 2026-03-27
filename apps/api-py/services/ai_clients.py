@@ -6,7 +6,6 @@ import subprocess
 from typing import TYPE_CHECKING
 
 import httpx
-import soundfile as sf
 from fastapi import HTTPException
 from openai import OpenAI
 
@@ -51,7 +50,14 @@ async def ensure_stt_loaded():
         if stt_model is not None:
             return
         logging.info("Lazy loading Whisper STT model...")
-        from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
+        try:
+            from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor
+        except ImportError as exc:
+            logging.warning(
+                "Local STT dependencies are not installed; "
+                "falling back to remote STT when available."
+            )
+            raise RuntimeError("Missing local STT dependency: transformers") from exc
 
         stt_processor = AutoProcessor.from_pretrained("openai/whisper-base")
         stt_model = AutoModelForSpeechSeq2Seq.from_pretrained("openai/whisper-base")
@@ -86,6 +92,15 @@ def convert_audio_to_wav_sync(audio_bytes: bytes) -> bytes:
 def run_stt_inference_sync(wav_audio_bytes: bytes) -> str:
     logging.info("Running STT inference with local model...")
     assert stt_processor is not None and stt_model is not None, "STT model not loaded"
+    try:
+        import soundfile as sf
+    except ImportError as exc:
+        logging.warning(
+            "soundfile is not installed; local STT is unavailable. "
+            "Install optional dependency group 'ml' to enable local STT."
+        )
+        raise RuntimeError("Missing local STT dependency: soundfile") from exc
+
     waveform, _ = sf.read(io.BytesIO(wav_audio_bytes))
     inputs = stt_processor(waveform, sampling_rate=16000, return_tensors="pt")
     input_features = inputs.input_features.to(device)
@@ -202,15 +217,53 @@ async def _get_transcription(audio_bytes: bytes) -> str:
     # 2) Local STT if explicitly enabled
     if ENABLE_LOCAL_STT:
         logging.info("Using local STT model.")
-        await ensure_stt_loaded()
-        loop = asyncio.get_running_loop()
         try:
+            await ensure_stt_loaded()
+            loop = asyncio.get_running_loop()
             wav_audio_bytes = await loop.run_in_executor(
                 None, convert_audio_to_wav_sync, audio_bytes
             )
             return await loop.run_in_executor(
                 None, run_stt_inference_sync, wav_audio_bytes
             )
+        except RuntimeError as e:
+            logging.warning(
+                "Local STT dependencies unavailable: %s. "
+                "Falling back to configured remote STT providers.",
+                e,
+            )
+            if STT_URL and DEEPGRAM_API_KEY:
+                logging.info("Retrying with external STT provider: Deepgram")
+                try:
+                    params = {
+                        "encoding": "opus",
+                        "container": "webm",
+                        "punctuate": "true",
+                        "smart_format": "true",
+                    }
+                    headers = {
+                        "Authorization": f"Token {DEEPGRAM_API_KEY}",
+                        "Content-Type": "audio/webm",
+                    }
+                    async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+                        resp = await client.post(
+                            STT_URL,
+                            headers=headers,
+                            params=params,
+                            content=audio_bytes,
+                        )
+                        resp.raise_for_status()
+                        data = resp.json()
+                        transcript = (
+                            data.get("results", {})
+                            .get("channels", [{}])[0]
+                            .get("alternatives", [{}])[0]
+                            .get("transcript", "")
+                        )
+                        if transcript:
+                            return transcript
+                except Exception:
+                    logging.exception("Fallback to Deepgram STT failed")
         except Exception as e:
             logging.exception(f"Local STT failed: {e}")
             raise HTTPException(status_code=500, detail="Local STT failed") from e

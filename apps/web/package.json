@@ -1,6 +1,6 @@
 {
   "name": "@nargis/web",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Next.js 15 frontend for Nargis - AI-powered productivity platform with task management, habit tracking, and Pomodoro timer",
   "keywords": [
@@ -33,17 +33,11 @@
     "unsafe": "biome check . --write --unsafe"
   },
   "dependencies": {
-    "@deepgram/sdk": "^5.0.0",
-    "@heroicons/react": "^2.2.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "groq-sdk": "^1.1.2",
+    "@tanstack/react-query": "^5.95.2",
     "lucide-react": "^1.7.0",
     "next": "^16.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "tailwind-merge": "^3.5.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {

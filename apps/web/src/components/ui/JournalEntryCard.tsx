@@ -1,7 +1,8 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useJournalStore } from "@/contexts/JournalContext";
+import { summarizeEntry } from "@/services/endpoints/journal";
 import type { JournalEntry } from "@/types";
 import { cn } from "@/utils";
 
@@ -21,7 +22,13 @@ export function JournalEntryCard({
   compact = false,
 }: JournalEntryCardProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const { summarizeEntry } = useJournalStore();
+  const queryClient = useQueryClient();
+  const summarizeMutation = useMutation({
+    mutationFn: summarizeEntry,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["journal"] });
+    },
+  });
 
   const getMoodColor = (mood?: JournalEntry["mood"]) => {
     switch (mood) {
@@ -185,7 +192,7 @@ export function JournalEntryCard({
             )}
             <button
               type="button"
-              onClick={() => summarizeEntry(entry.id)}
+              onClick={() => void summarizeMutation.mutateAsync(entry.id)}
               className="p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors"
               aria-label="Refresh AI summary"
               title="Refresh Summary"

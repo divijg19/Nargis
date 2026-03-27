@@ -1,40 +1,79 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { DashboardCard } from "@/components/ui/DashboardCard";
 import { TaskModal } from "@/components/ui/TaskModal";
 import { TaskPreview } from "@/components/ui/TaskPreview";
-import { useTaskStore } from "@/contexts/TaskContext";
-import type { CreateTaskRequest, Task } from "@/types";
+import { useTasks } from "@/hooks/queries";
+import { createTask, deleteTask, updateTask } from "@/services/endpoints/tasks";
+import type { CreateTaskRequest, Task, UpdateTaskRequest } from "@/types";
 
 export default function TasksPage() {
-  const {
-    tasks,
-    todayTasks,
-    tasksByStatus,
-    toggleTask,
-    loadTasks,
-    addTask,
-    updateTask,
-    deleteTask,
-  } = useTaskStore();
+  const queryClient = useQueryClient();
+  const tasksQuery = useTasks();
+  const tasks = tasksQuery.data ?? [];
+  const [todayKey, setTodayKey] = useState("");
+
+  useEffect(() => {
+    const d = new Date();
+    setTodayKey(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
+  }, []);
+
+  const createMutation = useMutation({
+    mutationFn: createTask,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: UpdateTaskRequest }) =>
+      updateTask(id, updates),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteTask,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+
+  const todayTasks = useMemo(() => {
+    if (!todayKey) return [];
+    return tasks.filter((task) => {
+      if (!task.dueDate) return false;
+      const dueKey = `${task.dueDate.getFullYear()}-${task.dueDate.getMonth()}-${task.dueDate.getDate()}`;
+      return dueKey === todayKey;
+    });
+  }, [tasks, todayKey]);
+
+  const tasksByStatus = useMemo(
+    () => ({
+      todo: tasks.filter((task) => task.status === "todo"),
+      inProgress: tasks.filter((task) => task.status === "inProgress"),
+      done: tasks.filter((task) => task.status === "done"),
+    }),
+    [tasks],
+  );
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  useEffect(() => {
-    loadTasks();
-  }, [loadTasks]);
-
   const handleCreateTask = async (taskData: CreateTaskRequest) => {
     if (editingTask) {
-      // Update existing task
-      await updateTask({ id: editingTask.id, ...taskData });
+      await updateMutation.mutateAsync({
+        id: editingTask.id,
+        updates: { id: editingTask.id, ...taskData },
+      });
       setEditingTask(null);
     } else {
-      // Create new task
-      addTask(taskData);
+      await createMutation.mutateAsync(taskData);
     }
     setIsModalOpen(false);
   };
@@ -45,7 +84,17 @@ export default function TasksPage() {
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    await deleteTask(taskId);
+    await deleteMutation.mutateAsync(taskId);
+  };
+
+  const handleToggleTask = async (taskId: string) => {
+    const existing = tasks.find((task) => task.id === taskId);
+    if (!existing) return;
+    const nextStatus = existing.status === "done" ? "todo" : "done";
+    await updateMutation.mutateAsync({
+      id: taskId,
+      updates: { id: taskId, status: nextStatus },
+    });
   };
 
   const handleModalClose = () => {
@@ -56,6 +105,19 @@ export default function TasksPage() {
   const completedCount = tasks.filter((t) => t.completed).length;
   const completionRate =
     tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
+
+  if (tasksQuery.isLoading) {
+    return (
+      <RequireAuth>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading tasks...</p>
+          </div>
+        </div>
+      </RequireAuth>
+    );
+  }
 
   return (
     <RequireAuth>
@@ -178,7 +240,7 @@ export default function TasksPage() {
                   <TaskPreview
                     tasks={todayTasks}
                     limit={6}
-                    onToggleTask={toggleTask}
+                    onToggleTask={handleToggleTask}
                   />
                 </div>
               </DashboardCard>
@@ -197,7 +259,7 @@ export default function TasksPage() {
                 <TaskPreview
                   tasks={tasksByStatus.inProgress}
                   limit={6}
-                  onToggleTask={toggleTask}
+                  onToggleTask={handleToggleTask}
                   onEditTask={handleEditTask}
                   onDeleteTask={handleDeleteTask}
                   showActions={true}
@@ -220,7 +282,7 @@ export default function TasksPage() {
                   <TaskPreview
                     tasks={tasksByStatus.todo}
                     limit={8}
-                    onToggleTask={toggleTask}
+                    onToggleTask={handleToggleTask}
                     onEditTask={handleEditTask}
                     onDeleteTask={handleDeleteTask}
                     showActions={true}
@@ -241,7 +303,7 @@ export default function TasksPage() {
                   <TaskPreview
                     tasks={tasksByStatus.done}
                     limit={8}
-                    onToggleTask={toggleTask}
+                    onToggleTask={handleToggleTask}
                     onEditTask={handleEditTask}
                     onDeleteTask={handleDeleteTask}
                     showActions={true}
@@ -266,7 +328,7 @@ export default function TasksPage() {
                 <TaskPreview
                   tasks={tasksByStatus.todo}
                   limit={3}
-                  onToggleTask={toggleTask}
+                  onToggleTask={handleToggleTask}
                   onEditTask={handleEditTask}
                   onDeleteTask={handleDeleteTask}
                   showActions={true}
@@ -287,7 +349,7 @@ export default function TasksPage() {
                 <TaskPreview
                   tasks={tasksByStatus.done}
                   limit={3}
-                  onToggleTask={toggleTask}
+                  onToggleTask={handleToggleTask}
                   onEditTask={handleEditTask}
                   onDeleteTask={handleDeleteTask}
                   showActions={true}

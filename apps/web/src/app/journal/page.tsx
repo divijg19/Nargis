@@ -1,10 +1,12 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { JournalEntryCard } from "@/components/ui/JournalEntryCard";
 import { JournalModal } from "@/components/ui/JournalModal";
-import { useJournalStore } from "@/contexts/JournalContext";
+import { useJournalEntries } from "@/hooks/queries";
+import { deleteJournalEntry } from "@/services/endpoints/journal";
 import type { JournalEntry } from "@/types";
 import { dateKey } from "@/utils";
 
@@ -12,7 +14,18 @@ type FilterType = "all" | "text" | "voice";
 type FilterMood = "all" | JournalEntry["mood"];
 
 export default function JournalPage() {
-  const { entries, loading, loadEntries, deleteEntry } = useJournalStore();
+  const queryClient = useQueryClient();
+  const journalQuery = useJournalEntries();
+  const entries = journalQuery.data ?? [];
+  const loading = journalQuery.isLoading;
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteJournalEntry,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["journal"] });
+    },
+  });
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | undefined>(
     undefined,
@@ -42,9 +55,9 @@ export default function JournalPage() {
   const [filterMood, setFilterMood] = useState<FilterMood>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    loadEntries();
-  }, [loadEntries]);
+  const handleDeleteEntry = async (id: string) => {
+    await deleteMutation.mutateAsync(id);
+  };
 
   // Filter entries based on selected filters and search
   const filteredEntries = useMemo(() => {
@@ -399,7 +412,7 @@ export default function JournalPage() {
                             key={entry.id}
                             entry={entry}
                             onEdit={handleEdit}
-                            onDelete={deleteEntry}
+                            onDelete={handleDeleteEntry}
                           />
                         ))}
                       </div>
@@ -418,7 +431,7 @@ export default function JournalPage() {
                             key={entry.id}
                             entry={entry}
                             onEdit={handleEdit}
-                            onDelete={deleteEntry}
+                            onDelete={handleDeleteEntry}
                           />
                         ))}
                       </div>
@@ -437,7 +450,7 @@ export default function JournalPage() {
                             key={entry.id}
                             entry={entry}
                             onEdit={handleEdit}
-                            onDelete={deleteEntry}
+                            onDelete={handleDeleteEntry}
                           />
                         ))}
                       </div>
@@ -538,7 +551,7 @@ export default function JournalPage() {
                               key={e.id}
                               entry={e}
                               onEdit={openEdit}
-                              onDelete={deleteEntry}
+                              onDelete={handleDeleteEntry}
                             />
                           ),
                         )}
@@ -620,7 +633,7 @@ export default function JournalPage() {
                                         key={e.id}
                                         entry={e}
                                         onEdit={openEdit}
-                                        onDelete={deleteEntry}
+                                        onDelete={handleDeleteEntry}
                                         compact
                                       />
                                     ))}
@@ -678,7 +691,7 @@ export default function JournalPage() {
                                         key={e.id}
                                         entry={e}
                                         onEdit={openEdit}
-                                        onDelete={deleteEntry}
+                                        onDelete={handleDeleteEntry}
                                       />
                                     ))}
                                     {list.length > 3 && (

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
@@ -11,76 +12,76 @@ import HabitModal from "@/components/ui/HabitModal";
 import { StatCard } from "@/components/ui/StatCard";
 import { TaskModal } from "@/components/ui/TaskModal";
 import { TaskPreview } from "@/components/ui/TaskPreview";
-import { useHabitStore } from "@/contexts/HabitContext";
-import { usePomodoroStore } from "@/contexts/PomodoroContext";
-import { useTaskStore } from "@/contexts/TaskContext";
+import { useDashboard } from "@/hooks/queries";
+import { createHabit } from "@/services/endpoints/habits";
 import { getLatestBriefing } from "@/services/endpoints/journal";
+import { createTask, updateTask } from "@/services/endpoints/tasks";
 import type { CreateHabitRequest, CreateTaskRequest } from "@/types";
 
 export default function DashboardPage() {
+  const queryClient = useQueryClient();
   const {
+    tasks,
     todayTasks,
     completedToday,
     tasksByStatus,
-    toggleTask,
-    loadTasks,
-    addTask,
-  } = useTaskStore();
-  const { totalStreaks, addHabit } = useHabitStore();
-  const { todaySessionsCount } = usePomodoroStore();
+    totalStreaks,
+    todaySessionsCount,
+  } = useDashboard();
   const router = useRouter();
+
+  const createTaskMutation = useMutation({
+    mutationFn: createTask,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+
+  const createHabitMutation = useMutation({
+    mutationFn: createHabit,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["habits"] });
+    },
+  });
+
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: "todo" | "done" }) =>
+      updateTask(id, { id, status }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
 
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
-  const [briefingText, setBriefingText] = useState<string | null>(null);
-  const [briefingUpdatedAt, setBriefingUpdatedAt] = useState<
-    Date | undefined
-  >();
-  const [briefingLoading, setBriefingLoading] = useState(true);
-  const [briefingError, setBriefingError] = useState<string | null>(null);
+  const briefingQuery = useQuery({
+    queryKey: ["journal", "briefing"],
+    queryFn: getLatestBriefing,
+  });
 
-  useEffect(() => {
-    loadTasks();
-  }, [loadTasks]);
+  const briefingText = briefingQuery.data?.content ?? null;
+  const briefingUpdatedAt =
+    briefingQuery.data?.updatedAt ?? briefingQuery.data?.createdAt;
+  const briefingLoading = briefingQuery.isLoading;
+  const briefingError = briefingQuery.error
+    ? briefingQuery.error instanceof Error
+      ? briefingQuery.error.message
+      : "Unable to load morning briefing."
+    : null;
 
-  useEffect(() => {
-    let mounted = true;
-    const loadBriefing = async () => {
-      setBriefingLoading(true);
-      setBriefingError(null);
-      try {
-        const briefing = await getLatestBriefing();
-        if (!mounted) return;
-        setBriefingText(briefing?.content ?? null);
-        setBriefingUpdatedAt(briefing?.updatedAt ?? briefing?.createdAt);
-      } catch (error) {
-        if (!mounted) return;
-        setBriefingText(null);
-        setBriefingUpdatedAt(undefined);
-        setBriefingError(
-          error instanceof Error
-            ? error.message
-            : "Unable to load morning briefing.",
-        );
-      } finally {
-        if (mounted) {
-          setBriefingLoading(false);
-        }
-      }
-    };
-
-    loadBriefing();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const handleCreateTask = (taskData: CreateTaskRequest) => {
-    addTask(taskData);
+  const handleCreateTask = async (taskData: CreateTaskRequest) => {
+    await createTaskMutation.mutateAsync(taskData);
   };
 
-  const handleCreateHabit = (habitData: CreateHabitRequest) => {
-    addHabit(habitData);
+  const handleCreateHabit = async (habitData: CreateHabitRequest) => {
+    await createHabitMutation.mutateAsync(habitData);
+  };
+
+  const handleToggleTask = (taskId: string) => {
+    const existing = tasks.find((task) => task.id === taskId);
+    if (!existing) return;
+    const status = existing.status === "done" ? "todo" : "done";
+    void updateTaskMutation.mutateAsync({ id: taskId, status });
   };
 
   const handleStartFocus = () => {
@@ -123,7 +124,7 @@ export default function DashboardPage() {
                 <TaskPreview
                   tasks={todayTasks}
                   limit={8}
-                  onToggleTask={toggleTask}
+                  onToggleTask={handleToggleTask}
                 />
               </div>
             </DashboardCard>
@@ -181,7 +182,7 @@ export default function DashboardPage() {
                     <TaskPreview
                       tasks={todayTasks}
                       limit={5}
-                      onToggleTask={toggleTask}
+                      onToggleTask={handleToggleTask}
                     />
                   </DashboardCard>
                 </div>

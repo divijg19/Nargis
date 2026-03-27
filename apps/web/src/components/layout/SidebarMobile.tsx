@@ -1,6 +1,6 @@
 "use client";
 
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { Plus } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { PromptList, type SidebarPrompt } from "./PromptList";
 
@@ -101,7 +101,7 @@ export function SidebarMobile({
               className="btn btn-secondary px-3 py-2 text-sm w-full flex items-center gap-2 justify-start"
               onClick={onNewSession}
             >
-              <PlusIcon className="w-5 h-5" />
+              <Plus className="w-5 h-5" />
               <span className="nav-label">New Session</span>
             </button>
           </div>
