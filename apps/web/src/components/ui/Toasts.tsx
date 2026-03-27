@@ -1,6 +1,6 @@
 "use client";
 // React import not needed (using automatic runtime)
-import { useToasts } from "@/contexts/ToastContext";
+import { useToasts } from "@/lib/toasts";
 
 export function ToastViewport() {
   const { toasts, dismiss } = useToasts();

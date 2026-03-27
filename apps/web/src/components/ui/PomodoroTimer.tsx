@@ -1,6 +1,6 @@
 "use client";
 
-import { usePomodoroStore } from "@/contexts/PomodoroContext";
+import type { PomodoroSession } from "@/types";
 import { cn } from "@/utils";
 
 interface PomodoroTimerProps {
@@ -8,6 +8,14 @@ interface PomodoroTimerProps {
   size?: "sm" | "md" | "lg";
   showControls?: boolean;
   minimal?: boolean;
+  formattedTime: string;
+  progress: number;
+  sessionType: "work" | "shortBreak" | "longBreak";
+  isRunning: boolean;
+  currentSession: PomodoroSession | null;
+  onStart: () => void;
+  onPause: () => void;
+  onReset: () => void;
 }
 
 export function PomodoroTimer({
@@ -15,18 +23,15 @@ export function PomodoroTimer({
   size = "md",
   showControls = true,
   minimal = false,
+  formattedTime,
+  progress,
+  sessionType,
+  isRunning,
+  currentSession,
+  onStart,
+  onPause,
+  onReset,
 }: PomodoroTimerProps) {
-  const {
-    formattedTime,
-    progress,
-    sessionType,
-    isRunning,
-    currentSession,
-    startTimer,
-    pauseTimer,
-    resetTimer,
-  } = usePomodoroStore();
-
   const sizeClasses = {
     sm: "text-4xl",
     md: "text-6xl",
@@ -87,7 +92,7 @@ export function PomodoroTimer({
         {currentSession && (
           <button
             type="button"
-            onClick={isRunning ? pauseTimer : () => startTimer()}
+            onClick={isRunning ? onPause : onStart}
             className="p-2 rounded-lg hover:bg-hover/20 transition-colors"
             aria-label={isRunning ? "Pause" : "Play"}
           >
@@ -181,7 +186,7 @@ export function PomodoroTimer({
           {!currentSession ? (
             <button
               type="button"
-              onClick={() => startTimer()}
+              onClick={onStart}
               className="px-8 py-4 bg-primary text-primary-foreground rounded-xl font-medium text-lg border border-primary/60 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200 hover:opacity-95 active:scale-95"
             >
               Start Focus
@@ -191,7 +196,7 @@ export function PomodoroTimer({
               {/* Play/Pause Button */}
               <button
                 type="button"
-                onClick={isRunning ? pauseTimer : () => startTimer()}
+                onClick={isRunning ? onPause : onStart}
                 className={cn(
                   "p-4 rounded-full border transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200 active:scale-95",
                   isRunning
@@ -228,7 +233,7 @@ export function PomodoroTimer({
               {/* Reset Button */}
               <button
                 type="button"
-                onClick={resetTimer}
+                onClick={onReset}
                 className="p-4 rounded-full bg-card border border-border/40 hover:bg-hover/20 text-foreground transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200 active:scale-95"
                 aria-label="Reset Timer"
               >

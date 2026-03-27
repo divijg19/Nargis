@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToasts } from "@/contexts/ToastContext";
+import { useToasts } from "@/lib/toasts";
 
 type ServiceName = "python" | "go";
 type RuntimeState = "active" | "idle" | "unreachable";

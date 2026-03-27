@@ -12,18 +12,15 @@ dependencies = [
     "openai>=2.6.0",
     "python-dotenv>=1.2.1",
     "python-multipart>=0.0.20",
-    "soundfile>=0.13.0",
     "bcrypt>=4.0.0",
     "pyjwt>=2.8.0",
     "email-validator>=2.0.0",
     "sqlalchemy>=2.0.45",
     "psycopg2-binary>=2.9.0",
     "pgvector>=0.4.0,<0.5",
-    "alembic>=1.13.0",
     "langgraph",
     "langchain",
     "langchain-groq",
-    "pytest-asyncio>=1.3.0",
     "redis>=7.1.0",
 ]
 
@@ -36,12 +33,14 @@ ml = [
     "accelerate",
     "bitsandbytes",
     "hf-xet>=1.2.0",
+    "soundfile>=0.13.0",
     # Optional local-only helpers
     "whisperx",
     "openai-whisper",
     "sentence-transformers",
 ]
 dev = [
+    "alembic>=1.13.0",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
     "requests>=2.31.0",

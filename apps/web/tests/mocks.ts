@@ -48,16 +48,22 @@ vi.mock("@/contexts/ToastContext", async () => {
   };
 });
 
-// Mock Task store
-vi.mock("@/contexts/TaskContext", async () => {
-  type TaskModule = typeof import("@/contexts/TaskContext");
-  const actual = (await vi.importActual(
-    "@/contexts/TaskContext",
-  )) as unknown as TaskModule;
+// Mock task endpoint used by ChatPanel task action
+vi.mock("@/services/endpoints/tasks", async () => {
+  const actual = await vi.importActual("@/services/endpoints/tasks");
   return {
     ...actual,
-    useTaskStore: () => ({
-      addTask: async () => {},
+    createTask: async () => ({
+      id: "task-test-id",
+      title: "Test Task",
+      description: "",
+      priority: "medium",
+      status: "todo",
+      tags: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      pomodoroCount: 0,
+      completed: false,
     }),
   };
 });

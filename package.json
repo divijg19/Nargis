@@ -12,7 +12,7 @@
     "dev:go": "cd apps/core-go && cross-env ORCHESTRATOR_URL=http://localhost:8000 air",
     "build": "bun build:web && bun build:core-go",
     "build:web": "cd apps/web && bun run build",
-    "build:core-go": "mkdir -p dist && cd apps/core-go && go build -o ../../dist/core-go .",
+    "build:core-go": "mkdir -p dist && cd apps/core-go && go build -o ../../dist/core-go ./cmd/server",
     "test": "bun test:web && bun test:api && bun test:core-go",
     "test:web": "cd apps/web && bun run test",
     "test:api": "cd apps/api-py && uv run pytest",

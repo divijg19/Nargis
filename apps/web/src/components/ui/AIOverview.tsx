@@ -1,38 +1,44 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 // Goals feature removed; avoid importing GoalContext
-import { useHabitStore } from "@/contexts/HabitContext";
-import { usePomodoroStore } from "@/contexts/PomodoroContext";
-import { useTaskStore } from "@/contexts/TaskContext";
+import { useDashboard } from "@/hooks/queries";
 
 interface AIOverviewProps {
   className?: string;
 }
 
 export function AIOverview({ className = "" }: AIOverviewProps) {
-  const { todayTasks, completedToday } = useTaskStore();
-  const { todayProgress } = useHabitStore();
-  // Goals removed — use empty list for insights
-  type MinimalGoal = { id?: string; status?: string; title?: string };
-  const goals: MinimalGoal[] = [];
-  const { todaySessionsCount, sessions } = usePomodoroStore();
+  const {
+    todayTasks,
+    completedToday,
+    todayProgress,
+    todaySessionsCount,
+    sessions,
+  } = useDashboard();
+  const [todayKey, setTodayKey] = useState("");
+  const [currentHour, setCurrentHour] = useState<number | null>(null);
+
+  useEffect(() => {
+    const now = new Date();
+    setTodayKey(`${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`);
+    setCurrentHour(now.getHours());
+  }, []);
 
   // Calculate total focus minutes from today's completed sessions
   const totalFocusMinutes = useMemo(() => {
+    if (!todayKey) return 0;
     return sessions
       .filter((s) => s.completed && s.type === "work")
       .reduce((acc, s) => {
         const sessionDate = new Date(s.startTime);
-        const today = new Date();
-        sessionDate.setHours(0, 0, 0, 0);
-        today.setHours(0, 0, 0, 0);
-        if (sessionDate.getTime() === today.getTime()) {
+        const sessionKey = `${sessionDate.getFullYear()}-${sessionDate.getMonth()}-${sessionDate.getDate()}`;
+        if (sessionKey === todayKey) {
           return acc + s.duration;
         }
         return acc;
       }, 0);
-  }, [sessions]);
+  }, [sessions, todayKey]);
 
   const insights = useMemo(() => {
     const insights: Array<{
@@ -116,25 +122,24 @@ export function AIOverview({ className = "" }: AIOverviewProps) {
       });
     }
 
-    // Goal insights
-    const activeGoals = goals.filter((g) => g.status === "active").length;
-    if (activeGoals > 0 && incompleteTasks === 0) {
-      insights.push({
-        type: "suggestion",
-        text: `You have ${activeGoals} active ${activeGoals === 1 ? "goal" : "goals"}. Ready to create tasks to move forward?`,
-        badge: "Tip",
-      });
-    }
-
     // Energy level suggestion based on time
-    const hour = new Date().getHours();
-    if (hour >= 6 && hour < 9 && incompleteTasks > 0) {
+    if (
+      currentHour !== null &&
+      currentHour >= 6 &&
+      currentHour < 9 &&
+      incompleteTasks > 0
+    ) {
       insights.push({
         type: "info",
         text: "Morning is great for tackling your most important tasks when energy is high!",
         badge: "Info",
       });
-    } else if (hour >= 14 && hour < 16 && todaySessionsCount === 0) {
+    } else if (
+      currentHour !== null &&
+      currentHour >= 14 &&
+      currentHour < 16 &&
+      todaySessionsCount === 0
+    ) {
       insights.push({
         type: "suggestion",
         text: "Post-lunch is a good time for a focused work session.",
@@ -159,7 +164,7 @@ export function AIOverview({ className = "" }: AIOverviewProps) {
     todayProgress,
     todaySessionsCount,
     totalFocusMinutes,
-    goals.filter,
+    currentHour,
   ]);
 
   const summary = useMemo(() => {

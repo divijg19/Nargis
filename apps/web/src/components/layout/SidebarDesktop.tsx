@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { PromptList, type SidebarPrompt } from "./PromptList";
 
 export function SidebarDesktop({
@@ -50,9 +46,9 @@ export function SidebarDesktop({
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? (
-            <ChevronRightIcon className="w-5 h-5" />
+            <ChevronRight className="w-5 h-5" />
           ) : (
-            <ChevronLeftIcon className="w-5 h-5" />
+            <ChevronLeft className="w-5 h-5" />
           )}
         </button>
       </div>
@@ -76,7 +72,7 @@ export function SidebarDesktop({
           aria-label="New session"
           title={!collapsed ? undefined : "New session"}
         >
-          <PlusIcon className="w-5 h-5" />
+          <Plus className="w-5 h-5" />
           {!collapsed && <span className="nav-label">New Session</span>}
         </button>
       </div>

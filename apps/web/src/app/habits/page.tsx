@@ -1,41 +1,104 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { DashboardCard } from "@/components/ui/DashboardCard";
 import { HabitCard } from "@/components/ui/HabitCard";
 import HabitModal from "@/components/ui/HabitModal";
 import Heatmap from "@/components/ui/Heatmap";
-import { useHabitStore } from "@/contexts/HabitContext";
-import type { CreateHabitRequest, Habit } from "@/types";
+import { useHabits } from "@/hooks/queries";
+import {
+  createHabit,
+  deleteHabit,
+  updateHabit,
+  updateHabitCount,
+} from "@/services/endpoints/habits";
+import type { CreateHabitRequest, Habit, UpdateHabitRequest } from "@/types";
 
 export default function HabitsPage() {
-  const {
-    todayProgress,
-    totalStreaks,
-    loadHabits,
-    addHabit,
-    updateHabit,
-    deleteHabit,
-    updateHabitCount,
-    habits,
-  } = useHabitStore();
+  const queryClient = useQueryClient();
+  const habitsQuery = useHabits();
+  const habits = habitsQuery.data ?? [];
+  const [todayIso, setTodayIso] = useState("");
+
+  useEffect(() => {
+    setTodayIso(new Date().toISOString().slice(0, 10));
+  }, []);
+
+  const createMutation = useMutation({
+    mutationFn: createHabit,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["habits"] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: UpdateHabitRequest;
+    }) => updateHabit(id, payload),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["habits"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteHabit,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["habits"] });
+    },
+  });
+
+  const updateCountMutation = useMutation({
+    mutationFn: ({ id, count }: { id: string; count: number }) =>
+      updateHabitCount(id, count),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["habits"] });
+    },
+  });
+
+  const todayProgress = useMemo(() => {
+    if (!todayIso) return [];
+    return habits.map((habit) => {
+      const todayEntry = habit.history?.find(
+        (entry) => entry.date === todayIso,
+      );
+      const todayCount = todayEntry?.count ?? 0;
+      const progress = Math.min(
+        100,
+        Math.round((todayCount / habit.target) * 100),
+      );
+      const completed = todayCount >= habit.target;
+      return {
+        ...habit,
+        todayCount,
+        progress,
+        completed,
+      };
+    });
+  }, [habits, todayIso]);
+
+  const totalStreaks = habits.filter(
+    (habit) => (habit.currentStreak ?? habit.streak) > 0,
+  ).length;
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
 
-  useEffect(() => {
-    loadHabits();
-  }, [loadHabits]);
-
-  const handleCreateHabit = (habitData: CreateHabitRequest) => {
+  const handleCreateHabit = async (habitData: CreateHabitRequest) => {
     if (editingHabit) {
-      // Update existing habit
-      updateHabit({ id: editingHabit.id, ...habitData });
+      await updateMutation.mutateAsync({
+        id: editingHabit.id,
+        payload: { id: editingHabit.id, ...habitData },
+      });
       setEditingHabit(null);
     } else {
-      // Create new habit
-      addHabit(habitData);
+      await createMutation.mutateAsync(habitData);
     }
     setIsModalOpen(false);
   };
@@ -46,13 +109,30 @@ export default function HabitsPage() {
   };
 
   const handleDeleteHabit = async (habitId: string) => {
-    await deleteHabit(habitId);
+    await deleteMutation.mutateAsync(habitId);
+  };
+
+  const handleUpdateHabitCount = async (habitId: string, count: number) => {
+    await updateCountMutation.mutateAsync({ id: habitId, count });
   };
 
   const handleModalClose = () => {
     setIsModalOpen(false);
     setEditingHabit(null);
   };
+
+  if (habitsQuery.isLoading) {
+    return (
+      <RequireAuth>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading habits...</p>
+          </div>
+        </div>
+      </RequireAuth>
+    );
+  }
 
   return (
     <RequireAuth>
@@ -122,7 +202,7 @@ export default function HabitsPage() {
                           <HabitCard
                             key={habit.id}
                             habit={habit}
-                            onUpdateCount={updateHabitCount}
+                            onUpdateCount={handleUpdateHabitCount}
                             onEdit={handleEditHabit}
                             onDelete={handleDeleteHabit}
                             showActions={true}

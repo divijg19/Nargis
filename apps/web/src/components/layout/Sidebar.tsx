@@ -1,17 +1,12 @@
 "use client";
 
-import {
-  CalendarDaysIcon,
-  ChartBarIcon,
-  ClockIcon,
-  PencilSquareIcon,
-} from "@heroicons/react/24/outline";
+import { BarChart3, CalendarDays, Clock, SquarePen } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { SidebarPrompt } from "@/components/layout/PromptList";
 import { SidebarDesktop } from "@/components/layout/SidebarDesktop";
 import { SidebarMobile } from "@/components/layout/SidebarMobile";
 import { useRealtime } from "@/contexts/RealtimeContext";
-import { useToasts } from "@/contexts/ToastContext";
+import { useToasts } from "@/lib/toasts";
 
 type SidebarProps = {
   mobileOpen?: boolean;
@@ -35,25 +30,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: "Plan my day",
       subtitle: "then list my top 3 priorities",
       prompt: "Plan my day: list my top 3 priorities",
-      icon: CalendarDaysIcon,
+      icon: CalendarDays,
     },
     {
       title: "Start a journal entry",
       subtitle: "about my progress this week",
       prompt: "Start a journal entry about my progress this week",
-      icon: PencilSquareIcon,
+      icon: SquarePen,
     },
     {
       title: "Track a new habit",
       subtitle: "like 'read for 15 minutes daily'",
       prompt: "Track a new habit: read for 15 minutes daily",
-      icon: ChartBarIcon,
+      icon: BarChart3,
     },
     {
       title: "Begin a focus session",
       subtitle: "by saying 'start Pomodoro'",
       prompt: "Begin a focus session: start Pomodoro",
-      icon: ClockIcon,
+      icon: Clock,
     },
   ];
 

@@ -1,4 +1,6 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
+import type { PropsWithChildren } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const realtimeState: {
@@ -58,11 +60,22 @@ vi.mock("@/contexts/ToastContext", () => ({
   useToasts: () => ({ push: vi.fn(), dismiss: vi.fn(), toasts: [] }),
 }));
 
-vi.mock("@/contexts/TaskContext", () => ({
-  useTaskStore: () => ({ addTask: vi.fn(async () => {}) }),
-}));
-
 import ChatPanel from "@/components/ui/ChatPanel";
+
+function withQueryClient() {
+  const client = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  return function Wrapper({ children }: PropsWithChildren) {
+    return (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+  };
+}
 
 describe("ChatPanel accessibility announcements", () => {
   afterEach(() => {
@@ -83,7 +96,9 @@ describe("ChatPanel accessibility announcements", () => {
       { role: "assistant", text: "Turn complete", ts: 2000 },
     ];
 
-    const { rerender, container } = render(<ChatPanel merged={false} />);
+    const { rerender, container } = render(<ChatPanel merged={false} />, {
+      wrapper: withQueryClient(),
+    });
 
     const log = screen.getByRole("log");
     expect(log.querySelectorAll(".message--assistant")).toHaveLength(1);
@@ -104,7 +119,9 @@ describe("ChatPanel accessibility announcements", () => {
       { role: "assistant", text: "Initial response", ts: 3000 },
     ];
 
-    const { rerender } = render(<ChatPanel merged={false} />);
+    const { rerender } = render(<ChatPanel merged={false} />, {
+      wrapper: withQueryClient(),
+    });
 
     realtimeState.isListening = true;
     rerender(<ChatPanel merged={false} />);
@@ -130,7 +147,9 @@ describe("ChatPanel accessibility announcements", () => {
     realtimeState.aiResponse =
       '{"choices":[{"message":{"content":"Hello world"}}]}';
 
-    render(<ChatPanel merged={false} />);
+    render(<ChatPanel merged={false} />, {
+      wrapper: withQueryClient(),
+    });
 
     expect(
       screen.queryByText('{"choices":[{"message":{"content":"Hello world"}}]}'),

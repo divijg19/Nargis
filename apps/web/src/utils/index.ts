@@ -1,12 +1,37 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+type PrimitiveClass = string | number | boolean | null | undefined;
+type ClassDictionary = Record<string, boolean | null | undefined>;
+type ClassArray = ClassValue[];
+type ClassValue = PrimitiveClass | ClassDictionary | ClassArray;
+
+function normalizeClassValue(input: ClassValue, out: string[]) {
+  if (!input) return;
+
+  if (typeof input === "string" || typeof input === "number") {
+    out.push(String(input));
+    return;
+  }
+
+  if (Array.isArray(input)) {
+    for (const item of input) {
+      normalizeClassValue(item, out);
+    }
+    return;
+  }
+
+  for (const [key, enabled] of Object.entries(input)) {
+    if (enabled) out.push(key);
+  }
+}
 
 /**
- * Utility function to merge Tailwind classes with clsx
- * Handles conditional classes and resolves conflicts
+ * Utility function to combine conditional class names
  */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  const classes: string[] = [];
+  for (const input of inputs) {
+    normalizeClassValue(input, classes);
+  }
+  return classes.join(" ");
 }
 
 /**
