@@ -27,6 +27,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redis/go-redis/v9"
 )
 
 func extractAuthToken(r *http.Request) string {
@@ -52,12 +53,13 @@ func extractAuthToken(r *http.Request) string {
 }
 
 var (
-	cfg        *config.Config
-	orchClient *orchestrator.Client
-	busClient  *bus.Client
-	vadProc    *vad.Processor
-	upgrader   websocket.Upgrader
-	audioSem   chan struct{}
+	cfg          *config.Config
+	orchClient   *orchestrator.Client
+	busClient    *bus.Client
+	rateLimitRDB *redis.Client
+	vadProc      *vad.Processor
+	upgrader     websocket.Upgrader
+	audioSem     chan struct{}
 )
 
 func newAPIReverseProxy(orchestratorURL string) (*httputil.ReverseProxy, error) {
@@ -101,11 +103,30 @@ func main() {
 	audioSem = make(chan struct{}, 4)
 
 	var err error
-	if cfg.RedisURL == "" {
-		slog.Warn("REDIS_URL not set, running in degraded mode (no events)")
+
+	rateLimitRDB, err = newRedisClient(cfg.RedisURL)
+	if err != nil {
+		slog.Warn("Failed to initialize Redis client for rate limiting; fail-open mode enabled", "error", err)
+		rateLimitRDB = nil
+	} else {
+		pingCtx, pingCancel := context.WithTimeout(context.Background(), 2*time.Second)
+		pingErr := rateLimitRDB.Ping(pingCtx).Err()
+		pingCancel()
+		if pingErr != nil {
+			slog.Warn("Redis is unreachable for rate limiting; fail-open mode enabled", "error", pingErr)
+			_ = rateLimitRDB.Close()
+			rateLimitRDB = nil
+		} else {
+			slog.Info("Connected to Redis for rate limiting", "redis", cfg.RedisURL)
+			defer rateLimitRDB.Close()
+		}
+	}
+
+	if strings.TrimSpace(cfg.RedisURL) == "" {
+		slog.Warn("REDIS_URL not set, running in degraded mode (no events, no Redis-backed rate limiting)")
 		busClient = nil
 	} else {
-		busClient, err = bus.NewClient(cfg.RedisURL)
+		busClient, err = bus.NewClient(normalizeRedisURL(cfg.RedisURL))
 		if err != nil {
 			slog.Warn("Failed to connect to Redis, real-time events disabled", "error", err)
 			busClient = nil
@@ -114,8 +135,6 @@ func main() {
 			slog.Info("Connected to Redis")
 		}
 	}
-
-	resilience.StartIPCacheEvictor()
 
 	upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool { return auth.CheckOrigin(r) },
@@ -129,13 +148,16 @@ func main() {
 
 	// 4. Setup Router
 	mux := http.NewServeMux()
+	apiHandler := auth.JWTMiddleware(
+		resilience.RateLimitMiddleware(rateLimitRDB, 100, time.Minute)(apiProxy),
+	)
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.Handle("/api/v1/", withCORSHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/v1/internal/") {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-		auth.JWTMiddleware(apiProxy).ServeHTTP(w, r)
+		apiHandler.ServeHTTP(w, r)
 	})))
 	mux.HandleFunc("/ws", handleConnections)
 	mux.HandleFunc("/health", healthHandler)
@@ -218,6 +240,29 @@ func getOrchestratorBaseURL() string {
 		return u
 	}
 	return "http://localhost:8000"
+}
+
+func normalizeRedisURL(raw string) string {
+	v := strings.TrimSpace(raw)
+	if v == "" {
+		return ""
+	}
+	if strings.Contains(v, "://") {
+		return v
+	}
+	return "redis://" + v
+}
+
+func newRedisClient(redisURL string) (*redis.Client, error) {
+	normalized := normalizeRedisURL(redisURL)
+	if normalized == "" {
+		return nil, fmt.Errorf("redis url is empty")
+	}
+	opts, err := redis.ParseURL(normalized)
+	if err != nil {
+		return nil, fmt.Errorf("invalid redis url %q: %w", redisURL, err)
+	}
+	return redis.NewClient(opts), nil
 }
 
 // WaitForOrchestrator polls the orchestrator health endpoint until it becomes
@@ -377,15 +422,21 @@ func readyHandler(w http.ResponseWriter, r *http.Request) {
 	redisStatus := "disabled"
 	redisErr := ""
 	if cfg.RedisURL != "" {
-		if busClient == nil {
-			redisStatus = "down"
-			redisErr = "not connected"
-		} else {
+		if rateLimitRDB != nil {
+			redisStatus = "ok"
+			if err := rateLimitRDB.Ping(ctx).Err(); err != nil {
+				redisStatus = "down"
+				redisErr = err.Error()
+			}
+		} else if busClient != nil {
 			redisStatus = "ok"
 			if err := busClient.Ping(ctx); err != nil {
 				redisStatus = "down"
 				redisErr = err.Error()
 			}
+		} else {
+			redisStatus = "down"
+			redisErr = "not connected"
 		}
 	}
 

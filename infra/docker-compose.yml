@@ -35,7 +35,7 @@ services:
       # core-go only needs one variable to find the Python AI orchestrator.
       # It points to the 'api-py' service name within Docker's network.
       - ORCHESTRATOR_URL=http://api-py:8000
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=redis:6379
     depends_on:
       - api-py
       - redis
@@ -52,7 +52,7 @@ services:
       - postgres_data_v2:/var/lib/postgresql/data
 
   redis:
-    image: redis:7
+    image: redis:7-alpine
     ports:
       - "6379:6379"
 

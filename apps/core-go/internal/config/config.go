@@ -23,7 +23,7 @@ func Load() *Config {
 	return &Config{
 		Port:             port,
 		OrchestratorURL:  getEnv("ORCHESTRATOR_URL", defaultOrchestratorURL()),
-		RedisURL:         getEnv("REDIS_URL", ""),
+		RedisURL:         getEnv("REDIS_URL", "localhost:6379"),
 		WSAllowedOrigins: getEnv("WS_ALLOWED_ORIGINS", "*"),
 		ReadTimeout:      10 * time.Second,
 		WriteTimeout:     10 * time.Second,

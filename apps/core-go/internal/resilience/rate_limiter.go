@@ -1,92 +1,107 @@
 package resilience
 
 import (
-	"os"
+	"log/slog"
+	"net"
+	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
+
+	"github.com/divijg19/Nargis/core-go/internal/auth"
+	"github.com/redis/go-redis/v9"
 )
 
-// TokenBucket implements a simple token bucket rate limiter.
-type TokenBucket struct {
-	mu     sync.Mutex
-	tokens float64
-	last   time.Time
-}
-
-func (tb *TokenBucket) Allow(rate float64, burst float64) bool {
-	tb.mu.Lock()
-	defer tb.mu.Unlock()
-	now := time.Now()
-	if tb.last.IsZero() {
-		tb.last = now
-		tb.tokens = burst
+// RateLimitMiddleware enforces a fixed-window Redis-backed limit per user or IP.
+// Fail-open behavior: if Redis is unavailable, requests are allowed through.
+func RateLimitMiddleware(rdb *redis.Client, limit int, window time.Duration) func(http.Handler) http.Handler {
+	if limit <= 0 {
+		limit = 100
 	}
-	elapsed := now.Sub(tb.last).Seconds()
-	tb.tokens += elapsed * rate
-	if tb.tokens > burst {
-		tb.tokens = burst
+	if window <= 0 {
+		window = time.Minute
 	}
-	tb.last = now
-	if tb.tokens >= 1.0 {
-		tb.tokens -= 1.0
-		return true
-	}
-	return false
-}
 
-// ipEntry implements a simple TTL-evicting cache for per-IP token buckets.
-// It stores a TokenBucket and the last seen timestamp.
-type ipEntry struct {
-	tb   *TokenBucket
-	last time.Time
-}
-
-var ipCache = struct {
-	mu sync.RWMutex
-	m  map[string]*ipEntry
-}{m: make(map[string]*ipEntry)}
-
-// GetTokenBucket returns the TokenBucket for a host, creating it if missing
-// and updating the last-seen timestamp.
-func GetTokenBucket(host string) *TokenBucket {
-	ipCache.mu.Lock()
-	defer ipCache.mu.Unlock()
-	e, ok := ipCache.m[host]
-	if !ok {
-		e = &ipEntry{tb: &TokenBucket{tokens: 0, last: time.Time{}}, last: time.Now()}
-		ipCache.m[host] = e
-		return e.tb
-	}
-	e.last = time.Now()
-	return e.tb
-}
-
-// StartIPCacheEvictor starts a background goroutine that removes entries
-// not seen within ttl minutes. Call once from main() before starting server.
-func StartIPCacheEvictor() {
-	ttlMin := 10
-	if v := strings.TrimSpace(os.Getenv("IP_BUCKET_TTL_MINUTES")); v != "" {
-		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
-			ttlMin = parsed
+	return func(next http.Handler) http.Handler {
+		if next == nil {
+			next = http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 		}
-	}
-	ttl := time.Duration(ttlMin) * time.Minute
-	ticker := time.NewTicker(1 * time.Minute)
-	go func() {
-		for range ticker.C {
-			cutoff := time.Now().Add(-ttl)
-			ipCache.mu.Lock()
-			removed := 0
-			for k, v := range ipCache.m {
-				if v.last.Before(cutoff) {
-					delete(ipCache.m, k)
-					removed++
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if rdb == nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			identity := requesterIdentity(r)
+			key := "rate_limit:" + identity
+
+			count, err := rdb.Incr(r.Context(), key).Result()
+			if err != nil {
+				slog.Warn("rate limiter redis INCR failed; failing open", "error", err)
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if count == 1 {
+				if err := rdb.Expire(r.Context(), key, window).Err(); err != nil {
+					slog.Warn("rate limiter redis EXPIRE failed; failing open", "error", err)
+					next.ServeHTTP(w, r)
+					return
 				}
 			}
-			ipCache.mu.Unlock()
-			// In a real app, we might log 'removed' count here
+
+			if count > int64(limit) {
+				w.Header().Set("Retry-After", retryAfterSeconds(window))
+				http.Error(w, "Too Many Requests", http.StatusTooManyRequests)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func requesterIdentity(r *http.Request) string {
+	if uid, ok := auth.UserIDFromContext(r.Context()); ok {
+		return uid
+	}
+	if uid := strings.TrimSpace(r.Header.Get("X-User-Id")); uid != "" {
+		return uid
+	}
+	return clientIP(r)
+}
+
+func clientIP(r *http.Request) string {
+	if xff := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); xff != "" {
+		parts := strings.Split(xff, ",")
+		if len(parts) > 0 {
+			if ip := strings.TrimSpace(parts[0]); ip != "" {
+				return ip
+			}
 		}
-	}()
+	}
+	if xrip := strings.TrimSpace(r.Header.Get("X-Real-Ip")); xrip != "" {
+		return xrip
+	}
+	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
+	if err == nil && host != "" {
+		return host
+	}
+	if ra := strings.TrimSpace(r.RemoteAddr); ra != "" {
+		return ra
+	}
+	return "unknown"
+}
+
+func retryAfterSeconds(window time.Duration) string {
+	secs := int(window.Seconds())
+	if secs <= 0 {
+		return "1"
+	}
+	return strconvItoa(secs)
+}
+
+func strconvItoa(v int) string {
+	return strconv.FormatInt(int64(v), 10)
 }
