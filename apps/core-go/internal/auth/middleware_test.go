@@ -51,8 +51,12 @@ func TestJWTMiddlewareInjectsUserIDHeader(t *testing.T) {
 	})
 
 	gotUserID := ""
+	gotContextUserID := ""
 	h := JWTMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotUserID = r.Header.Get("X-User-Id")
+		if uid, ok := UserIDFromContext(r.Context()); ok {
+			gotContextUserID = uid
+		}
 		w.WriteHeader(http.StatusOK)
 	}))
 
@@ -67,5 +71,8 @@ func TestJWTMiddlewareInjectsUserIDHeader(t *testing.T) {
 	}
 	if gotUserID != "user-123" {
 		t.Fatalf("expected X-User-Id to be user-123, got %q", gotUserID)
+	}
+	if gotContextUserID != "user-123" {
+		t.Fatalf("expected context user id to be user-123, got %q", gotContextUserID)
 	}
 }

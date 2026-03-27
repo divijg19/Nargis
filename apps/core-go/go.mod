@@ -5,6 +5,7 @@ go 1.25.8
 require github.com/gorilla/websocket v1.5.3
 
 require (
+	github.com/alicebob/miniredis/v2 v2.37.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.23.2
@@ -19,6 +20,7 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.67.5 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	golang.org/x/sys v0.42.0 // indirect

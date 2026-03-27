@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"os"
@@ -10,6 +11,26 @@ import (
 )
 
 const userIDHeader = "X-User-Id"
+
+type userIDContextKey struct{}
+
+// WithUserID returns a new context with an authenticated user id attached.
+func WithUserID(ctx context.Context, userID string) context.Context {
+	return context.WithValue(ctx, userIDContextKey{}, strings.TrimSpace(userID))
+}
+
+// UserIDFromContext extracts an authenticated user id from context.
+func UserIDFromContext(ctx context.Context) (string, bool) {
+	v, ok := ctx.Value(userIDContextKey{}).(string)
+	if !ok {
+		return "", false
+	}
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return "", false
+	}
+	return v, true
+}
 
 func extractBearerToken(r *http.Request) (string, error) {
 	authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
@@ -82,6 +103,7 @@ func JWTMiddleware(next http.Handler) http.Handler {
 		}
 
 		r2 := r.Clone(r.Context())
+		r2 = r2.WithContext(WithUserID(r2.Context(), uid))
 		r2.Header.Set(userIDHeader, uid)
 		next.ServeHTTP(w, r2)
 	})
