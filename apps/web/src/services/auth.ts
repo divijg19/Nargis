@@ -33,6 +33,32 @@ class AuthService {
   // The server now sets a secure httpOnly cookie named `access_token`.
   private tokenKey = "access_token";
   private userKey = "nargis_user";
+  private guestKey = "guest_id";
+
+  private makeGuestId(): string {
+    if (
+      typeof crypto !== "undefined" &&
+      typeof crypto.randomUUID === "function"
+    ) {
+      return crypto.randomUUID();
+    }
+    return `${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}`;
+  }
+
+  getGuestId(): string | null {
+    if (typeof window === "undefined") return null;
+    try {
+      const existing = localStorage.getItem(this.guestKey);
+      if (existing?.trim()) {
+        return existing.trim();
+      }
+      const created = this.makeGuestId();
+      localStorage.setItem(this.guestKey, created);
+      return created;
+    } catch {
+      return null;
+    }
+  }
 
   /**
    * Store authentication token
@@ -183,12 +209,8 @@ class AuthService {
    * Get current user profile
    */
   async getProfile(): Promise<User | null> {
-    // Try local token first (legacy). If absent, rely on cookie being sent.
-    const token = this.getToken();
-    const headers: HeadersInit = {};
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
+    const headers = new Headers();
+    this.applySessionAuthHeader(headers);
 
     const response = await fetch(`${API_URL}/v1/auth/me`, {
       headers,
@@ -215,11 +237,8 @@ class AuthService {
     name?: string;
     email?: string;
   }): Promise<User> {
-    const token = this.getToken();
-    const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
+    const headers = new Headers({ "Content-Type": "application/json" });
+    this.applySessionAuthHeader(headers);
 
     const response = await fetch(`${API_URL}/v1/auth/me`, {
       method: "PATCH",
@@ -244,13 +263,29 @@ class AuthService {
    */
   getAuthHeaders(): HeadersInit {
     const token = this.getToken();
-    if (!token) {
-      return {};
+    if (token) {
+      return {
+        Authorization: `Bearer ${token}`,
+      };
     }
 
-    return {
-      Authorization: `Bearer ${token}`,
-    };
+    const guestId = this.getGuestId();
+    if (guestId) {
+      return {
+        "X-Guest-Id": guestId,
+      };
+    }
+
+    return {};
+  }
+
+  private applySessionAuthHeader(headers: Headers): void {
+    const authHeaders = new Headers(this.getAuthHeaders());
+    authHeaders.forEach((value, key) => {
+      if (!headers.has(key)) {
+        headers.set(key, value);
+      }
+    });
   }
 
   /**
@@ -260,15 +295,11 @@ class AuthService {
     url: string,
     options: RequestInit = {},
   ): Promise<Response> {
-    // If we have a local token, include it; otherwise rely on cookie.
-    const token = this.getToken();
     const headers = new Headers(options.headers);
     if (!headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
+    this.applySessionAuthHeader(headers);
 
     const response = await fetch(url, {
       ...options,

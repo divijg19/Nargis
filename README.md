@@ -1,6 +1,7 @@
-# Nargis — Voice-first AI productivity companion
+# `Nargis`
+> Voice-first AI productivity companion
 
-Nargis is a full-stack demo of a voice-first AI productivity assistant (tasks, habits, journaling) with a real-time pipeline and a dual-mode AI backend (API + local fallback).
+`Nargis` is a full-stack demo of a voice-first AI productivity assistant (tasks, habits, journaling) with a real-time pipeline and a dual-mode AI backend (API + local fallback).
 
 This README is purposely concise — detailed operational and design docs live under `docs/` and the package READMEs in `apps/`.
 
@@ -97,7 +98,7 @@ Key files:
 Environment & dependencies:
 
 - Add `langgraph`, `langchain`, and `langchain-groq` to the Python environment used by `apps/api-py` (see `apps/api-py/pyproject.toml` and commit `apps/api-py/uv.lock` for reproducible installs).
-- Configure AI keys and endpoints as usual (`GROQ_API_KEY`, `DEEPGRAM_API_KEY`, `LLM_URL`, `TTS_URL`, etc.) and add any agent-specific settings (e.g., `AGENT_MODEL`, `AGENT_TEMPERATURE`).
+- Configure AI keys and endpoints as usual (`GROQ_API_KEY`, `DEEPGRAM_API_KEY`, `LLM_URL`, etc.) and add any agent-specific settings (e.g., `AGENT_MODEL`, `AGENT_TEMPERATURE`).
 
 The refactor keeps the HTTP surface unchanged while enabling safe, testable agent tooling.
 

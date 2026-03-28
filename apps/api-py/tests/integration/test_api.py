@@ -2,6 +2,8 @@
 Test script for Nargis API endpoints
 """
 
+import uuid
+
 import requests
 from fastapi.testclient import TestClient
 
@@ -91,6 +93,38 @@ def test_tasks_list(token):
     headers = {"Authorization": f"Bearer {token}"}
     response = client.get("/v1/tasks", headers=headers)
     assert response.status_code == 200
+
+
+def test_guest_shadow_profile_from_forwarded_header():
+    guest_user_id = f"guest_{uuid.uuid4().hex}"
+    headers = {"X-User-Id": guest_user_id}
+
+    me_response = client.get("/v1/auth/me", headers=headers)
+    assert me_response.status_code == 200
+    profile = me_response.json()
+    assert profile["id"] == guest_user_id
+    assert profile["email"] == f"{guest_user_id}@temp.com"
+
+    create_response = client.post(
+        "/v1/tasks",
+        json={"title": "Guest task", "status": "pending"},
+        headers=headers,
+    )
+    assert create_response.status_code == 201
+
+    list_response = client.get("/v1/tasks", headers=headers)
+    assert list_response.status_code == 200
+    assert any(task.get("title") == "Guest task" for task in list_response.json())
+
+
+def test_guest_shadow_profile_from_guest_header():
+    guest_suffix = uuid.uuid4().hex
+    headers = {"X-Guest-Id": guest_suffix}
+
+    me_response = client.get("/v1/auth/me", headers=headers)
+    assert me_response.status_code == 200
+    profile = me_response.json()
+    assert profile["id"] == f"guest_{guest_suffix}"
 
 
 def main():

@@ -10,6 +10,7 @@ Features:
 from __future__ import annotations
 
 import os
+import re
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -18,6 +19,7 @@ import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr, Field
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from storage.database import get_db
@@ -30,6 +32,8 @@ security = HTTPBearer(auto_error=False)
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+
+GUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9-]{8,128}$")
 
 
 class UserRegister(BaseModel):
@@ -81,12 +85,91 @@ def create_access_token(data: dict) -> str:
     return encoded_jwt
 
 
+def normalize_guest_user_id(candidate: str | None) -> str | None:
+    raw = (candidate or "").strip()
+    if not raw:
+        return None
+
+    if raw.startswith("guest_"):
+        suffix = raw.removeprefix("guest_").strip()
+    else:
+        suffix = raw
+
+    if not suffix or not GUEST_ID_PATTERN.fullmatch(suffix):
+        return None
+
+    return f"guest_{suffix}"
+
+
+def ensure_shadow_guest_user(db: Session, guest_user_id: str) -> User:
+    user = db.query(User).filter(User.id == guest_user_id).first()
+    if user is not None:
+        return user
+
+    now = datetime.now(UTC)
+    guest_user = User(
+        id=guest_user_id,
+        email=f"{guest_user_id}@temp.com",
+        name="Guest",
+        password_hash=hash_password(str(uuid.uuid4())),
+        created_at=now,
+        updated_at=now,
+    )
+
+    try:
+        db.add(guest_user)
+        db.commit()
+        db.refresh(guest_user)
+        return guest_user
+    except IntegrityError:
+        db.rollback()
+        existing = db.query(User).filter(User.id == guest_user_id).first()
+        if existing is not None:
+            return existing
+        raise
+
+
+def _user_payload(user: User) -> dict:
+    return {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "createdAt": user.created_at.isoformat(),
+    }
+
+
+def _resolve_user_from_forwarded_headers(request: Request, db: Session) -> User | None:
+    forwarded_user_id = (request.headers.get("X-User-Id") or "").strip()
+    if forwarded_user_id:
+        guest_user_id = normalize_guest_user_id(forwarded_user_id)
+        if guest_user_id:
+            return ensure_shadow_guest_user(db, guest_user_id)
+
+        user = db.query(User).filter(User.id == forwarded_user_id).first()
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+            )
+        return user
+
+    guest_id = normalize_guest_user_id(request.headers.get("X-Guest-Id"))
+    if guest_id:
+        return ensure_shadow_guest_user(db, guest_id)
+
+    return None
+
+
 async def get_current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: Session = Depends(get_db),
 ) -> dict:
     """Dependency to get current authenticated user"""
+    forwarded_user = _resolve_user_from_forwarded_headers(request, db)
+    if forwarded_user is not None:
+        return _user_payload(forwarded_user)
+
     token = None
     if credentials and getattr(credentials, "credentials", None):
         token = credentials.credentials
@@ -125,12 +208,7 @@ async def get_current_user(
         )
 
     # Return as dict for compatibility with existing code
-    return {
-        "id": user.id,
-        "email": user.email,
-        "name": user.name,
-        "createdAt": user.created_at.isoformat(),
-    }
+    return _user_payload(user)
 
 
 async def get_optional_user(
@@ -143,6 +221,9 @@ async def get_optional_user(
     If credentials are provided but invalid/expired, raise 401. We do not
     silently downgrade invalid auth to anonymous.
     """
+
+    if request.headers.get("X-User-Id") or request.headers.get("X-Guest-Id"):
+        return await get_current_user(request=request, credentials=credentials, db=db)
 
     token = None
     if credentials and getattr(credentials, "credentials", None):

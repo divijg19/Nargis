@@ -78,6 +78,34 @@ func TestJWTMiddlewareInjectsUserIDHeader(t *testing.T) {
 	}
 }
 
+func TestJWTMiddlewareAllowsGuestHeader(t *testing.T) {
+	gotUserID := ""
+	gotContextUserID := ""
+	h := JWTMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUserID = r.Header.Get("X-User-Id")
+		if uid, ok := UserIDFromContext(r.Context()); ok {
+			gotContextUserID = uid
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/tasks", nil)
+	req.Header.Set("X-Guest-Id", "abc-123")
+	rr := httptest.NewRecorder()
+
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	if gotUserID != "guest_abc-123" {
+		t.Fatalf("expected X-User-Id to be guest_abc-123, got %q", gotUserID)
+	}
+	if gotContextUserID != "guest_abc-123" {
+		t.Fatalf("expected context user id to be guest_abc-123, got %q", gotContextUserID)
+	}
+}
+
 func TestTracingMiddlewareInjectsRequestID(t *testing.T) {
 	gotHeader := ""
 	gotCtx := ""

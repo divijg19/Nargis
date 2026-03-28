@@ -1,4 +1,6 @@
 // Lightweight typed fetch helper + error normalization.
+import { authService } from "@/services/auth";
+
 export interface ApiErrorShape {
   status: number;
   message: string;
@@ -29,15 +31,6 @@ function normalizeApiPath(path: string): string {
   return `/api/v1${withSlash}`;
 }
 
-function getBearerTokenFromStorage(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return window.localStorage.getItem("access_token");
-  } catch {
-    return null;
-  }
-}
-
 export async function fetchAPI(
   path: string,
   options: RequestInit = {},
@@ -52,10 +45,12 @@ export async function fetchAPI(
     headers.set("Content-Type", "application/json");
   }
 
-  const token = getBearerTokenFromStorage();
-  if (token && !headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
+  const sessionHeaders = new Headers(authService.getAuthHeaders());
+  sessionHeaders.forEach((value, key) => {
+    if (!headers.has(key)) {
+      headers.set(key, value);
+    }
+  });
 
   return fetch(url, {
     ...options,

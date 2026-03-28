@@ -11,7 +11,12 @@ from sqlalchemy.orm import Session
 
 from agent import graph as agent_graph
 from agent.tools import set_agent_runtime_context
-from routers.auth import ALGORITHM, SECRET_KEY
+from routers.auth import (
+    ALGORITHM,
+    SECRET_KEY,
+    ensure_shadow_guest_user,
+    normalize_guest_user_id,
+)
 from services.ai_clients import _get_transcription
 from storage.database import SessionLocal
 from storage.models import User
@@ -36,22 +41,25 @@ def _decode_user_id(token: str) -> str:
     return str(user_id)
 
 
-def _extract_token_from_frame(frame_text: str) -> str | None:
-    """Accept either raw token text or JSON payload with {"token": "..."}."""
+def _extract_auth_from_frame(frame_text: str) -> tuple[str | None, str | None]:
+    """Accept either raw token text or JSON payload with auth fields."""
     candidate = (frame_text or "").strip()
     if not candidate:
-        return None
+        return None, None
 
     try:
         parsed = json.loads(candidate)
         if isinstance(parsed, dict):
             token = parsed.get("token")
             if isinstance(token, str) and token.strip():
-                return token.strip()
+                return token.strip(), None
+            guest_id = parsed.get("guest_id")
+            if isinstance(guest_id, str) and guest_id.strip():
+                return None, guest_id.strip()
     except Exception:
         pass
 
-    return candidate
+    return candidate, None
 
 
 def _extract_user_text_from_frame(frame: Mapping[str, Any]) -> str:
@@ -67,9 +75,24 @@ def _extract_user_text_from_frame(frame: Mapping[str, Any]) -> str:
 
 
 async def _resolve_ws_user(websocket: WebSocket, db: Session) -> str:
+    forwarded_user_id = (websocket.headers.get("x-user-id") or "").strip()
+    if forwarded_user_id:
+        normalized_guest = normalize_guest_user_id(forwarded_user_id)
+        if normalized_guest:
+            return ensure_shadow_guest_user(db, normalized_guest).id
+
+        user = db.query(User).filter(User.id == forwarded_user_id).first()
+        if user is None:
+            raise ValueError("User not found")
+        return user.id
+
+    guest_from_query = normalize_guest_user_id(websocket.query_params.get("guest_id"))
+    if guest_from_query:
+        return ensure_shadow_guest_user(db, guest_from_query).id
+
     token = websocket.query_params.get("token")
 
-    # If query token is not present, expect first frame to carry auth info.
+    # If query auth is not present, expect first frame to carry auth info.
     if not token:
         await websocket.send_json(
             {
@@ -81,7 +104,10 @@ async def _resolve_ws_user(websocket: WebSocket, db: Session) -> str:
         auth_text = auth_frame.get("text")
         if not isinstance(auth_text, str):
             raise ValueError("Missing auth token")
-        token = _extract_token_from_frame(auth_text)
+        token, guest_from_frame = _extract_auth_from_frame(auth_text)
+        normalized_guest = normalize_guest_user_id(guest_from_frame)
+        if normalized_guest:
+            return ensure_shadow_guest_user(db, normalized_guest).id
 
     if not token:
         raise ValueError("Missing auth token")

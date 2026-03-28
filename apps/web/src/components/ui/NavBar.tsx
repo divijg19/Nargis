@@ -7,11 +7,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "./ThemeToggle";
 
 const navigationItems = [
-  { href: "/dashboard", label: "Dashboard", requiresAuth: true },
-  { href: "/journal", label: "Journal", requiresAuth: true },
-  { href: "/tasks", label: "Tasks", requiresAuth: true },
-  { href: "/habits", label: "Habits", requiresAuth: true },
-  { href: "/pomodoro", label: "Focus", requiresAuth: true },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/journal", label: "Journal" },
+  { href: "/tasks", label: "Tasks" },
+  { href: "/habits", label: "Habits" },
+  { href: "/pomodoro", label: "Focus" },
 ];
 
 type NavBarProps = {
@@ -52,28 +52,17 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
               <div className="hidden md:flex items-center gap-1">
                 {navigationItems.map((item) => {
                   const isActive = pathname === item.href;
-                  const isLocked = item.requiresAuth && !isAuthenticated;
-                  const targetHref = isLocked
-                    ? `/login?next=${encodeURIComponent(item.href)}`
-                    : item.href;
                   return (
                     <Link
                       key={item.href}
-                      href={targetHref}
+                      href={item.href}
                       aria-current={isActive ? "page" : undefined}
-                      title={isLocked ? "Sign in to access" : undefined}
-                      className={`relative px-2.5 py-1 rounded-md text-sm font-normal transition-[opacity,transform] duration-(--motion-medium) focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                        isActive
+                      className={`relative px-2.5 py-1 rounded-md text-sm font-normal transition-[opacity,transform] duration-(--motion-medium) focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${isActive
                           ? "text-primary bg-primary-subtle"
                           : "text-foreground/80 hover:text-foreground hover:bg-hover/35"
-                      }`}
+                        }`}
                     >
                       {item.label}
-                      {isLocked && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          Locked
-                        </span>
-                      )}
                     </Link>
                   );
                 })}
@@ -153,31 +142,33 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
               <div className="space-y-1">
                 {navigationItems.map((item) => {
                   const isActive = pathname === item.href;
-                  const isLocked = item.requiresAuth && !isAuthenticated;
-                  const targetHref = isLocked
-                    ? `/login?next=${encodeURIComponent(item.href)}`
-                    : item.href;
                   return (
                     <Link
                       key={item.href}
-                      href={targetHref}
+                      href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
                       aria-current={isActive ? "page" : undefined}
-                      title={isLocked ? "Sign in to access" : undefined}
                       className={`block px-3 py-2 rounded-lg text-sm font-normal transition-[opacity,transform] duration-(--motion-medium) focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background
                       ${isActive ? "bg-primary-subtle text-primary" : "text-muted-foreground hover:text-foreground hover:bg-hover/40"}
                     `}
                     >
                       <span className="align-middle">{item.label}</span>
-                      {isLocked && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          Locked
-                        </span>
-                      )}
                     </Link>
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {!isAuthenticated && (
+            <div className="pb-2 px-1.5 sm:px-2.5">
+              <p className="text-[11px] sm:text-xs text-muted-foreground text-center rounded-md border border-structural/60 bg-background/70 px-2.5 py-1.5">
+                You are in a temporary session. {" "}
+                <Link href="/login" className="text-primary hover:underline">
+                  Log in
+                </Link>{" "}
+                to save your data.
+              </p>
             </div>
           )}
         </div>

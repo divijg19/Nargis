@@ -73,12 +73,12 @@ function parseAgentEvent(input: unknown): AgentEvent | null {
 // Define the shape of the data that the context will provide to the UI.
 interface RealtimeContextValue {
   connectionStatus:
-    | "idle"
-    | "connecting"
-    | "open"
-    | "closed"
-    | "error"
-    | "retrying";
+  | "idle"
+  | "connecting"
+  | "open"
+  | "closed"
+  | "error"
+  | "retrying";
   isListening: boolean;
   startListening: () => void;
   stopListening: () => void;
@@ -207,7 +207,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       canChatEphemeral: true,
       canStream: streamEnabled,
       canPersist: Boolean(isAuthenticated && user?.id),
-      canExecuteAgents: Boolean(isAuthenticated && user?.id),
+      canExecuteAgents: true,
     };
   }, [isAuthenticated, user?.id]);
 
@@ -219,13 +219,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   // Marks whether we've already seen a terminal event for the current stream.
   // When true, the UI will ignore late events from the server for this turn.
   const terminalSeenRef = useRef<boolean>(false);
-
-  // If the user logs out, force mode back to chat.
-  useEffect(() => {
-    if (!isAuthenticated && voiceMode !== "chat") {
-      setVoiceMode("chat");
-    }
-  }, [isAuthenticated, voiceMode]);
 
   // Centralized incoming message handler (used for both real WS messages and
   // dev/testing injections). Kept stable via useCallback so it can be used
@@ -476,8 +469,12 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     if (!enabled) return;
 
     const token = authService.getToken();
-    const url =
-      process.env.NEXT_PUBLIC_WS_URL || buildPythonRealtimeWsUrl(token);
+    const guestId = authService.getGuestId();
+    const url = buildPythonRealtimeWsUrl(
+      token,
+      guestId,
+      process.env.NEXT_PUBLIC_WS_URL,
+    );
     console.debug("[Realtime] initializing connection");
     const conn = new RealtimeConnection({ url, maxRetries: 6 });
     connectionRef.current = conn;
@@ -619,24 +616,18 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       streamDebounceTimerRef.current = null;
     }
 
-    // Enforce auth for execution/agent mode.
-    if (voiceMode === "agent" && !isAuthenticated) {
-      push({
-        message: "Sign in to use execution mode.",
-        variant: "warning",
-        type: "auth-required",
-      });
-      return;
-    }
-
     // If connection isn't ready, attempt to wait for it to open briefly so
     // the user can press the voice button and the app will try to connect.
     if (connectionStatus !== "open") {
       let conn = connectionRef.current;
       if (!conn) {
         const token = authService.getToken();
-        const url =
-          process.env.NEXT_PUBLIC_WS_URL || buildPythonRealtimeWsUrl(token);
+        const guestId = authService.getGuestId();
+        const url = buildPythonRealtimeWsUrl(
+          token,
+          guestId,
+          process.env.NEXT_PUBLIC_WS_URL,
+        );
         conn = new RealtimeConnection({ url, maxRetries: 6 });
         connectionRef.current = conn;
         conn.onStatus(setConnectionStatus);
@@ -652,7 +643,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
             settled = true;
             try {
               unsub();
-            } catch {}
+            } catch { }
             resolve(true);
           }
         });
@@ -660,7 +651,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
           if (!settled) {
             try {
               unsub();
-            } catch {}
+            } catch { }
             resolve(false);
           }
         }, 4000);
@@ -702,8 +693,6 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [
     isRecording,
-    voiceMode,
-    isAuthenticated,
     connectionStatus,
     push,
     start,
