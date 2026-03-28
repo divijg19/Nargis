@@ -1,13 +1,27 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from agent.tools import log_habit_tool, log_journal_tool, start_focus_tool
-from storage.models import Base, Habit, HabitEntry, JournalEntry, PomodoroSession, User
+from agent.tools import (
+    analyze_productivity_tool,
+    log_habit_tool,
+    log_journal_tool,
+    start_focus_tool,
+)
+from storage.models import (
+    Base,
+    Habit,
+    HabitEntry,
+    JournalEntry,
+    PomodoroSession,
+    Task,
+    User,
+)
 
 
 def setup_inmemory_db():
@@ -123,3 +137,109 @@ def test_start_focus_tool_uses_runtime_context_and_returns_success():
         assert session is not None
         assert session.task_id == "task-9"
         assert int(session.duration_minutes) == 25
+
+
+def test_analyze_productivity_tool_returns_condensed_weekly_summary():
+    SessionLocal = setup_inmemory_db()
+    expected_user_id = "user-analytics-1"
+    now = datetime.now(UTC)
+
+    with SessionLocal() as db:
+        db.add(User(id=expected_user_id, email="analytics@test.dev", password_hash="x"))
+
+        db.add_all(
+            [
+                Task(
+                    id="t-done",
+                    user_id=expected_user_id,
+                    title="Done task",
+                    description=None,
+                    status="done",
+                    priority="medium",
+                    due_date=None,
+                    tags=[],
+                    created_at=now - timedelta(days=1),
+                    updated_at=now - timedelta(days=1),
+                ),
+                Task(
+                    id="t-pending",
+                    user_id=expected_user_id,
+                    title="Pending task",
+                    description=None,
+                    status="pending",
+                    priority="low",
+                    due_date=None,
+                    tags=[],
+                    created_at=now - timedelta(days=2),
+                    updated_at=now - timedelta(days=2),
+                ),
+            ]
+        )
+
+        db.add_all(
+            [
+                PomodoroSession(
+                    id="p-1",
+                    user_id=expected_user_id,
+                    task_id="t-done",
+                    type="work",
+                    duration_minutes=25,
+                    started_at=now - timedelta(days=1),
+                    ended_at=now - timedelta(days=1, minutes=-25),
+                    completed=True,
+                    created_at=now - timedelta(days=1),
+                    updated_at=now - timedelta(days=1),
+                ),
+                PomodoroSession(
+                    id="p-2",
+                    user_id=expected_user_id,
+                    task_id="t-done",
+                    type="work",
+                    duration_minutes=15,
+                    started_at=now - timedelta(days=1),
+                    ended_at=now - timedelta(days=1, minutes=-15),
+                    completed=True,
+                    created_at=now - timedelta(days=1),
+                    updated_at=now - timedelta(days=1),
+                ),
+            ]
+        )
+
+        db.add(
+            Habit(
+                id="h-analytics",
+                user_id=expected_user_id,
+                name="Read",
+                target=1,
+                unit="pages",
+                frequency="daily",
+                color="blue",
+                created_at=now - timedelta(days=3),
+                updated_at=now - timedelta(days=1),
+            )
+        )
+        db.add_all(
+            [
+                HabitEntry(
+                    habit_id="h-analytics",
+                    date=(now - timedelta(days=1)).date().isoformat(),
+                    count=1,
+                    completed=True,
+                ),
+                HabitEntry(
+                    habit_id="h-analytics",
+                    date=(now - timedelta(days=2)).date().isoformat(),
+                    count=1,
+                    completed=True,
+                ),
+            ]
+        )
+        db.commit()
+
+        config = _runtime_config(expected_user_id, db)
+        result = _invoke_tool(analyze_productivity_tool, {}, config)
+
+    assert "tasks_completed=1" in result
+    assert "tasks_pending=1" in result
+    assert "focus_minutes=40" in result
+    assert "habits_hit=2" in result

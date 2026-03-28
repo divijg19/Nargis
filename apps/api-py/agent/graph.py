@@ -79,6 +79,7 @@ def _build_agent_app():
     # (keeps linters happy and allows optional langgraph during testing).
     try:
         from agent.tools import (
+            analyze_productivity_tool,
             create_habit_tool,
             create_journal_tool,
             create_plan_tool,
@@ -93,6 +94,7 @@ def _build_agent_app():
         )
     except Exception:
         create_plan_tool = None
+        analyze_productivity_tool = None
         create_task_tool = None
         get_task_details_tool = None
         list_tasks_tool = None
@@ -113,6 +115,7 @@ def _build_agent_app():
             for t in (
                 create_task_tool,
                 create_plan_tool,
+                analyze_productivity_tool,
                 get_task_details_tool,
                 list_tasks_tool,
                 recall_memory_tool,

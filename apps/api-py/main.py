@@ -12,11 +12,11 @@ import httpx
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response, StreamingResponse
+from starlette.responses import StreamingResponse
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from middleware.idempotency import IdempotencyMiddleware
 from routers import (
@@ -62,6 +62,7 @@ if sys.stderr.encoding != "utf-8":
         _reconf(encoding="utf-8")
 
 request_id_ctx: ContextVar[str] = ContextVar("request_id", default="-")
+REQUEST_ID_HEADER = "x-request-id"
 
 
 # THIS IS THE LOGGING FIX: It safely handles logs from external libraries.
@@ -75,7 +76,7 @@ class RequestIdFilter(logging.Filter):
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(
     level=LOG_LEVEL,
-    format="%(asctime)s %(levelname)s request_id=%(request_id)s %(message)s",
+    format="%(asctime)s %(levelname)s [RequestID: %(request_id)s] %(message)s",
 )
 logging.getLogger().addFilter(RequestIdFilter())
 
@@ -135,13 +136,76 @@ TTS_URL = os.getenv("TTS_URL", "")
 TTS_API_KEY = os.getenv("TTS_API_KEY", "")
 
 
-class CorrelationIdMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        rid = request.headers.get("X-Request-ID", str(uuid.uuid4()))
-        request_id_ctx.set(rid)
-        response: Response = await call_next(request)
-        response.headers["X-Request-ID"] = rid
-        return response
+def _normalize_request_id(value: str | None) -> str:
+    candidate = (value or "").strip()
+    return candidate if candidate else str(uuid.uuid4())
+
+
+def _request_id_from_scope_headers(headers: list[tuple[bytes, bytes]]) -> str:
+    for key, value in headers:
+        if key.decode("latin1").strip().lower() == REQUEST_ID_HEADER:
+            return _normalize_request_id(value.decode("latin1"))
+    return str(uuid.uuid4())
+
+
+def _request_id_from_ws_frame_text(frame_text: str) -> str | None:
+    text = (frame_text or "").strip()
+    if not text:
+        return None
+
+    try:
+        payload = json.loads(text)
+    except Exception:
+        return None
+
+    if not isinstance(payload, dict):
+        return None
+
+    for key in ("request_id", "x_request_id", "x-request-id"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return _normalize_request_id(value)
+
+    return None
+
+
+class CorrelationIdMiddleware:
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        scope_type = scope.get("type")
+        if scope_type not in {"http", "websocket"}:
+            await self.app(scope, receive, send)
+            return
+
+        rid = _request_id_from_scope_headers(scope.get("headers", []))
+        token = request_id_ctx.set(rid)
+
+        async def traced_receive() -> Message:
+            message = await receive()
+            if (
+                scope_type == "websocket"
+                and message.get("type") == "websocket.receive"
+                and isinstance(message.get("text"), str)
+            ):
+                frame_rid = _request_id_from_ws_frame_text(message["text"])
+                if frame_rid:
+                    request_id_ctx.set(frame_rid)
+            return message
+
+        async def traced_send(message: Message) -> None:
+            if message.get("type") in {"http.response.start", "websocket.accept"}:
+                headers = list(message.get("headers", []))
+                active_rid = request_id_ctx.get(rid)
+                headers.append((b"x-request-id", active_rid.encode("utf-8")))
+                message = {**message, "headers": headers}
+            await send(message)
+
+        try:
+            await self.app(scope, traced_receive, traced_send)
+        finally:
+            request_id_ctx.reset(token)
 
 
 app.add_middleware(cast(Any, CorrelationIdMiddleware))
