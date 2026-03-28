@@ -13,7 +13,6 @@ from agent import graph as agent_graph
 from agent.tools import set_agent_runtime_context
 from routers.auth import ALGORITHM, SECRET_KEY
 from services.ai_clients import _get_transcription
-from services.context import get_system_context
 from storage.database import SessionLocal
 from storage.models import User
 
@@ -143,13 +142,8 @@ async def chat_websocket(websocket: WebSocket):
                     )
                     continue
 
-                context_str = get_system_context(user_id, db)
                 input_payload = {
                     "messages": [
-                        {
-                            "role": "system",
-                            "content": f"System Context: {context_str}",
-                        },
                         {"role": "user", "content": user_text},
                     ]
                 }

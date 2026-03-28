@@ -14,7 +14,7 @@ This is the AI Orchestrator service for Nargis.
 
 # api-py — Nargis Python API
 
-This service provides STT/LLM/TTS endpoints and now includes an agent orchestration layer (LangGraph) and a dedicated service layer for domain logic.
+This service provides STT/LLM endpoints and now includes an agent orchestration layer (LangGraph) and a dedicated service layer for domain logic.
 
 Key architectural changes
 -------------------------
@@ -60,7 +60,7 @@ Environment variables (new/agent-specific)
 ----------------------------------------
 - `AGENT_MODEL` — model identifier used by LangGraph / Groq (e.g., `llama-3.1-70b-versatile`).
 - `AGENT_TEMPERATURE` — numeric temperature for deterministic or exploratory behavior.
-- Existing AI env vars still apply: `GROQ_API_KEY`, `DEEPGRAM_API_KEY`, `LLM_URL`, `TTS_URL`, `TTS_API_KEY`, `PRELOAD_STT`.
+- Existing AI env vars still apply: `GROQ_API_KEY`, `DEEPGRAM_API_KEY`, `LLM_URL`, `PRELOAD_STT`.
 
 Run locally (dev)
 -----------------

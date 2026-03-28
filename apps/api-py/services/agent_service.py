@@ -1,13 +1,12 @@
 import json
 from collections.abc import AsyncGenerator
 
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage
 from sqlalchemy.orm import Session
 
 from agent import graph as agent_graph
 from agent.tools import set_agent_runtime_context
 from services.ai_clients import _get_llm_response
-from services.context import get_system_context
 
 
 async def run_agent_pipeline(
@@ -54,18 +53,12 @@ async def run_agent_pipeline(
         yield (json.dumps({"type": "end", "content": "done"}) + "\n").encode()
         return
 
-    # Inject context
-    context_str = get_system_context(user_id, db)
-
     # Prepare payload
-    if HumanMessage and SystemMessage:
-        messages = [
-            SystemMessage(content=f"System Context: {context_str}"),
-            HumanMessage(content=user_input),
-        ]
+    if HumanMessage:
+        messages = [HumanMessage(content=user_input)]
         input_payload = {"messages": messages}
     else:
-        input_payload = {"input": f"Context: {context_str}\nUser: {user_input}"}
+        input_payload = {"messages": [{"role": "user", "content": user_input}]}
 
     # Stream events
     response_parts: list[str] = []
