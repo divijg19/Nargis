@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
@@ -12,9 +12,8 @@ import HabitModal from "@/components/ui/HabitModal";
 import { StatCard } from "@/components/ui/StatCard";
 import { TaskModal } from "@/components/ui/TaskModal";
 import { TaskPreview } from "@/components/ui/TaskPreview";
-import { useDashboard } from "@/hooks/queries";
+import { useDashboard, useMorningBriefing } from "@/hooks/queries";
 import { createHabit } from "@/services/endpoints/habits";
-import { getLatestBriefing } from "@/services/endpoints/journal";
 import { createTask, updateTask } from "@/services/endpoints/tasks";
 import type { CreateHabitRequest, CreateTaskRequest } from "@/types";
 
@@ -54,20 +53,12 @@ export default function DashboardPage() {
 
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isHabitModalOpen, setIsHabitModalOpen] = useState(false);
-  const briefingQuery = useQuery({
-    queryKey: ["journal", "briefing"],
-    queryFn: getLatestBriefing,
-  });
+  const briefingQuery = useMorningBriefing();
 
   const briefingText = briefingQuery.data?.content ?? null;
   const briefingUpdatedAt =
     briefingQuery.data?.updatedAt ?? briefingQuery.data?.createdAt;
   const briefingLoading = briefingQuery.isLoading;
-  const briefingError = briefingQuery.error
-    ? briefingQuery.error instanceof Error
-      ? briefingQuery.error.message
-      : "Unable to load morning briefing."
-    : null;
 
   const handleCreateTask = async (taskData: CreateTaskRequest) => {
     await createTaskMutation.mutateAsync(taskData);
@@ -138,7 +129,6 @@ export default function DashboardPage() {
                   loading={briefingLoading}
                   content={briefingText}
                   updatedAt={briefingUpdatedAt}
-                  error={briefingError}
                 />
 
                 {/* Mobile-only stacked left area */}

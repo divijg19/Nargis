@@ -65,8 +65,8 @@ export function ConversationContent({
                   key={`${baseKey}-${nextCount}`}
                   className={
                     m.role === "user"
-                      ? "flex justify-start pl-4 sm:pl-6"
-                      : "flex justify-start"
+                      ? "flex justify-end pl-8 sm:pl-10"
+                      : "flex justify-start pr-8 sm:pr-10"
                   }
                 >
                   <div className="max-w-[86%]">
@@ -109,12 +109,13 @@ export function ConversationContent({
               {processing ? "Nargis is thinking" : "Nargis"}
             </div>
             {processing ? (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 rounded-md border border-border/40 bg-background/50 px-2.5 py-2 transition-all duration-200">
                 <span
                   role="img"
                   aria-label="Loading"
                   className="w-4 h-4 rounded-full border-2 border-current border-r-transparent animate-spin text-muted-foreground"
                 />
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/80 animate-pulse" />
                 <span className="text-xs text-muted-foreground font-mono">
                   {currentAgentState || "Thinking..."}
                 </span>
