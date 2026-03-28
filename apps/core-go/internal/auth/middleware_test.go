@@ -3,6 +3,7 @@ package auth
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -74,5 +75,59 @@ func TestJWTMiddlewareInjectsUserIDHeader(t *testing.T) {
 	}
 	if gotContextUserID != "user-123" {
 		t.Fatalf("expected context user id to be user-123, got %q", gotContextUserID)
+	}
+}
+
+func TestTracingMiddlewareInjectsRequestID(t *testing.T) {
+	gotHeader := ""
+	gotCtx := ""
+
+	h := TracingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotHeader = r.Header.Get(RequestIDHeader)
+		if rid, ok := RequestIDFromContext(r.Context()); ok {
+			gotCtx = rid
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/tasks", nil)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("expected 204, got %d", rr.Code)
+	}
+	if strings.TrimSpace(gotHeader) == "" {
+		t.Fatal("expected request id header to be set")
+	}
+	if gotCtx != gotHeader {
+		t.Fatalf("expected request id in context to match header, got ctx=%q header=%q", gotCtx, gotHeader)
+	}
+	if rr.Header().Get(RequestIDHeader) != gotHeader {
+		t.Fatalf("expected response request id to match, got response=%q request=%q", rr.Header().Get(RequestIDHeader), gotHeader)
+	}
+}
+
+func TestTracingMiddlewarePreservesIncomingRequestID(t *testing.T) {
+	const incoming = "req-preserved-123"
+	gotCtx := ""
+
+	h := TracingMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if rid, ok := RequestIDFromContext(r.Context()); ok {
+			gotCtx = rid
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/tasks", nil)
+	req.Header.Set(RequestIDHeader, incoming)
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+
+	if gotCtx != incoming {
+		t.Fatalf("expected context request id %q, got %q", incoming, gotCtx)
+	}
+	if rr.Header().Get(RequestIDHeader) != incoming {
+		t.Fatalf("expected response request id %q, got %q", incoming, rr.Header().Get(RequestIDHeader))
 	}
 }

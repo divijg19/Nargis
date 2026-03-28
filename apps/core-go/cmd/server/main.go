@@ -76,8 +76,8 @@ func newAPIReverseProxy(orchestratorURL string) (*httputil.ReverseProxy, error) 
 		req.URL.Host = target.Host
 		req.Host = target.Host
 	}
-	proxy.ErrorHandler = func(rw http.ResponseWriter, _ *http.Request, e error) {
-		slog.Error("api proxy failed", "error", e)
+	proxy.ErrorHandler = func(rw http.ResponseWriter, req *http.Request, e error) {
+		auth.LoggerFromContext(req.Context()).Error("api proxy failed", "error", e)
 		http.Error(rw, "Upstream unavailable", http.StatusBadGateway)
 	}
 
@@ -148,8 +148,10 @@ func main() {
 
 	// 4. Setup Router
 	mux := http.NewServeMux()
-	apiHandler := auth.JWTMiddleware(
-		resilience.RateLimitMiddleware(rateLimitRDB, 100, time.Minute)(apiProxy),
+	apiHandler := auth.TracingMiddleware(
+		auth.JWTMiddleware(
+			resilience.RateLimitMiddleware(rateLimitRDB, 100, time.Minute)(apiProxy),
+		),
 	)
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.Handle("/api/v1/", withCORSHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -159,7 +161,7 @@ func main() {
 		}
 		apiHandler.ServeHTTP(w, r)
 	})))
-	mux.HandleFunc("/ws", handleConnections)
+	mux.Handle("/ws", auth.TracingMiddleware(http.HandlerFunc(handleConnections)))
 	mux.HandleFunc("/health", healthHandler)
 	mux.HandleFunc("/ready", readyHandler)
 	mux.HandleFunc("/proxy/process-audio", proxyProcessAudioHandler)
@@ -377,8 +379,8 @@ func proxyAuthHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		return nil
 	}
-	proxy.ErrorHandler = func(rw http.ResponseWriter, _ *http.Request, e error) {
-		slog.Error("auth proxy failed", "error", e)
+	proxy.ErrorHandler = func(rw http.ResponseWriter, req *http.Request, e error) {
+		auth.LoggerFromContext(req.Context()).Error("auth proxy failed", "error", e)
 		http.Error(rw, "Auth service unavailable", http.StatusBadGateway)
 	}
 
@@ -493,6 +495,8 @@ func safeSend(send chan<- []byte, msg []byte) {
 }
 
 func handleConnections(w http.ResponseWriter, r *http.Request) {
+	reqLogger := auth.LoggerFromContext(r.Context())
+
 	// Ensure semaphore is initialized (tests may not call main())
 	if audioSem == nil {
 		audioSem = make(chan struct{}, 4)
@@ -509,7 +513,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		slog.Error("WS upgrade failed", "error", err)
+		reqLogger.Error("WS upgrade failed", "error", err)
 		return
 	}
 	metrics.ActiveWebsockets.Inc()
@@ -537,7 +541,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		for msg := range send {
 			if err := ws.WriteMessage(websocket.TextMessage, msg); err != nil {
-				slog.Error("WS write failed", "error", err)
+				reqLogger.Error("WS write failed", "error", err)
 				return
 			}
 		}
@@ -561,7 +565,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			}
 
 			reqID := uuid.New().String()
-			slog.Info("Processing audio", "req_id", reqID, "user_id", uid)
+			reqLogger.Info("Processing audio", "req_id", reqID, "user_id", uid)
 			start := time.Now()
 
 			ctx, cancel := context.WithTimeout(r.Context(), 120*time.Second)
@@ -578,7 +582,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			)
 			metrics.OrchestratorLatency.Observe(time.Since(start).Seconds())
 			if err != nil {
-				slog.Error("Orchestrator failed", "error", err, "req_id", reqID)
+				reqLogger.Error("Orchestrator failed", "error", err, "req_id", reqID)
 				// If the request was canceled (e.g. STOP), prefer a clean end marker.
 				if ctx.Err() == context.Canceled {
 					safeSend(send, []byte(`{"type": "end", "content": "canceled"}`))
@@ -643,7 +647,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 						safeSend(send, []byte(`{"type": "end", "content": "canceled"}`))
 					}
 				} else {
-					slog.Error("Failed to stream response", "error", err, "req_id", reqID)
+					reqLogger.Error("Failed to stream response", "error", err, "req_id", reqID)
 					if !terminalSent {
 						terminalSent = true
 						safeSend(send, []byte(`{"type": "error", "content": "Failed to stream response"}`))
@@ -674,7 +678,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 
 		events, err := busClient.SubscribeToUserEvents(ctx, uid)
 		if err != nil {
-			slog.Error("Failed to subscribe to user events", "uid", uid, "error", err)
+			reqLogger.Error("Failed to subscribe to user events", "uid", uid, "error", err)
 		} else {
 			go func() {
 				for {

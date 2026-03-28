@@ -23,6 +23,7 @@ except Exception:  # pragma: no cover - runtime may not have langchain during CI
     _lc_tool_impl = None
 
 from services.ai_clients import get_embedding
+from services.analytics import analyze_weekly_productivity_service
 from services.habits import (
     create_habit_service,
     list_habits_service,
@@ -219,6 +220,30 @@ def recall_memory_tool(config: RunnableConfig | None = None, **kwargs) -> str:
         lines.append(f"MemoryID: {mid} | Created: {created} | Content: {snippet}")
 
     return "\n".join(lines)
+
+
+class AnalyzeProductivityArgs(BaseModel):
+    days: int | None = 7
+
+
+@safe_tool(
+    name="analyze_productivity",
+    return_direct=True,
+    args_schema=AnalyzeProductivityArgs,
+)
+def analyze_productivity_tool(config: RunnableConfig | None = None, **kwargs) -> str:
+    """Return compact weekly productivity aggregates for the active user."""
+    user_id, db = _resolve_runtime(config)
+    args = AnalyzeProductivityArgs(**kwargs)
+    _ = args.days
+
+    summary = analyze_weekly_productivity_service(db, user_id)
+    return (
+        "tasks_completed={tasks_completed} "
+        "tasks_pending={tasks_pending} "
+        "focus_minutes={focus_minutes} "
+        "habits_hit={habits_hit}"
+    ).format(**summary)
 
 
 class CreateHabitArgs(BaseModel):
