@@ -57,10 +57,11 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
                       key={item.href}
                       href={item.href}
                       aria-current={isActive ? "page" : undefined}
-                      className={`relative px-2.5 py-1 rounded-md text-sm font-normal transition-[opacity,transform] duration-(--motion-medium) focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${isActive
+                      className={`relative px-2.5 py-1 rounded-md text-sm font-normal transition-[opacity,transform] duration-(--motion-medium) focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                        isActive
                           ? "text-primary bg-primary-subtle"
                           : "text-foreground/80 hover:text-foreground hover:bg-hover/35"
-                        }`}
+                      }`}
                     >
                       {item.label}
                     </Link>
@@ -163,7 +164,7 @@ export function NavBar({ onMobileSidebarToggle }: NavBarProps) {
           {!isAuthenticated && (
             <div className="pb-2 px-1.5 sm:px-2.5">
               <p className="text-[11px] sm:text-xs text-muted-foreground text-center rounded-md border border-structural/60 bg-background/70 px-2.5 py-1.5">
-                You are in a temporary session. {" "}
+                You are in a temporary session.{" "}
                 <Link href="/login" className="text-primary hover:underline">
                   Log in
                 </Link>{" "}
