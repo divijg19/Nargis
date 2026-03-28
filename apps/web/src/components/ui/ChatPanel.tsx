@@ -8,6 +8,7 @@ import { useRealtime } from "@/contexts/RealtimeContext";
 import { useToasts } from "@/contexts/ToastContext";
 import { sanitizeText } from "@/lib/sanitize";
 import { createTask } from "@/services/endpoints/tasks";
+import { cn } from "@/utils";
 import { ConversationActions } from "./chat-panel/ConversationActions";
 import { ConversationCollapsedTrigger } from "./chat-panel/ConversationCollapsedTrigger";
 import { ConversationContent } from "./chat-panel/ConversationContent";
@@ -32,11 +33,22 @@ type ChatPanelProps = {
   permissionDenied?: boolean;
 };
 
-function ThinkingIndicator({ agentState }: { agentState: string }) {
+function ThinkingIndicator({
+  agentState,
+  visible,
+}: {
+  agentState: string;
+  visible: boolean;
+}) {
   return (
-    <div className="mb-2 rounded-md border border-border/50 bg-muted/35 px-3 py-2">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono animate-pulse">
-        <span className="inline-block h-2 w-2 rounded-full bg-foreground/60" />
+    <div
+      className={cn(
+        "mb-2 min-h-9 rounded-md border border-border/50 bg-background/55 px-3 py-2 transition-all duration-200",
+        visible ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0",
+      )}
+    >
+      <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+        <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-muted-foreground/80" />
         <span>{agentState}</span>
       </div>
     </div>
@@ -76,9 +88,16 @@ export default function ChatPanel({
   const [showFullTranscript, setShowFullTranscript] = useState(false);
   const [voiceStateAnnouncement, setVoiceStateAnnouncement] = useState("");
   const [conversationAnnouncement, setConversationAnnouncement] = useState("");
+  const [displayAgentState, setDisplayAgentState] = useState<string | null>(
+    null,
+  );
+  const [showThinkingIndicator, setShowThinkingIndicator] = useState(false);
   const lastVoiceStateRef = useRef<"idle" | "listening" | "processing">("idle");
   const lastTranscriptRef = useRef<string>("");
   const lastAssistantKeyRef = useRef<string>("");
+  const clearAgentStateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const rawAi = sanitizeText(aiResponse);
   const safeAi = /[{[\]"]|\bchoices\b|\bmessage\b|\bcontent\b/i.test(rawAi)
@@ -312,6 +331,48 @@ export default function ChatPanel({
     );
   }, [messages]);
 
+  useEffect(() => {
+    const next = (currentAgentState || "").trim();
+    if (clearAgentStateTimerRef.current) {
+      clearTimeout(clearAgentStateTimerRef.current);
+      clearAgentStateTimerRef.current = null;
+    }
+
+    if (next) {
+      setDisplayAgentState(next);
+      setShowThinkingIndicator(true);
+      return;
+    }
+
+    if (!processing && displayAgentState) {
+      setShowThinkingIndicator(false);
+      clearAgentStateTimerRef.current = setTimeout(() => {
+        setDisplayAgentState(null);
+      }, 220);
+    }
+  }, [currentAgentState, processing, displayAgentState]);
+
+  useEffect(() => {
+    if (!displayAgentState) return;
+    if (aiResponse || (messages || []).some((m) => m.role === "assistant")) {
+      setShowThinkingIndicator(false);
+      if (clearAgentStateTimerRef.current) {
+        clearTimeout(clearAgentStateTimerRef.current);
+      }
+      clearAgentStateTimerRef.current = setTimeout(() => {
+        setDisplayAgentState(null);
+      }, 220);
+    }
+  }, [aiResponse, messages, displayAgentState]);
+
+  useEffect(() => {
+    return () => {
+      if (clearAgentStateTimerRef.current) {
+        clearTimeout(clearAgentStateTimerRef.current);
+      }
+    };
+  }, []);
+
   // If nothing to show and panel closed, render a compact trigger bar.
   // For merged/embedded usage we show a slimmer trigger that expands the
   // embedded panel instead of opening the full conversation drawer.
@@ -388,7 +449,7 @@ export default function ChatPanel({
           displayAi={displayAi}
           displayLimit={DISPLAY_LIMIT}
           processing={processing}
-          currentAgentState={currentAgentState}
+          currentAgentState={displayAgentState ?? currentAgentState}
           showFullTranscript={showFullTranscript}
           showFullAi={showFullAi}
           onToggleShowFullTranscript={() => setShowFullTranscript((s) => !s)}
@@ -402,8 +463,11 @@ export default function ChatPanel({
           }}
         />
 
-        {currentAgentState && (
-          <ThinkingIndicator agentState={currentAgentState} />
+        {(processing || displayAgentState) && (
+          <ThinkingIndicator
+            agentState={displayAgentState || "Thinking..."}
+            visible={showThinkingIndicator || processing}
+          />
         )}
 
         <ConversationActions

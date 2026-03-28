@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { listHabits } from "@/services/endpoints/habits";
-import { listJournalEntries } from "@/services/endpoints/journal";
+import {
+  getLatestBriefing,
+  listJournalEntries,
+} from "@/services/endpoints/journal";
 import { listSessions } from "@/services/endpoints/pomodoro";
 import { listTasks } from "@/services/endpoints/tasks";
 
@@ -23,6 +26,13 @@ export function useJournalEntries() {
   return useQuery({
     queryKey: ["journal"],
     queryFn: listJournalEntries,
+  });
+}
+
+export function useMorningBriefing() {
+  return useQuery({
+    queryKey: ["journal", "briefing"],
+    queryFn: getLatestBriefing,
   });
 }
 
