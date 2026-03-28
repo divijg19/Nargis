@@ -86,14 +86,18 @@ def create_memory(
 
 
 def search_memories(
-    db: Session, user_id: str, query_vector: list[float], limit: int = 3
+    db: Session,
+    user_id: str,
+    query_vector: list[float],
+    limit: int = 3,
+    query_text: str | None = None,
 ) -> list[dict[str, Any]]:
+    min_similarity = 0.55
+    vector_rows: list[tuple[Memory, float | None]] = []
+
     if PGVECTOR_AVAILABLE:
-        # Use SQLAlchemy + pgvector integration so the driver binds the vector
-        # parameter with the correct type (avoids `vector <-> numeric[]` errors).
+        # Vector-first retrieval: rank by cosine similarity.
         try:
-            # Wrap the query vector with the runtime PgVector wrapper when
-            # available so the DB sees the correct type.
             qparam = query_vector
             if PGVECTOR_VALUE_AVAILABLE:
                 try:
@@ -101,23 +105,45 @@ def search_memories(
                 except Exception:
                     qparam = query_vector
 
+            similarity = (1 - Memory.embedding.cosine_distance(qparam)).label(
+                "similarity"
+            )
             stmt = (
-                select(Memory)
+                select(Memory, similarity)
                 .where(Memory.user_id == user_id)
-                .order_by(
-                    Memory.embedding.l2_distance(qparam),
-                    Memory.created_at.desc(),
-                    Memory.id.desc(),
-                )
+                .order_by(similarity.desc(), Memory.created_at.desc(), Memory.id.desc())
                 .limit(limit)
             )
-            rows = db.scalars(stmt).all()
-            return [_mem_to_dict(r) for r in rows]
-        except Exception:
-            # If the Vector expression isn't available or fails, fall back below.
-            pass
+            vector_rows = [
+                (row[0], float(row[1]) if row[1] is not None else None)
+                for row in db.execute(stmt).all()
+            ]
 
-    # Fallback: simple recency-based selection when pgvector unavailable
+            if vector_rows:
+                top_similarity = vector_rows[0][1]
+                if top_similarity is not None and top_similarity >= min_similarity:
+                    return [_mem_to_dict(row[0]) for row in vector_rows]
+        except Exception:
+            vector_rows = []
+
+    # Hybrid fallback: if vector retrieval is weak, run text search on content.
+    text_query = (query_text or "").strip()
+    if text_query:
+        like_pattern = f"%{text_query}%"
+        text_stmt = (
+            select(Memory)
+            .where(Memory.user_id == user_id, Memory.content.ilike(like_pattern))
+            .order_by(Memory.created_at.desc(), Memory.id.desc())
+            .limit(limit)
+        )
+        text_rows = db.scalars(text_stmt).all()
+        if text_rows:
+            return [_mem_to_dict(r) for r in text_rows]
+
+    if vector_rows:
+        return [_mem_to_dict(row[0]) for row in vector_rows]
+
+    # Final fallback: simple recency-based retrieval.
     stmt = (
         select(Memory)
         .where(Memory.user_id == user_id)

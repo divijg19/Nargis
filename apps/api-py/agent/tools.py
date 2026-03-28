@@ -199,7 +199,13 @@ def recall_memory_tool(config: RunnableConfig | None = None, **kwargs) -> str:
     except Exception as e:
         return f"Error generating embedding: {e}"
 
-    matches = search_memories(db, user_id, vec, limit=args.limit or 3)
+    matches = search_memories(
+        db,
+        user_id,
+        vec,
+        limit=args.limit or 3,
+        query_text=args.query,
+    )
 
     if not matches:
         return "No memories found."

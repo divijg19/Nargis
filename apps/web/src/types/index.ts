@@ -108,14 +108,6 @@ export interface DashboardCardProps {
   size?: "xs" | "sm" | "md";
 }
 
-export interface StatCardProps {
-  title: string;
-  value: string | number;
-  icon?: string;
-  className?: string;
-  size?: "xs" | "sm" | "md";
-}
-
 export interface ActionButtonProps {
   icon?: string;
   label: string;

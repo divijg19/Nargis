@@ -169,7 +169,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:         ":" + cfg.Port,
-		Handler:      mux,
+		Handler:      metrics.InstrumentHTTP(mux),
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 	}
@@ -512,10 +512,10 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		slog.Error("WS upgrade failed", "error", err)
 		return
 	}
-	metrics.ActiveConnections.Inc()
+	metrics.ActiveWebsockets.Inc()
 	defer func() {
 		ws.Close()
-		metrics.ActiveConnections.Dec()
+		metrics.ActiveWebsockets.Dec()
 	}()
 
 	// Channel for outgoing messages to ensure thread-safety

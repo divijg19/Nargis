@@ -6,12 +6,6 @@ import (
 )
 
 var (
-	// ActiveConnections tracks the number of currently connected WebSocket clients
-	ActiveConnections = promauto.NewGauge(prometheus.GaugeOpts{
-		Name: "gateway_active_connections",
-		Help: "The total number of active WebSocket connections",
-	})
-
 	// AudioFramesProcessed tracks the total number of audio frames handled
 	// Status label can be "forwarded" or "dropped" (by VAD)
 	AudioFramesProcessed = promauto.NewCounterVec(prometheus.CounterOpts{
