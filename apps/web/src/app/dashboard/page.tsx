@@ -1,15 +1,15 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { ActionButton } from "@/components/ui/ActionButton";
-import { AIBriefingCard } from "@/components/ui/AIBriefingCard";
 import { DashboardCard } from "@/components/ui/DashboardCard";
 import DashboardHero from "@/components/ui/DashboardHero";
 import HabitModal from "@/components/ui/HabitModal";
-import { StatCard } from "@/components/ui/StatCard";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { TaskModal } from "@/components/ui/TaskModal";
 import { TaskPreview } from "@/components/ui/TaskPreview";
 import { useDashboard, useMorningBriefing } from "@/hooks/queries";
@@ -59,6 +59,7 @@ export default function DashboardPage() {
   const briefingUpdatedAt =
     briefingQuery.data?.updatedAt ?? briefingQuery.data?.createdAt;
   const briefingLoading = briefingQuery.isLoading;
+  const hasBriefing = Boolean(briefingText?.trim().length);
 
   const handleCreateTask = async (taskData: CreateTaskRequest) => {
     await createTaskMutation.mutateAsync(taskData);
@@ -125,11 +126,48 @@ export default function DashboardPage() {
           <main className="w-full max-w-5xl mx-auto px-3 sm:px-4 lg:px-8 space-y-6 lg:space-y-8 pb-14 lg:pb-16 lg:col-start-4 lg:col-end-5 h-full overflow-auto">
             <div className="app-viewport-available">
               <div className="grid grid-cols-1 gap-4 md:gap-6">
-                <AIBriefingCard
-                  loading={briefingLoading}
-                  content={briefingText}
-                  updatedAt={briefingUpdatedAt}
-                />
+                {(briefingLoading || hasBriefing) && (
+                  <section
+                    aria-live="polite"
+                    className="rounded-2xl border border-blue-200/70 bg-blue-50/50 p-4 shadow-sm dark:border-blue-500/20 dark:bg-blue-900/10 sm:p-5"
+                  >
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-blue-200/80 bg-white/70 text-blue-600 dark:border-blue-400/30 dark:bg-blue-900/20 dark:text-blue-300">
+                          <Sparkles className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <h2 className="text-base font-semibold text-foreground sm:text-lg">
+                          Morning Briefing
+                        </h2>
+                      </div>
+                      {briefingUpdatedAt ? (
+                        <span className="text-xs text-muted-foreground">
+                          Updated{" "}
+                          {briefingUpdatedAt.toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {briefingLoading ? (
+                      <div
+                        className="space-y-2"
+                        role="status"
+                        aria-label="Loading briefing"
+                      >
+                        <Skeleton className="h-3 w-full rounded-sm bg-blue-200/60 dark:bg-blue-800/35" />
+                        <Skeleton className="h-3 w-11/12 rounded-sm bg-blue-200/60 dark:bg-blue-800/35" />
+                        <Skeleton className="h-3 w-9/12 rounded-sm bg-blue-200/60 dark:bg-blue-800/35" />
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap text-sm leading-6 text-foreground/90 sm:text-base">
+                        {briefingText}
+                      </p>
+                    )}
+                  </section>
+                )}
 
                 {/* Mobile-only stacked left area */}
                 <div className="lg:hidden flex flex-col gap-4">
@@ -272,10 +310,38 @@ export default function DashboardPage() {
 
           {/* Right stat stack: right rail, sticky within its column */}
           <aside className="hidden lg:flex flex-col sticky top-16 w-48 xl:w-56 justify-self-start gap-3 z-20 lg:col-start-6 lg:col-end-7">
-            <StatCard title="Tasks Completed" value={completedToday} />
-            <StatCard title="Focus Sessions" value={todaySessionsCount} />
-            <StatCard title="Active Streaks" value={totalStreaks} />
-            <StatCard title="Weekly Progress" value={`${weeklyProgress}%`} />
+            <div className="relative rounded-xl border border-structural bg-card p-4 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Tasks Completed
+              </p>
+              <p className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">
+                {completedToday}
+              </p>
+            </div>
+            <div className="relative rounded-xl border border-structural bg-card p-4 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Focus Sessions
+              </p>
+              <p className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">
+                {todaySessionsCount}
+              </p>
+            </div>
+            <div className="relative rounded-xl border border-structural bg-card p-4 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Active Streaks
+              </p>
+              <p className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">
+                {totalStreaks}
+              </p>
+            </div>
+            <div className="relative rounded-xl border border-structural bg-card p-4 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Weekly Progress
+              </p>
+              <p className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">
+                {weeklyProgress}%
+              </p>
+            </div>
           </aside>
         </div>
 

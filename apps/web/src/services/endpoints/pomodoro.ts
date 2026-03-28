@@ -1,5 +1,4 @@
 import type { PomodoroSession } from "@/types";
-import { generateId } from "@/utils";
 import { mockDelay } from "../apiClient";
 
 // Generate some sample historical sessions
@@ -17,7 +16,7 @@ twoDaysAgo.setHours(15, 0, 0, 0);
 
 let mockSessions: PomodoroSession[] = [
   {
-    id: generateId(),
+    id: crypto.randomUUID(),
     type: "work",
     duration: 25,
     startTime: new Date(today.getTime()),
@@ -25,7 +24,7 @@ let mockSessions: PomodoroSession[] = [
     completed: true,
   },
   {
-    id: generateId(),
+    id: crypto.randomUUID(),
     type: "shortBreak",
     duration: 5,
     startTime: new Date(today.getTime() + 26 * 60 * 1000),
@@ -33,7 +32,7 @@ let mockSessions: PomodoroSession[] = [
     completed: true,
   },
   {
-    id: generateId(),
+    id: crypto.randomUUID(),
     type: "work",
     duration: 25,
     startTime: new Date(today.getTime() + 35 * 60 * 1000),
@@ -41,7 +40,7 @@ let mockSessions: PomodoroSession[] = [
     completed: true,
   },
   {
-    id: generateId(),
+    id: crypto.randomUUID(),
     type: "work",
     duration: 25,
     startTime: yesterday,
@@ -49,7 +48,7 @@ let mockSessions: PomodoroSession[] = [
     completed: true,
   },
   {
-    id: generateId(),
+    id: crypto.randomUUID(),
     type: "shortBreak",
     duration: 5,
     startTime: new Date(yesterday.getTime() + 26 * 60 * 1000),
@@ -57,7 +56,7 @@ let mockSessions: PomodoroSession[] = [
     completed: true,
   },
   {
-    id: generateId(),
+    id: crypto.randomUUID(),
     type: "work",
     duration: 25,
     startTime: twoDaysAgo,
@@ -65,7 +64,7 @@ let mockSessions: PomodoroSession[] = [
     completed: true,
   },
   {
-    id: generateId(),
+    id: crypto.randomUUID(),
     type: "longBreak",
     duration: 15,
     startTime: new Date(twoDaysAgo.getTime() + 26 * 60 * 1000),
@@ -84,7 +83,7 @@ export async function listSessions(): Promise<PomodoroSession[]> {
 export async function recordSession(
   session: Omit<PomodoroSession, "id">,
 ): Promise<PomodoroSession> {
-  const stored: PomodoroSession = { ...session, id: generateId() };
+  const stored: PomodoroSession = { ...session, id: crypto.randomUUID() };
   mockSessions = [...mockSessions, stored];
   return mockDelay({ ...stored }, 80);
 }
