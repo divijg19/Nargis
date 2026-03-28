@@ -58,7 +58,6 @@ async def test_run_agent_pipeline_emits_tool_result_with_result_key():
 
     with (
         patch("services.agent_service.agent_graph", fake_graph),
-        patch("services.agent_service.get_system_context", return_value="ctx"),
     ):
         chunks = []
         async for b in run_agent_pipeline(

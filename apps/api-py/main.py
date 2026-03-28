@@ -8,12 +8,10 @@ from contextlib import asynccontextmanager
 from contextvars import ContextVar
 from typing import Any, cast
 
-import httpx
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from starlette.responses import StreamingResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -130,10 +128,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Nargis AI Service", lifespan=lifespan)
-
-# TTS configuration used by the /tts endpoint (kept in main for routing concerns)
-TTS_URL = os.getenv("TTS_URL", "")
-TTS_API_KEY = os.getenv("TTS_API_KEY", "")
 
 
 def _normalize_request_id(value: str | None) -> str:
@@ -426,27 +420,3 @@ async def ready():
 # NOTE: Startup/shutdown handling is implemented via the `lifespan`
 # async context manager supplied to FastAPI above. This replaces the
 # deprecated `@app.on_event("startup")` decorator.
-
-
-class TTSRequest(BaseModel):
-    text: str
-
-
-@app.post("/tts")
-async def text_to_speech(req: TTSRequest):
-    if not TTS_URL or not TTS_API_KEY:
-        raise HTTPException(status_code=501, detail="TTS not configured")
-    try:
-        headers = {"Authorization": f"Bearer {TTS_API_KEY}"}
-        from services.ai_clients import HTTP_TIMEOUT
-
-        async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-            resp = await client.post(TTS_URL, json={"text": req.text}, headers=headers)
-            resp.raise_for_status()
-            return Response(
-                content=resp.content,
-                media_type=resp.headers.get("content-type", "audio/mpeg"),
-            )
-    except Exception as e:
-        logging.exception("TTS proxy failed")
-        raise HTTPException(status_code=502, detail=f"TTS service error: {e}") from e

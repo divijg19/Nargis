@@ -1,62 +1,89 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
-from storage.models import Habit, HabitEntry, PomodoroSession, Task
+from storage.models import Habit, HabitEntry, Task, User
+
+
+def get_user_daily_context(db: Session, user_id: str) -> str:
+    """Build a compact daily state summary for system-prompt injection."""
+    now_iso = datetime.now(UTC).isoformat()
+    today = datetime.now(UTC).date().isoformat()
+
+    user_name = db.scalar(select(User.name).where(User.id == user_id))
+
+    task_filters = (
+        Task.user_id == user_id,
+        Task.status != "done",
+        Task.due_date.is_not(None),
+        Task.due_date <= now_iso,
+    )
+    pending_task_count = (
+        db.scalar(select(func.count(Task.id)).where(*task_filters)) or 0
+    )
+    pending_task_titles = db.scalars(
+        select(Task.title)
+        .where(
+            *task_filters,
+        )
+        .order_by(Task.due_date.asc(), Task.id.asc())
+        .limit(3)
+    ).all()
+
+    pending_habit_query = (
+        select(Habit.name)
+        .outerjoin(
+            HabitEntry,
+            and_(
+                HabitEntry.habit_id == Habit.id,
+                HabitEntry.date == today,
+                HabitEntry.completed.is_(True),
+            ),
+        )
+        .where(Habit.user_id == user_id, HabitEntry.id.is_(None))
+        .order_by(Habit.name.asc())
+    )
+    pending_habit_names = db.scalars(pending_habit_query.limit(5)).all()
+    pending_habit_count = (
+        db.scalar(
+            select(func.count())
+            .select_from(Habit)
+            .outerjoin(
+                HabitEntry,
+                and_(
+                    HabitEntry.habit_id == Habit.id,
+                    HabitEntry.date == today,
+                    HabitEntry.completed.is_(True),
+                ),
+            )
+            .where(Habit.user_id == user_id, HabitEntry.id.is_(None))
+        )
+        or 0
+    )
+
+    if pending_task_count == 0 and pending_habit_count == 0:
+        return "[TODAY'S STATE] Clear schedule."
+
+    parts: list[str] = []
+    if user_name:
+        parts.append(f"User:{user_name}.")
+    if pending_task_count > 0:
+        task_titles = ";".join(t for t in pending_task_titles if t)
+        if task_titles:
+            parts.append(f"Pending Tasks:{pending_task_count} ({task_titles}).")
+        else:
+            parts.append(f"Pending Tasks:{pending_task_count}.")
+    if pending_habit_count > 0:
+        names = ",".join(pending_habit_names)
+        if names:
+            parts.append(f"Unlogged Habits:{names}.")
+        else:
+            parts.append(f"Unlogged Habits:{pending_habit_count}.")
+
+    return "[TODAY'S STATE] " + " ".join(parts)
 
 
 def get_system_context(user_id: str, db: Session) -> str:
-    """
-    Aggregates system state into a natural language string for the AI agent.
-    """
-    context_parts = []
-
-    # 1. Overdue Tasks
-    now_iso = datetime.now(UTC).isoformat()
-    overdue_tasks = db.scalars(
-        select(Task).where(
-            Task.user_id == user_id, Task.status != "done", Task.due_date < now_iso
-        )
-    ).all()
-
-    if overdue_tasks:
-        titles = ", ".join([f"'{t.title}'" for t in overdue_tasks[:3]])
-        count = len(overdue_tasks)
-        context_parts.append(f"User has {count} overdue tasks (e.g., {titles}).")
-
-    # 2. Habits for Today
-    today_str = datetime.now(UTC).strftime("%Y-%m-%d")
-    habits = db.scalars(select(Habit).where(Habit.user_id == user_id)).all()
-    pending_habits = []
-    for h in habits:
-        # Check if entry exists for today
-        entry = db.scalar(
-            select(HabitEntry).where(
-                HabitEntry.habit_id == h.id, HabitEntry.date == today_str
-            )
-        )
-        if not entry or not entry.completed:
-            pending_habits.append(h.name)
-
-    if pending_habits:
-        habits_str = ", ".join(pending_habits[:5])
-        context_parts.append(f"Pending habits for today: {habits_str}.")
-
-    # 3. Current Focus (Pomodoro)
-    active_session = db.scalar(
-        select(PomodoroSession).where(
-            PomodoroSession.user_id == user_id,
-            PomodoroSession.completed.is_(False),
-            PomodoroSession.ended_at.is_(None),
-        )
-    )
-
-    if active_session:
-        start_time = active_session.started_at
-        context_parts.append(
-            f"User is currently in a '{active_session.type}' focus session "
-            f"started at {start_time}."
-        )
-
-    return " ".join(context_parts)
+    """Compatibility wrapper for older call sites."""
+    return get_user_daily_context(db, user_id)
