@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { authService } from "@/services/auth";
 // import ChatPanel from "./ChatPanel"; // Removed ChatPanel usage
 
 export default function DashboardHero({ greeting }: { greeting?: string }) {
@@ -38,15 +39,18 @@ export default function DashboardHero({ greeting }: { greeting?: string }) {
             onClick={async () => {
               // Trigger morning briefing
               try {
-                const token = localStorage.getItem("token");
+                const headers = new Headers({
+                  "Content-Type": "application/json",
+                });
+                const authHeaders = new Headers(authService.getAuthHeaders());
+                authHeaders.forEach((value, key) => {
+                  headers.set(key, value);
+                });
                 await fetch(
                   `${process.env.NEXT_PUBLIC_API_URL}/v1/agent/trigger`,
                   {
                     method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      Authorization: `Bearer ${token}`,
-                    },
+                    headers,
                     body: JSON.stringify({ trigger_type: "morning_briefing" }),
                   },
                 );

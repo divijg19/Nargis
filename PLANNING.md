@@ -100,7 +100,6 @@
 
 #### Technical Goals
 - Streaming LLM responses
-- Text-to-Speech integration
 - Vector embeddings for semantic search
 - RAG for personalized context
 - Fine-tuned models for productivity domain

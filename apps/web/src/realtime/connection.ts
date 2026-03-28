@@ -19,8 +19,13 @@ function toWsBaseUrl(httpBase: string): string {
   }
 }
 
-export function buildPythonRealtimeWsUrl(token?: string | null): string {
+export function buildPythonRealtimeWsUrl(
+  token?: string | null,
+  guestId?: string | null,
+  wsOverride?: string | null,
+): string {
   const apiBase =
+    wsOverride ||
     process.env.NEXT_PUBLIC_API_PY_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
     "http://localhost:8000";
@@ -28,6 +33,8 @@ export function buildPythonRealtimeWsUrl(token?: string | null): string {
   const url = new URL(`${wsBase}/ws/v1/chat`);
   if (token) {
     url.searchParams.set("token", token);
+  } else if (guestId) {
+    url.searchParams.set("guest_id", guestId);
   }
   return url.toString();
 }

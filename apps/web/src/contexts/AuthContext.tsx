@@ -20,6 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const isGuestUser = Boolean(user?.id?.startsWith("guest_"));
 
   useEffect(() => {
     // Check for existing session on mount
@@ -77,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         loading,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && !isGuestUser,
         login,
         register,
         logout,

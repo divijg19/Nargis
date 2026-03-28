@@ -311,7 +311,7 @@ func withCORS(h http.HandlerFunc) http.HandlerFunc {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Set("Vary", "Origin")
 				w.Header().Set("Access-Control-Allow-Credentials", "true")
-				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Guest-Id")
 				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
 			}
 			w.WriteHeader(http.StatusNoContent)
@@ -360,7 +360,7 @@ func proxyAuthHandler(w http.ResponseWriter, r *http.Request) {
 			resp.Header.Set("Access-Control-Allow-Origin", origin)
 			resp.Header.Set("Access-Control-Allow-Credentials", "true")
 			// Keep preflight allowances aligned with withCORS.
-			resp.Header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			resp.Header.Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Guest-Id")
 			resp.Header.Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
 			// Ensure Vary includes Origin
 			vary := resp.Header.Values("Vary")

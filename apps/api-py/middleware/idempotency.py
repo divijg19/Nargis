@@ -13,10 +13,18 @@ from storage.database import SessionLocal
 
 # Import JWT settings from auth module if available
 try:
-    from routers.auth import ALGORITHM, SECRET_KEY
+    from routers.auth import ALGORITHM, SECRET_KEY, normalize_guest_user_id
 except Exception:
     SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
     ALGORITHM = "HS256"
+
+    def normalize_guest_user_id(candidate: str | None) -> str | None:
+        raw = (candidate or "").strip()
+        if not raw:
+            return None
+        if raw.startswith("guest_"):
+            return raw
+        return f"guest_{raw}"
 
 
 class IdempotencyMiddleware(BaseHTTPMiddleware):
@@ -44,6 +52,10 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
                 user_identifier = auth_header
         else:
             user_identifier = request.headers.get("X-User-Id")
+            if not user_identifier:
+                user_identifier = normalize_guest_user_id(
+                    request.headers.get("X-Guest-Id")
+                )
 
         db = SessionLocal()
         try:
