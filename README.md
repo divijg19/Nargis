@@ -11,7 +11,7 @@ Prerequisites: Bun, Python 3.12, `uv`, Go, and a POSIX-compatible shell.
 
 ```bash
 bun install
-bun run dev
+bun dev
 ```
 
 Local defaults:
@@ -23,22 +23,19 @@ Local defaults:
 
 | Command | Purpose |
 | --- | --- |
-| `bun run dev` | Start the web app, Python API, and Go gateway together |
+| `bun dev` | Start the web app, Python API, and Go gateway together |
 | `bun run build` | Build the web app and Go gateway |
-| `bun run lint` | Preferred cleanup/write command across the repo |
-| `bun run lint:format` | Run format-only write actions |
-| `bun run lint:check` | Run the full read-only validation umbrella |
-| `bun run qa` | Fast one-stop validation alias |
+| `bun lint` | Preferred cleanup/write command across the repo |
+| `bun qa` | Fast one-stop validation alias |
 | `bun run test` | Run all test suites |
-| `bun run smoke:ws` | Run the websocket smoke client |
-| `bun run smoke:local-realtime` | Run the local realtime smoke script |
+| `bun smoke:ws` | Run the websocket smoke client |
+| `bun smoke:local-realtime` | Run the local realtime smoke script |
 
 Targeted escape hatches remain available:
 - `dev:web`, `dev:py`, `dev:go`
 - `build:web`, `build:go`
 - `test:web`, `test:api`, `test:go`
 - `lint:web`, `lint:api`, `lint:go`
-- `lint:check:web`, `lint:check:api`, `lint:check:go`
 
 ## Repo Guide
 
