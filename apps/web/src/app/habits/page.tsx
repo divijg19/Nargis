@@ -169,7 +169,10 @@ export default function HabitsPage() {
               {todayProgress.length === 0 ? (
                 <div className="py-16 text-center">
                   <div className="mb-4 inline-flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
-                    <span className="text-sm text-muted-foreground" aria-hidden="true">
+                    <span
+                      className="text-sm text-muted-foreground"
+                      aria-hidden="true"
+                    >
                       None
                     </span>
                   </div>

@@ -101,41 +101,7 @@ export function NavBar() {
         <nav className="rounded-2xl border border-structural bg-card/96 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-sm">
           <div className="px-2.5 sm:px-3">
             <div className="flex h-12 items-center justify-between gap-2.5 sm:gap-3">
-              <Link
-                href="/"
-                className="flex items-center gap-2 transition-[opacity,transform] duration-(--motion-medium)"
-              >
-                <div className="flex h-6 w-6 items-center justify-center rounded-md border border-structural">
-                  <span className="text-xs font-semibold text-foreground">
-                    N
-                  </span>
-                </div>
-                <span className="text-sm font-medium tracking-tight text-foreground/95">
-                  Nargis
-                </span>
-              </Link>
-
-              <div className="ml-auto hidden items-center gap-1 md:flex">
-                {navigationItems.map((item) => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      aria-current={isActive ? "page" : undefined}
-                      className={`relative rounded-md px-2.5 py-1 text-sm font-normal transition-[opacity,transform] duration-(--motion-medium) focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                        isActive
-                          ? "bg-primary-subtle text-primary"
-                          : "text-foreground/80 hover:bg-hover/35 hover:text-foreground"
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </div>
-
-              <div className="ml-auto flex items-center gap-2 sm:gap-2.5">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={togglePromptBar}
@@ -162,6 +128,42 @@ export function NavBar() {
                   </svg>
                 </button>
 
+                <Link
+                  href="/"
+                  className="flex items-center gap-2 transition-[opacity,transform] duration-(--motion-medium)"
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-md border border-structural">
+                    <span className="text-xs font-semibold text-foreground">
+                      N
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium tracking-tight text-foreground/95">
+                    Nargis
+                  </span>
+                </Link>
+              </div>
+
+              <div className="hidden items-center gap-1 md:flex">
+                {navigationItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`relative rounded-md px-2.5 py-1 text-sm font-normal transition-[opacity,transform] duration-(--motion-medium) focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                        isActive
+                          ? "bg-primary-subtle text-primary"
+                          : "text-foreground/80 hover:bg-hover/35 hover:text-foreground"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+
+              <div className="ml-auto flex items-center gap-2 sm:gap-2.5">
                 <div className="rounded-md bg-background/80 p-1">
                   <ThemeToggle />
                 </div>
@@ -229,20 +231,20 @@ export function NavBar() {
                 </div>
               </div>
             )}
-
-            {!isAuthenticated && (
-              <div className="px-1.5 pb-2 sm:px-2.5">
-                <p className="rounded-md border border-structural/60 bg-background/70 px-2.5 py-1.5 text-center text-[11px] text-muted-foreground sm:text-xs">
-                  You are in a temporary session.{" "}
-                  <Link href="/login" className="text-primary hover:underline">
-                    Log in
-                  </Link>{" "}
-                  to save your data.
-                </p>
-              </div>
-            )}
           </div>
         </nav>
+
+        {!isAuthenticated && (
+          <div className="mt-2 px-1.5 sm:px-2.5">
+            <p className="rounded-2xl border border-structural/60 bg-card/94 px-3 py-2 text-center text-[11px] text-muted-foreground shadow-[0_10px_30px_rgba(15,23,42,0.05)] backdrop-blur-sm sm:text-xs">
+              You are in a temporary session.{" "}
+              <Link href="/login" className="text-primary hover:underline">
+                Log in
+              </Link>{" "}
+              to save your data.
+            </p>
+          </div>
+        )}
 
         {promptBarOpen && (
           <div
