@@ -1,30 +1,47 @@
 "use client";
 
-import { useRealtime } from "@/contexts/RealtimeContext";
+import { useAutoWarmSystem, useSystemStatus } from "@/hooks/useSystemStatus";
+import { isEngineOnline, isWakingStatus } from "@/types/system";
 
 export function ConnectionStatusIndicator() {
-  const { connectionStatus } = useRealtime();
+  const { data, isPending, isError } = useSystemStatus({
+    refetchInterval: 30_000,
+  });
+  const warmMutation = useAutoWarmSystem(data);
 
-  const map = {
-    open: { color: "bg-success", title: "Connected" },
-    connecting: { color: "bg-warning", title: "Connecting..." },
-    retrying: { color: "bg-warning", title: "Reconnecting..." },
-    closed: { color: "bg-destructive", title: "Disconnected" },
-    error: { color: "bg-destructive", title: "Connection Error" },
-    idle: { color: "bg-muted", title: "Idle" },
-  } as const;
+  const go = data?.go;
+  const py = data?.py;
 
-  const entry =
-    (map as Record<string, { color: string; title: string }>)[
-      connectionStatus
-    ] ?? map.idle;
+  const isWaking =
+    isWakingStatus(go?.hf_status) || isWakingStatus(py?.hf_status);
+  const allOnline = Boolean(
+    go && py && isEngineOnline(go) && isEngineOnline(py),
+  );
+
+  const entry = isPending
+    ? { color: "bg-warning", title: "Checking AI Engines...", pulse: true }
+    : isError
+      ? { color: "bg-destructive", title: "Systems Unreachable", pulse: false }
+      : isWaking || warmMutation.isPending
+        ? {
+            color: "bg-amber-500",
+            title: "Waking AI Engines...",
+            pulse: true,
+          }
+        : allOnline
+          ? { color: "bg-success", title: "Systems Online", pulse: false }
+          : {
+              color: "bg-destructive",
+              title: "Systems Degraded",
+              pulse: false,
+            };
 
   return (
     <div className="flex items-center space-x-2">
       <div className="relative">
         <span
           title={entry.title}
-          className={`inline-block w-2.5 h-2.5 rounded-full ${entry.color}`}
+          className={`inline-block h-2.5 w-2.5 rounded-full ${entry.color} ${entry.pulse ? "animate-pulse" : ""}`}
           aria-hidden
         />
       </div>

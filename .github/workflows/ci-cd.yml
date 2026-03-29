@@ -21,7 +21,7 @@ jobs:
     outputs:
       web: ${{ steps.filter.outputs.web }}
       api: ${{ steps.filter.outputs.api }}
-      core: ${{ steps.filter.outputs.co }}
+      core: ${{ steps.filter.outputs.core }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
@@ -63,11 +63,11 @@ jobs:
       - name: Install Dependencies
         run: bun install --frozen-lockfile
 
-      - name: Lint & Typecheck
-        run: bun lint && bun type-check
+      - name: Lint & Format Check
+        run: bun lint && bun run format
 
-      - name: Format
-        run: bun format
+      - name: Typecheck & Test
+        run: bun type-check && bun run test
 
       - name: Build
         run: bun run build
@@ -107,8 +107,8 @@ jobs:
       - name: Install Dependencies
         run: uv sync --upgrade --all-extras
 
-      - name: Lint (Ruff)
-        run: uv run ruff check . --fix
+      - name: Lint & Format Check
+        run: uv run ty check . && uv run ruff check . --fix && uv run ruff format .
 
       - name: Run Migrations
         env:

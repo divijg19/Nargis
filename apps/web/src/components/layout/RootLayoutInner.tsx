@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { RegisterModal } from "@/components/auth/RegisterModal";
 import Sidebar from "@/components/layout/Sidebar";
@@ -11,6 +11,7 @@ import { Footer } from "@/components/ui/Footer";
 import { NavBar } from "@/components/ui/NavBar";
 import { OnboardingOverlay } from "@/components/ui/OnboardingOverlay";
 import { ToastViewport } from "@/components/ui/Toasts";
+import { useWarmSystemOnMount } from "@/hooks/useSystemStatus";
 
 export default function RootLayoutInner({
   children,
@@ -21,19 +22,7 @@ export default function RootLayoutInner({
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [accountDrawerOpen, setAccountDrawerOpen] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    void fetch("/api/system/warm", {
-      method: "POST",
-      keepalive: true,
-    }).catch(() => {
-      // silent by design
-    });
-  }, []);
+  useWarmSystemOnMount(true);
 
   const handleAuthSuccess = () => {
     // Modal will close automatically, can add toast here if desired

@@ -12,6 +12,8 @@ import (
 )
 
 func TestExtractAuthToken_PriorityAndFallbacks(t *testing.T) {
+	resetGatewayTestState(t)
+
 	t.Setenv("WS_ALLOW_QUERY_TOKEN", "0")
 
 	reqHeader := httptest.NewRequest(http.MethodGet, "/ws?token=query-token", nil)
@@ -35,6 +37,8 @@ func TestExtractAuthToken_PriorityAndFallbacks(t *testing.T) {
 }
 
 func TestIsAllowedHTTPOrigin(t *testing.T) {
+	resetGatewayTestState(t)
+
 	t.Setenv("WS_ALLOWED_ORIGINS", "*")
 	if !isAllowedHTTPOrigin("https://app.example.com") {
 		t.Fatal("expected wildcard to allow origin")
@@ -53,6 +57,8 @@ func TestIsAllowedHTTPOrigin(t *testing.T) {
 }
 
 func TestGetOrchestratorBaseURL_Precedence(t *testing.T) {
+	resetGatewayTestState(t)
+
 	prevCfg := cfg
 	defer func() {
 		cfg = prevCfg
@@ -78,68 +84,85 @@ func TestGetOrchestratorBaseURL_Precedence(t *testing.T) {
 	}
 }
 
-func TestReadyHandler_ReportsReadyAndDegraded(t *testing.T) {
-	prevCfg := cfg
-	prevBus := busClient
+func TestReadyHandlerMatchesHealthzWhenRedisMissing(t *testing.T) {
+	resetGatewayTestState(t)
+
+	prevRDB := rateLimitRDB
 	defer func() {
-		cfg = prevCfg
-		busClient = prevBus
+		rateLimitRDB = prevRDB
 	}()
 
-	orchUp := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"status":"ok"}`))
-	}))
-	defer orchUp.Close()
+	rateLimitRDB = nil
 
-	cfg = &config.Config{OrchestratorURL: orchUp.URL, RedisURL: ""}
-	busClient = nil
+	req := httptest.NewRequest(http.MethodGet, "/ready", nil)
+	rr := httptest.NewRecorder()
+	readyHandler(rr, req)
 
-	reqReady := httptest.NewRequest(http.MethodGet, "/ready", nil)
-	rrReady := httptest.NewRecorder()
-	readyHandler(rrReady, reqReady)
-
-	if rrReady.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", rrReady.Code)
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected status 503, got %d", rr.Code)
 	}
-	bodyReady, _ := io.ReadAll(rrReady.Result().Body)
-	bodyReadyStr := string(bodyReady)
-	if !strings.Contains(bodyReadyStr, `"status":"ready"`) {
-		t.Fatalf("expected ready status in body, got %s", bodyReadyStr)
+	body, _ := io.ReadAll(rr.Result().Body)
+	bodyStr := string(body)
+	if !strings.Contains(bodyStr, `"status":"degraded"`) {
+		t.Fatalf("expected degraded status in body, got %s", bodyStr)
 	}
-	if !strings.Contains(bodyReadyStr, `"orchestrator":{"url":"`+orchUp.URL+`/health","status":"ok"`) {
-		t.Fatalf("expected orchestrator ok in body, got %s", bodyReadyStr)
-	}
-
-	cfg = &config.Config{OrchestratorURL: "http://127.0.0.1:1", RedisURL: ""}
-	reqDegraded := httptest.NewRequest(http.MethodGet, "/ready", nil)
-	rrDegraded := httptest.NewRecorder()
-	readyHandler(rrDegraded, reqDegraded)
-
-	if rrDegraded.Code != http.StatusServiceUnavailable {
-		t.Fatalf("expected status 503, got %d", rrDegraded.Code)
-	}
-	bodyDegraded, _ := io.ReadAll(rrDegraded.Result().Body)
-	bodyDegradedStr := string(bodyDegraded)
-	if !strings.Contains(bodyDegradedStr, `"status":"degraded"`) {
-		t.Fatalf("expected degraded status in body, got %s", bodyDegradedStr)
-	}
-	if !strings.Contains(bodyDegradedStr, `"orchestrator":{"url":"http://127.0.0.1:1/health","status":"down"`) {
-		t.Fatalf("expected orchestrator down in body, got %s", bodyDegradedStr)
+	if !strings.Contains(bodyStr, `"redis":"down"`) {
+		t.Fatalf("expected redis down in body, got %s", bodyStr)
 	}
 }
 
-func TestJsonStringAndIfThen(t *testing.T) {
-	escaped := jsonString("line1\n\"quoted\"\tvalue")
-	expected := "\"line1\\n\\\"quoted\\\"\\tvalue\""
-	if escaped != expected {
-		t.Fatalf("unexpected jsonString output: got %s want %s", escaped, expected)
-	}
+func TestHealthzHandlerReportsRedisUnavailableWhenClientMissing(t *testing.T) {
+	resetGatewayTestState(t)
 
-	if got := ifThen(true, "a", "b"); got != "a" {
-		t.Fatalf("expected 'a', got %q", got)
+	prevRDB := rateLimitRDB
+	defer func() {
+		rateLimitRDB = prevRDB
+	}()
+
+	rateLimitRDB = nil
+
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	rr := httptest.NewRecorder()
+	healthzHandler(rr, req)
+
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected status 503, got %d", rr.Code)
 	}
-	if got := ifThen(false, "a", "b"); got != "b" {
-		t.Fatalf("expected 'b', got %q", got)
+	body, _ := io.ReadAll(rr.Result().Body)
+	bodyStr := string(body)
+	if !strings.Contains(bodyStr, `"status":"degraded"`) {
+		t.Fatalf("expected degraded status in body, got %s", bodyStr)
+	}
+	if !strings.Contains(bodyStr, `"redis":"down"`) {
+		t.Fatalf("expected redis down in body, got %s", bodyStr)
+	}
+}
+
+func TestWithCORSHandlesPreflightForAllowedOrigin(t *testing.T) {
+	resetGatewayTestState(t)
+
+	prevCfg := cfg
+	defer func() {
+		cfg = prevCfg
+	}()
+
+	cfg = &config.Config{WSAllowedOrigins: "https://app.example.com"}
+
+	req := httptest.NewRequest(http.MethodOptions, "/v1/auth/session", nil)
+	req.Header.Set("Origin", "https://app.example.com")
+
+	rr := httptest.NewRecorder()
+	withCORS(func(w http.ResponseWriter, _ *http.Request) {
+		t.Fatal("preflight should not reach wrapped handler")
+	})(rr, req)
+
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("expected status 204, got %d", rr.Code)
+	}
+	if got := rr.Header().Get("Access-Control-Allow-Origin"); got != "https://app.example.com" {
+		t.Fatalf("expected allow origin header, got %q", got)
+	}
+	if got := rr.Header().Get("Access-Control-Allow-Credentials"); got != "true" {
+		t.Fatalf("expected credentials header, got %q", got)
 	}
 }

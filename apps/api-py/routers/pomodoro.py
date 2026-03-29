@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from routers.auth import get_current_user
+from routers.resource_access import raise_owned_resource_error
+from routers.response_models import PomodoroSessionResponse
 from services.pomodoro import (
     create_session_service,
     delete_session_service,
@@ -15,6 +17,7 @@ from services.pomodoro import (
     update_session_service,
 )
 from storage.database import get_db
+from storage.models import PomodoroSession
 
 router = APIRouter(prefix="/v1/pomodoro", tags=["pomodoro"])
 
@@ -32,7 +35,7 @@ class PomodoroUpdate(BaseModel):
     duration_minutes: int | None = Field(None, ge=1, le=180)
 
 
-@router.get("", response_model=list[dict])
+@router.get("", response_model=list[PomodoroSessionResponse])
 async def list_sessions(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -51,7 +54,11 @@ async def list_sessions(
     )
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    response_model=PomodoroSessionResponse,
+)
 async def create_session(
     payload: PomodoroCreate,
     current_user: dict = Depends(get_current_user),
@@ -84,7 +91,7 @@ async def create_session(
     return created
 
 
-@router.get("/{session_id}")
+@router.get("/{session_id}", response_model=PomodoroSessionResponse)
 async def get_session(
     session_id: str,
     current_user: dict = Depends(get_current_user),
@@ -92,19 +99,18 @@ async def get_session(
 ):
     session = get_session_service(session_id, current_user["id"], db)
     if not session:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "SESSION_NOT_FOUND",
-                    "message": f"No session with id: {session_id}",
-                }
-            },
+        raise_owned_resource_error(
+            db,
+            PomodoroSession,
+            session_id,
+            current_user["id"],
+            code="SESSION_NOT_FOUND",
+            noun="session",
         )
     return session
 
 
-@router.patch("/{session_id}")
+@router.patch("/{session_id}", response_model=PomodoroSessionResponse)
 async def update_session(
     session_id: str,
     patch: PomodoroUpdate,
@@ -115,14 +121,13 @@ async def update_session(
         session_id, patch.model_dump(exclude_unset=True), current_user["id"], db
     )
     if not updated:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "SESSION_NOT_FOUND",
-                    "message": f"No session with id: {session_id}",
-                }
-            },
+        raise_owned_resource_error(
+            db,
+            PomodoroSession,
+            session_id,
+            current_user["id"],
+            code="SESSION_NOT_FOUND",
+            noun="session",
         )
     return updated
 
@@ -135,13 +140,12 @@ async def delete_session(
 ):
     ok = delete_session_service(session_id, current_user["id"], db)
     if not ok:
-        raise HTTPException(
-            status_code=404,
-            detail={
-                "error": {
-                    "code": "SESSION_NOT_FOUND",
-                    "message": f"No session with id: {session_id}",
-                }
-            },
+        raise_owned_resource_error(
+            db,
+            PomodoroSession,
+            session_id,
+            current_user["id"],
+            code="SESSION_NOT_FOUND",
+            noun="session",
         )
     return None

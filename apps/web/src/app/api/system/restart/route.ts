@@ -1,36 +1,42 @@
 import { NextResponse } from "next/server";
-import { MissingEnvironmentError, restartSpace } from "../shared";
+import {
+  getMissingEnvironment,
+  restartByTarget,
+} from "@/app/api/system/shared";
+import type { RestartTarget } from "@/types/system";
 
 type RestartBody = {
-  service?: "python" | "go";
+  target?: RestartTarget;
 };
 
-function isValidService(service: unknown): service is "python" | "go" {
-  return service === "python" || service === "go";
+function isValidTarget(target: unknown): target is RestartTarget {
+  return target === "go" || target === "py" || target === "both";
 }
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as RestartBody;
+    const body = (await request.json()) as RestartBody | null;
+    const target = body?.target;
 
-    if (!isValidService(body?.service)) {
-      return NextResponse.json({ error: "invalid-service" }, { status: 400 });
+    if (!isValidTarget(target)) {
+      return NextResponse.json({ error: "invalid-target" }, { status: 400 });
     }
 
-    const ok = await restartSpace(body.service);
-    if (!ok) {
-      return NextResponse.json(
-        { error: "restart-unavailable" },
-        { status: 503 },
-      );
-    }
+    const result = await restartByTarget(target);
+    const allOk =
+      target === "both"
+        ? Boolean(result.go?.ok && result.py?.ok)
+        : target === "go"
+          ? Boolean(result.go?.ok)
+          : Boolean(result.py?.ok);
 
-    return NextResponse.json({ status: "restarting" });
+    return NextResponse.json(result, { status: allOk ? 200 : 502 });
   } catch (error) {
-    if (error instanceof MissingEnvironmentError) {
-      console.error("/api/system/restart missing environment", error.missing);
+    const missing = getMissingEnvironment(error);
+    if (missing) {
+      console.error("/api/system/restart missing environment", missing);
       return NextResponse.json(
-        { error: "missing-environment", missing: error.missing },
+        { error: "missing-environment", missing },
         { status: 500 },
       );
     }

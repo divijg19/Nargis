@@ -1,69 +1,36 @@
 # @nargis/web
 
-The Next.js 15 frontend for Nargis.
+Next.js frontend for Nargis.
 
-## Features
-- **Real-time Updates**: Uses WebSocket via the Gateway service.
-- **AI Integration**: Voice-to-text and intelligent task management.
-- **Modern Stack**: Next.js 15, Tailwind CSS, Biome, Vitest.
+For repo-level context, see:
+- [../../README.md](../../README.md)
+- [../../ARCHITECTURE.md](../../ARCHITECTURE.md)
+- [../../ROADMAP.md](../../ROADMAP.md)
 
-## Getting Started
-
-### Prerequisites
-- Node.js 20+ or Bun 1.2+
-- Backend services running (API + Gateway)
-
-### Installation
+## Setup
 
 ```bash
 cd apps/web
 bun install
-```
-
-### Configuration
-Copy `.env.example` to `.env.local`:
-
-```bash
 cp .env.example .env.local
 ```
 
-Set the public URLs the browser should use:
+## Key Environment Variables
 
-- `NEXT_PUBLIC_API_URL` (HTTP) → the **Gateway** base URL (dev default `http://localhost:8080`)
-- `NEXT_PUBLIC_WS_URL` (WebSocket) → the **Gateway** WS endpoint (dev default `ws://localhost:8080/ws`)
-	- NOTE: WebSocket is opt-in. The client will only enable WS when the `realtime`
-		feature flag is enabled or when `NEXT_PUBLIC_ENABLE_WS=1` is set. `NEXT_PUBLIC_WS_URL`
-		alone will not enable WebSocket usage in production.
-- `NEXT_PUBLIC_API_PY_URL` (HTTP) → the **api-py** base URL (dev default `http://localhost:8000`)
+- `NEXT_PUBLIC_API_PY_URL`: Python API base URL
+- `NEXT_PUBLIC_WS_URL`: gateway websocket URL
+- `NEXT_PUBLIC_GO_URL`: gateway base URL when needed by frontend routes
+- `HF_TOKEN`: server-side only token for Hugging Face control routes
+- `HF_PY_SPACE`, `HF_GO_SPACE`, `PY_SPACE_URL`, `GO_SPACE_URL`: compatibility and deployment variables for system warm/restart flows
 
-In production, use `https://` + `wss://`.
-
-For system health warm/restart routing through Vercel serverless routes, also set:
-
-- `HF_TOKEN` (server-side only, never expose to client)
-- `HF_PY_SPACE` (for example `username/python-runtime`)
-- `HF_GO_SPACE` (for example `username/go-gateway`)
-- `PY_SPACE_URL` (for example `https://username-python-runtime.hf.space`)
-- `GO_SPACE_URL` (for example `https://username-go-gateway.hf.space`)
-
-### Development
+## Local Commands
 
 ```bash
 bun dev
-```
-
-## Testing
-
-```bash
-bun test:unit        # Run unit tests
-bun test:e2e         # Run Playwright tests
-```
-
-## Linting & Formatting
-
-We use [Biome](https://biomejs.dev/) for fast linting and formatting.
-
-```bash
-bun lint
-bun format
+bun run check:fix
+bun run lint
+bun run format:check
+bun run type-check
+bun run test
+bun run test:e2e
 ```

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from routers.auth import get_current_user
+from routers.resource_access import raise_owned_resource_error
+from routers.response_models import JournalEntryResponse, JournalSummaryResponse
 from services.journal import (
     create_entry_service,
     delete_entry_service,
@@ -41,7 +43,7 @@ class JournalEntryUpdate(BaseModel):
     aiSummary: str | None = None
 
 
-@router.get("", response_model=list[dict[str, Any]])
+@router.get("", response_model=list[JournalEntryResponse])
 async def list_entries(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -60,7 +62,11 @@ async def list_entries(
     )
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    response_model=JournalEntryResponse,
+)
 async def create_entry(
     payload: JournalEntryCreate,
     current_user: dict = Depends(get_current_user),
@@ -94,7 +100,7 @@ async def create_entry(
     return created
 
 
-@router.get("/briefing")
+@router.get("/briefing", response_model=JournalEntryResponse)
 async def get_latest_briefing(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -125,7 +131,7 @@ async def get_latest_briefing(
     )
 
 
-@router.get("/{entry_id}")
+@router.get("/{entry_id}", response_model=JournalEntryResponse)
 async def get_entry(
     entry_id: str,
     current_user: dict = Depends(get_current_user),
@@ -133,25 +139,18 @@ async def get_entry(
 ):
     entry = get_entry_service(entry_id, current_user["id"], db)
     if not entry:
-        e = db.query(JournalEntry).filter(JournalEntry.id == entry_id).first()
-        if not e:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": {
-                        "code": "ENTRY_NOT_FOUND",
-                        "message": f"No entry with id: {entry_id}",
-                    }
-                },
-            )
-        raise HTTPException(
-            status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        raise_owned_resource_error(
+            db,
+            JournalEntry,
+            entry_id,
+            current_user["id"],
+            code="ENTRY_NOT_FOUND",
+            noun="entry",
         )
     return entry
 
 
-@router.patch("/{entry_id}")
+@router.patch("/{entry_id}", response_model=JournalEntryResponse)
 async def update_entry(
     entry_id: str,
     patch: JournalEntryUpdate,
@@ -162,20 +161,13 @@ async def update_entry(
         entry_id, patch.model_dump(exclude_unset=True), current_user["id"], db
     )
     if not updated:
-        e = db.query(JournalEntry).filter(JournalEntry.id == entry_id).first()
-        if not e:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": {
-                        "code": "ENTRY_NOT_FOUND",
-                        "message": f"No entry with id: {entry_id}",
-                    }
-                },
-            )
-        raise HTTPException(
-            status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        raise_owned_resource_error(
+            db,
+            JournalEntry,
+            entry_id,
+            current_user["id"],
+            code="ENTRY_NOT_FOUND",
+            noun="entry",
         )
     return updated
 
@@ -188,45 +180,32 @@ async def delete_entry(
 ):
     ok = delete_entry_service(entry_id, current_user["id"], db)
     if not ok:
-        e = db.query(JournalEntry).filter(JournalEntry.id == entry_id).first()
-        if not e:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": {
-                        "code": "ENTRY_NOT_FOUND",
-                        "message": f"No entry with id: {entry_id}",
-                    }
-                },
-            )
-        raise HTTPException(
-            status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        raise_owned_resource_error(
+            db,
+            JournalEntry,
+            entry_id,
+            current_user["id"],
+            code="ENTRY_NOT_FOUND",
+            noun="entry",
         )
     return None
 
 
-@router.post("/{entry_id}/summary")
+@router.post("/{entry_id}/summary", response_model=JournalSummaryResponse)
 async def generate_summary(
     entry_id: str,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     result = generate_summary_service(entry_id, current_user["id"], db)
-    if not result:
-        e = db.query(JournalEntry).filter(JournalEntry.id == entry_id).first()
-        if not e:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": {
-                        "code": "ENTRY_NOT_FOUND",
-                        "message": f"No entry with id: {entry_id}",
-                    }
-                },
-            )
-        raise HTTPException(
-            status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+    if result is None:
+        raise_owned_resource_error(
+            db,
+            JournalEntry,
+            entry_id,
+            current_user["id"],
+            code="ENTRY_NOT_FOUND",
+            noun="entry",
         )
+    assert result is not None
     return {"summary": result.get("aiSummary"), "entry": result}

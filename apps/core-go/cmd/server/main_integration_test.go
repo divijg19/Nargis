@@ -107,6 +107,8 @@ func fakeOrchestratorBlocking(started chan<- struct{}, release <-chan struct{}) 
 }
 
 func TestGatewayStopCancelsInFlightOrchestrator(t *testing.T) {
+	resetGatewayTestState(t)
+
 	secret := "test-hmac-secret"
 	os.Setenv("JWT_SECRET_KEY", secret)
 	os.Setenv("VAD_MODE", "off")
@@ -175,6 +177,8 @@ func TestGatewayStopCancelsInFlightOrchestrator(t *testing.T) {
 // duplicate terminal events reaching clients when STOP races with upstream
 // completion.
 func TestGatewayStopProducesSingleTerminalEvent(t *testing.T) {
+	resetGatewayTestState(t)
+
 	secret := "test-hmac-secret"
 	os.Setenv("JWT_SECRET_KEY", secret)
 	os.Setenv("VAD_MODE", "off")
@@ -274,6 +278,8 @@ func TestGatewayStopProducesSingleTerminalEvent(t *testing.T) {
 // in-flight orchestration produces exactly one `{ type: "end", content:
 // "canceled" }` event and that no further events are sent after it.
 func TestWSStopEmitsSingleCanceledEnd(t *testing.T) {
+	resetGatewayTestState(t)
+
 	secret := "test-hmac-secret"
 	os.Setenv("JWT_SECRET_KEY", secret)
 	os.Setenv("VAD_MODE", "off")
@@ -409,6 +415,8 @@ func fakeOrchestratorAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestGatewayAuthProxyCORSAndCookie(t *testing.T) {
+	resetGatewayTestState(t)
+
 	orch := httptest.NewServer(http.HandlerFunc(fakeOrchestratorAuth))
 	defer orch.Close()
 	os.Setenv("ORCHESTRATOR_URL", orch.URL)
@@ -477,6 +485,8 @@ func TestGatewayAuthProxyCORSAndCookie(t *testing.T) {
 }
 
 func TestGatewayCookieWSAuthIntegration(t *testing.T) {
+	resetGatewayTestState(t)
+
 	// Simpler WS test: verify gateway accepts cookie on upgrade and we can echo the resolved user id.
 	secret := "test-hmac-secret"
 	os.Setenv("JWT_SECRET_KEY", secret)
@@ -526,6 +536,8 @@ func TestGatewayCookieWSAuthIntegration(t *testing.T) {
 }
 
 func TestGatewayExpiredCookieJWTRejected(t *testing.T) {
+	resetGatewayTestState(t)
+
 	secret := "test-hmac-secret"
 	os.Setenv("JWT_SECRET_KEY", secret)
 
@@ -540,6 +552,8 @@ func TestGatewayExpiredCookieJWTRejected(t *testing.T) {
 }
 
 func TestGatewayProxyCookieAuthIntegration(t *testing.T) {
+	resetGatewayTestState(t)
+
 	secret := "test-hmac-secret"
 	os.Setenv("JWT_SECRET_KEY", secret)
 
@@ -596,6 +610,8 @@ func TestGatewayProxyCookieAuthIntegration(t *testing.T) {
 
 // Full streaming test: exercise the gateway streaming path
 func TestGatewayFullStreaming(t *testing.T) {
+	resetGatewayTestState(t)
+
 	secret := "test-hmac-secret"
 	os.Setenv("JWT_SECRET_KEY", secret)
 
@@ -673,6 +689,8 @@ func TestGatewayFullStreaming(t *testing.T) {
 }
 
 func TestGatewayWSRejectsMissingOriginWhenAllowlistSet(t *testing.T) {
+	resetGatewayTestState(t)
+
 	os.Setenv("WS_ALLOWED_ORIGINS", "https://nargis.vercel.app")
 	defer os.Unsetenv("WS_ALLOWED_ORIGINS")
 
@@ -706,6 +724,8 @@ func TestGatewayWSRejectsMissingOriginWhenAllowlistSet(t *testing.T) {
 }
 
 func TestGatewayWSRequiresAuthWhenEnabled(t *testing.T) {
+	resetGatewayTestState(t)
+
 	secret := "test-hmac-secret"
 	os.Setenv("JWT_SECRET_KEY", secret)
 	os.Setenv("WS_REQUIRE_AUTH", "1")
@@ -740,6 +760,8 @@ func TestGatewayWSRequiresAuthWhenEnabled(t *testing.T) {
 }
 
 func TestGatewayWSEOSNotForwardedToOrchestrator(t *testing.T) {
+	resetGatewayTestState(t)
+
 	secret := "test-hmac-secret"
 	os.Setenv("JWT_SECRET_KEY", secret)
 
@@ -780,6 +802,8 @@ func TestGatewayWSEOSNotForwardedToOrchestrator(t *testing.T) {
 }
 
 func TestGatewayWSConcurrencyLimitReturnsError(t *testing.T) {
+	resetGatewayTestState(t)
+
 	secret := "test-hmac-secret"
 	os.Setenv("JWT_SECRET_KEY", secret)
 
@@ -844,6 +868,8 @@ func TestGatewayWSConcurrencyLimitReturnsError(t *testing.T) {
 // until the orchestrator /health endpoint returns 2xx. We simulate an
 // orchestrator that is initially unhealthy and becomes healthy after a delay.
 func TestGatewayWaitsForOrchestratorReadiness(t *testing.T) {
+	resetGatewayTestState(t)
+
 	// orchestrator faux server: unhealthy for first 3 calls, then healthy
 	callCount := 0
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

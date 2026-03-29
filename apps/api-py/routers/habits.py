@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import Any
-
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from routers.auth import get_current_user
+from routers.resource_access import raise_owned_resource_error
+from routers.response_models import HabitResponse
 from services.habits import (
     create_habit_service,
     delete_habit_service,
@@ -43,7 +43,7 @@ class HabitCountUpdate(BaseModel):
     delta: int | None = None
 
 
-@router.get("", response_model=list[dict[str, Any]])
+@router.get("", response_model=list[HabitResponse])
 async def list_habits(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -62,7 +62,7 @@ async def list_habits(
     )
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=HabitResponse)
 async def create_habit(
     payload: HabitCreate,
     current_user: dict = Depends(get_current_user),
@@ -95,7 +95,7 @@ async def create_habit(
     return created
 
 
-@router.get("/{habit_id}")
+@router.get("/{habit_id}", response_model=HabitResponse)
 async def get_habit(
     habit_id: str,
     current_user: dict = Depends(get_current_user),
@@ -103,26 +103,18 @@ async def get_habit(
 ):
     habit = get_habit_service(habit_id, current_user["id"], db)
     if not habit:
-        # Decide between 404 and 403 by checking existence
-        h = db.query(Habit).filter(Habit.id == habit_id).first()
-        if not h:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": {
-                        "code": "HABIT_NOT_FOUND",
-                        "message": f"No habit with id: {habit_id}",
-                    }
-                },
-            )
-        raise HTTPException(
-            status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        raise_owned_resource_error(
+            db,
+            Habit,
+            habit_id,
+            current_user["id"],
+            code="HABIT_NOT_FOUND",
+            noun="habit",
         )
     return habit
 
 
-@router.patch("/{habit_id}")
+@router.patch("/{habit_id}", response_model=HabitResponse)
 async def update_habit(
     habit_id: str,
     patch: HabitUpdate,
@@ -133,20 +125,13 @@ async def update_habit(
         habit_id, patch.model_dump(exclude_unset=True), current_user["id"], db
     )
     if not updated:
-        h = db.query(Habit).filter(Habit.id == habit_id).first()
-        if not h:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": {
-                        "code": "HABIT_NOT_FOUND",
-                        "message": f"No habit with id: {habit_id}",
-                    }
-                },
-            )
-        raise HTTPException(
-            status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        raise_owned_resource_error(
+            db,
+            Habit,
+            habit_id,
+            current_user["id"],
+            code="HABIT_NOT_FOUND",
+            noun="habit",
         )
     return updated
 
@@ -159,25 +144,18 @@ async def delete_habit(
 ):
     ok = delete_habit_service(habit_id, current_user["id"], db)
     if not ok:
-        h = db.query(Habit).filter(Habit.id == habit_id).first()
-        if not h:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": {
-                        "code": "HABIT_NOT_FOUND",
-                        "message": f"No habit with id: {habit_id}",
-                    }
-                },
-            )
-        raise HTTPException(
-            status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        raise_owned_resource_error(
+            db,
+            Habit,
+            habit_id,
+            current_user["id"],
+            code="HABIT_NOT_FOUND",
+            noun="habit",
         )
     return None
 
 
-@router.post("/{habit_id}/count")
+@router.post("/{habit_id}/count", response_model=HabitResponse)
 async def update_habit_count(
     habit_id: str,
     payload: HabitCountUpdate,
@@ -188,19 +166,12 @@ async def update_habit_count(
         habit_id, payload.model_dump(exclude_unset=True), current_user["id"], db
     )
     if not updated:
-        h = db.query(Habit).filter(Habit.id == habit_id).first()
-        if not h:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": {
-                        "code": "HABIT_NOT_FOUND",
-                        "message": f"No habit with id: {habit_id}",
-                    }
-                },
-            )
-        raise HTTPException(
-            status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        raise_owned_resource_error(
+            db,
+            Habit,
+            habit_id,
+            current_user["id"],
+            code="HABIT_NOT_FOUND",
+            noun="habit",
         )
     return updated
