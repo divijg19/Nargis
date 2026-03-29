@@ -6,12 +6,17 @@ import (
 )
 
 type Config struct {
-	Port             string
-	OrchestratorURL  string
-	RedisURL         string
-	WSAllowedOrigins string
-	ReadTimeout      time.Duration
-	WriteTimeout     time.Duration
+	Port              string
+	OrchestratorURL   string
+	RedisURL          string
+	WSAllowedOrigins  string
+	WSAllowQueryToken bool
+	WSRequireAuth     bool
+	VADMode           string
+	LogLevel          string
+	LogFormat         string
+	ReadTimeout       time.Duration
+	WriteTimeout      time.Duration
 }
 
 func Load() *Config {
@@ -21,12 +26,17 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Port:             port,
-		OrchestratorURL:  getEnv("ORCHESTRATOR_URL", defaultOrchestratorURL()),
-		RedisURL:         getEnv("REDIS_URL", "localhost:6379"),
-		WSAllowedOrigins: getEnv("WS_ALLOWED_ORIGINS", "*"),
-		ReadTimeout:      10 * time.Second,
-		WriteTimeout:     10 * time.Second,
+		Port:              port,
+		OrchestratorURL:   getEnv("ORCHESTRATOR_URL", defaultOrchestratorURL()),
+		RedisURL:          getEnv("REDIS_URL", "localhost:6379"),
+		WSAllowedOrigins:  getEnv("WS_ALLOWED_ORIGINS", "*"),
+		WSAllowQueryToken: getEnvBool("WS_ALLOW_QUERY_TOKEN", false),
+		WSRequireAuth:     getEnvBool("WS_REQUIRE_AUTH", false),
+		VADMode:           getEnv("VAD_MODE", "auto"),
+		LogLevel:          getEnv("LOG_LEVEL", "info"),
+		LogFormat:         getEnv("LOG_FORMAT", "json"),
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
 	}
 }
 
@@ -62,4 +72,20 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+
+	switch v {
+	case "1", "true", "TRUE", "True", "yes", "YES", "on", "ON":
+		return true
+	case "0", "false", "FALSE", "False", "no", "NO", "off", "OFF":
+		return false
+	default:
+		return fallback
+	}
 }

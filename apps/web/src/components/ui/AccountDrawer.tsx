@@ -1,28 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  getRestartTargetOk,
+  useRestartSystemMutation,
+  useSystemStatus,
+  useWarmSystemMutation,
+} from "@/hooks/useSystemStatus";
 import { useToasts } from "@/lib/toasts";
+import type {
+  RestartTarget,
+  SystemActionResult,
+  SystemRestartResponse,
+} from "@/types/system";
+import { getEngineStatusMeta, UNKNOWN_ENGINE_STATUS } from "@/types/system";
 
 type ServiceName = "python" | "go";
-type RuntimeState = "active" | "idle" | "unreachable";
 type ActionState = {
   service: ServiceName;
   action: "wake" | "restart";
 };
-type RuntimeHealth = {
-  status: RuntimeState;
-  latency: number;
-};
-
-type SystemActionError = {
-  error?: string;
-  missing?: string[];
-};
-
-type SystemActionResult =
-  | { ok: true }
-  | { ok: false; status?: number; payload?: SystemActionError };
 
 type AccountDrawerProps = {
   open: boolean;
@@ -31,169 +29,67 @@ type AccountDrawerProps = {
   onOpenRegister: () => void;
 };
 
-function getStatusMeta(status: RuntimeState): {
-  label: string;
-  dotClassName: string;
-  textClassName: string;
-} {
-  if (status === "active") {
-    return {
-      label: "Active",
-      dotClassName: "bg-success",
-      textClassName: "text-foreground",
-    };
-  }
-  if (status === "idle") {
-    return {
-      label: "Idle",
-      dotClassName: "bg-muted",
-      textClassName: "text-muted-foreground",
-    };
-  }
-  return {
-    label: "Unreachable",
-    dotClassName: "bg-destructive",
-    textClassName: "text-destructive",
-  };
-}
-
-const UNREACHABLE: RuntimeHealth = {
-  status: "unreachable",
-  latency: -1,
-};
-
-function isRuntimeState(value: unknown): value is RuntimeState {
-  return value === "active" || value === "idle" || value === "unreachable";
-}
-
-function coerceRuntimeHealth(input: unknown): RuntimeHealth {
-  if (
-    typeof input === "object" &&
-    input !== null &&
-    "status" in input &&
-    "latency" in input &&
-    isRuntimeState((input as { status: unknown }).status) &&
-    typeof (input as { latency: unknown }).latency === "number"
-  ) {
-    return {
-      status: (input as { status: RuntimeState }).status,
-      latency: (input as { latency: number }).latency,
-    };
-  }
-
-  return UNREACHABLE;
+function serviceToTarget(service: ServiceName): RestartTarget {
+  return service === "python" ? "py" : "go";
 }
 
 function useSystemHealth(open: boolean) {
-  const [pythonStatus, setPythonStatus] = useState<RuntimeHealth>(UNREACHABLE);
-  const [goStatus, setGoStatus] = useState<RuntimeHealth>(UNREACHABLE);
   const [busyAction, setBusyAction] = useState<ActionState | null>(null);
+  const statusQuery = useSystemStatus({
+    enabled: open,
+    refetchInterval: open ? 30_000 : false,
+  });
+  const wakeMutation = useWarmSystemMutation();
+  const restartMutation = useRestartSystemMutation();
 
-  const fetchStatus = useCallback(async () => {
-    try {
-      const response = await fetch("/api/system/status", {
-        method: "GET",
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        throw new Error("status-unavailable");
-      }
-
-      const payload = (await response.json()) as {
-        python?: unknown;
-        go?: unknown;
-      };
-
-      setPythonStatus(coerceRuntimeHealth(payload.python));
-      setGoStatus(coerceRuntimeHealth(payload.go));
-    } catch {
-      setPythonStatus(UNREACHABLE);
-      setGoStatus(UNREACHABLE);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    void fetchStatus();
-    const intervalId = window.setInterval(() => {
-      void fetchStatus();
-    }, 30000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [open, fetchStatus]);
+  const pythonStatus = statusQuery.data?.py ?? UNKNOWN_ENGINE_STATUS;
+  const goStatus = statusQuery.data?.go ?? UNKNOWN_ENGINE_STATUS;
 
   const wake = useCallback(
-    async (service: ServiceName): Promise<SystemActionResult> => {
+    async (
+      service: ServiceName,
+    ): Promise<SystemActionResult<{ waking: true; target: RestartTarget }>> => {
       setBusyAction({ service, action: "wake" });
       try {
-        const response = await fetch("/api/system/warm", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ service }),
-        });
-
-        if (response.ok) {
-          return { ok: true };
-        }
-
-        let payload: SystemActionError | undefined;
-        try {
-          payload = (await response.json()) as SystemActionError;
-        } catch {
-          payload = undefined;
-        }
-
-        return { ok: false, status: response.status, payload };
+        return await wakeMutation.mutateAsync(serviceToTarget(service));
       } catch {
         return { ok: false };
       } finally {
-        await fetchStatus();
         setBusyAction(null);
       }
     },
-    [fetchStatus],
+    [wakeMutation],
   );
 
   const restart = useCallback(
-    async (service: ServiceName): Promise<SystemActionResult> => {
+    async (
+      service: ServiceName,
+    ): Promise<SystemActionResult<SystemRestartResponse>> => {
       setBusyAction({ service, action: "restart" });
       try {
-        const response = await fetch("/api/system/restart", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        const target = serviceToTarget(service);
+        const result = await restartMutation.mutateAsync(target);
+        if (
+          !result.ok ||
+          !result.data ||
+          getRestartTargetOk(target, result.data)
+        ) {
+          return result;
+        }
+        return {
+          ok: false,
+          status: result.status,
+          payload: {
+            error: "restart-unavailable",
           },
-          body: JSON.stringify({ service }),
-        });
-
-        if (response.ok) {
-          return { ok: true };
-        }
-
-        let payload: SystemActionError | undefined;
-        try {
-          payload = (await response.json()) as SystemActionError;
-        } catch {
-          payload = undefined;
-        }
-
-        return { ok: false, status: response.status, payload };
+        };
       } catch {
         return { ok: false };
       } finally {
-        await fetchStatus();
         setBusyAction(null);
       }
     },
-    [fetchStatus],
+    [restartMutation],
   );
 
   return {
@@ -217,6 +113,8 @@ export function AccountDrawer({
 }: AccountDrawerProps) {
   const { user, isAuthenticated, logout } = useAuth();
   const { push } = useToasts();
+  const showSystemOperations =
+    isAuthenticated || process.env.NEXT_PUBLIC_ENABLE_SYSTEM_OPS === "1";
   const {
     pythonStatus,
     goStatus,
@@ -227,8 +125,8 @@ export function AccountDrawer({
     isBusy,
   } = useSystemHealth(open);
 
-  const pyMeta = getStatusMeta(pythonStatus.status);
-  const goMeta = getStatusMeta(goStatus.status);
+  const pyMeta = getEngineStatusMeta(pythonStatus);
+  const goMeta = getEngineStatusMeta(goStatus);
 
   const handleWake = async (service: ServiceName) => {
     const result = await wake(service);
@@ -363,92 +261,94 @@ export function AccountDrawer({
           </div>
         </section>
 
-        <section>
-          <h3 className="text-xs uppercase tracking-wide text-foreground/80 dark:text-muted-foreground mb-2">
-            System Health
-          </h3>
-          <div className="rounded-xl border border-structural bg-background/96 dark:bg-background/35 p-3 space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-foreground">
-                  Python Runtime
-                </p>
-                <div className="mt-1 inline-flex items-center gap-1.5">
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${pyMeta.dotClassName}`}
-                    aria-hidden="true"
-                  />
-                  <span className={`text-xs ${pyMeta.textClassName}`}>
-                    {pyMeta.label}
-                  </span>
+        {showSystemOperations && (
+          <section>
+            <h3 className="text-xs uppercase tracking-wide text-foreground/80 dark:text-muted-foreground mb-2">
+              System Operations
+            </h3>
+            <div className="rounded-xl border border-structural bg-background/96 dark:bg-background/35 p-3 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-foreground">
+                    Python Runtime
+                  </p>
+                  <div className="mt-1 inline-flex items-center gap-1.5">
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${pyMeta.dotClassName}`}
+                      aria-hidden="true"
+                    />
+                    <span className={`text-xs ${pyMeta.textClassName}`}>
+                      {pyMeta.label}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    HF: {pythonStatus.hf_status} • App:{" "}
+                    {pythonStatus.ready ? "ready" : "not ready"}
+                  </p>
                 </div>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  {pythonStatus.latency >= 0
-                    ? `${pythonStatus.latency} ms`
-                    : "No response"}
-                </p>
+                <div className="shrink-0 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleWake("python")}
+                    disabled={isBusy("python")}
+                    className="text-xs px-2.5 py-1.5 rounded-md border border-structural bg-transparent text-foreground hover:bg-hover/20 disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
+                  >
+                    {isWaking("python") ? "Waking…" : "Wake"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRestart("python")}
+                    disabled={isBusy("python")}
+                    className="text-xs px-2.5 py-1.5 rounded-md border border-structural-thick bg-transparent text-foreground hover:bg-hover/20 disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
+                  >
+                    {isRestarting("python")
+                      ? "Restarting…"
+                      : "Restart Python Engine"}
+                  </button>
+                </div>
               </div>
-              <div className="shrink-0 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleWake("python")}
-                  disabled={isBusy("python")}
-                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural bg-transparent text-foreground hover:bg-hover/20 disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
-                >
-                  {isWaking("python") ? "Waking…" : "Wake"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleRestart("python")}
-                  disabled={isBusy("python")}
-                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural-thick bg-transparent text-foreground hover:bg-hover/20 disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
-                >
-                  {isRestarting("python") ? "Restarting…" : "Restart"}
-                </button>
-              </div>
-            </div>
 
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-foreground">
-                  Go Gateway
-                </p>
-                <div className="mt-1 inline-flex items-center gap-1.5">
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${goMeta.dotClassName}`}
-                    aria-hidden="true"
-                  />
-                  <span className={`text-xs ${goMeta.textClassName}`}>
-                    {goMeta.label}
-                  </span>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-foreground">
+                    Go Gateway
+                  </p>
+                  <div className="mt-1 inline-flex items-center gap-1.5">
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${goMeta.dotClassName}`}
+                      aria-hidden="true"
+                    />
+                    <span className={`text-xs ${goMeta.textClassName}`}>
+                      {goMeta.label}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    HF: {goStatus.hf_status} • App:{" "}
+                    {goStatus.ready ? "ready" : "not ready"}
+                  </p>
                 </div>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  {goStatus.latency >= 0
-                    ? `${goStatus.latency} ms`
-                    : "No response"}
-                </p>
-              </div>
-              <div className="shrink-0 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleWake("go")}
-                  disabled={isBusy("go")}
-                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural bg-transparent text-foreground hover:bg-hover/20 disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
-                >
-                  {isWaking("go") ? "Waking…" : "Wake"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleRestart("go")}
-                  disabled={isBusy("go")}
-                  className="text-xs px-2.5 py-1.5 rounded-md border border-structural-thick bg-transparent text-foreground hover:bg-hover/20 disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
-                >
-                  {isRestarting("go") ? "Restarting…" : "Restart"}
-                </button>
+                <div className="shrink-0 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleWake("go")}
+                    disabled={isBusy("go")}
+                    className="text-xs px-2.5 py-1.5 rounded-md border border-structural bg-transparent text-foreground hover:bg-hover/20 disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
+                  >
+                    {isWaking("go") ? "Waking…" : "Wake"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRestart("go")}
+                    disabled={isBusy("go")}
+                    className="text-xs px-2.5 py-1.5 rounded-md border border-structural-thick bg-transparent text-foreground hover:bg-hover/20 disabled:opacity-60 transition-[opacity,transform] duration-(--motion-medium)"
+                  >
+                    {isRestarting("go") ? "Restarting…" : "Restart Go Engine"}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
       </aside>
     </>
   );

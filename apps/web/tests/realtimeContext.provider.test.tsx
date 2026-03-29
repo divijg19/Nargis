@@ -1,7 +1,34 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
 import { useEffect } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { RealtimeProvider, useRealtime } from "@/contexts/RealtimeContext";
+
+vi.mock("@/contexts/AuthContext", () => ({
+  useAuth: () => ({
+    isAuthenticated: false,
+    user: null,
+  }),
+}));
+
+vi.mock("@/lib/toasts", () => ({
+  useToasts: () => ({ push: vi.fn(), dismiss: vi.fn(), toasts: [] }),
+}));
+
+function withQueryClient() {
+  const client = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+  };
+}
 
 function Probe({ events }: { events: unknown[] }) {
   const { simulateIncoming, processing, currentAgentState, messages } =
@@ -37,6 +64,7 @@ describe("RealtimeContext AgentEvent handling", () => {
       <RealtimeProvider>
         <Probe events={events} />
       </RealtimeProvider>,
+      { wrapper: withQueryClient() },
     );
 
     expect((await findByTestId("processing")).textContent).toBe("no");

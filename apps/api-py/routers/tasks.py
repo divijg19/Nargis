@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+import logging
+
+from fastapi import APIRouter, Depends, Header, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from routers.auth import get_current_user
+from routers.resource_access import raise_owned_resource_error
+from routers.response_models import TaskResponse
 
 # Import service functions
 from services.tasks import (
@@ -19,6 +23,7 @@ from storage.database import get_db
 from storage.models import Task
 
 router = APIRouter(prefix="/v1/tasks", tags=["tasks"])
+logger = logging.getLogger(__name__)
 
 
 class TaskCreate(BaseModel):
@@ -37,7 +42,7 @@ class TaskUpdate(BaseModel):
     due_date: str | None = None
 
 
-@router.get("", response_model=list[dict])
+@router.get("", response_model=list[TaskResponse])
 async def list_tasks(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -56,7 +61,7 @@ async def list_tasks(
     )
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=TaskResponse)
 async def create_task(
     payload: TaskCreate,
     current_user: dict = Depends(get_current_user),
@@ -80,9 +85,8 @@ async def create_task(
         from services.event_bus import get_event_bus
 
         await get_event_bus().publish(current_user["id"], "task_created", created)
-    except Exception as e:
-        # Log error but don't fail request
-        print(f"Failed to publish event: {e}")
+    except Exception:
+        logger.exception("Failed to publish task_created event")
 
     if Idempotency_Key:
         save_idempotent_response(
@@ -98,7 +102,7 @@ async def create_task(
     return created
 
 
-@router.get("/{task_id}")
+@router.get("/{task_id}", response_model=TaskResponse)
 async def get_task(
     task_id: str,
     current_user: dict = Depends(get_current_user),
@@ -106,25 +110,18 @@ async def get_task(
 ):
     result = get_task_service(task_id, current_user["id"], db)
     if not result:
-        task = db.query(Task).filter(Task.id == task_id).first()
-        if not task:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": {
-                        "code": "TASK_NOT_FOUND",
-                        "message": f"No task with id: {task_id}",
-                    }
-                },
-            )
-        raise HTTPException(
-            status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        raise_owned_resource_error(
+            db,
+            Task,
+            task_id,
+            current_user["id"],
+            code="TASK_NOT_FOUND",
+            noun="task",
         )
     return result
 
 
-@router.patch("/{task_id}")
+@router.patch("/{task_id}", response_model=TaskResponse)
 async def update_task(
     task_id: str,
     patch: TaskUpdate,
@@ -135,20 +132,13 @@ async def update_task(
         task_id, patch.model_dump(exclude_unset=True), current_user["id"], db
     )
     if not updated:
-        task = db.query(Task).filter(Task.id == task_id).first()
-        if not task:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": {
-                        "code": "TASK_NOT_FOUND",
-                        "message": f"No task with id: {task_id}",
-                    }
-                },
-            )
-        raise HTTPException(
-            status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        raise_owned_resource_error(
+            db,
+            Task,
+            task_id,
+            current_user["id"],
+            code="TASK_NOT_FOUND",
+            noun="task",
         )
     return updated
 
@@ -161,25 +151,18 @@ async def delete_task(
 ):
     ok = delete_task_service(task_id, current_user["id"], db)
     if not ok:
-        task = db.query(Task).filter(Task.id == task_id).first()
-        if not task:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": {
-                        "code": "TASK_NOT_FOUND",
-                        "message": f"No task with id: {task_id}",
-                    }
-                },
-            )
-        raise HTTPException(
-            status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        raise_owned_resource_error(
+            db,
+            Task,
+            task_id,
+            current_user["id"],
+            code="TASK_NOT_FOUND",
+            noun="task",
         )
     return None
 
 
-@router.post("/{task_id}/toggle")
+@router.post("/{task_id}/toggle", response_model=TaskResponse)
 async def toggle_task(
     task_id: str,
     current_user: dict = Depends(get_current_user),
@@ -187,19 +170,12 @@ async def toggle_task(
 ):
     updated = toggle_task_service(task_id, current_user["id"], db)
     if not updated:
-        task = db.query(Task).filter(Task.id == task_id).first()
-        if not task:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": {
-                        "code": "TASK_NOT_FOUND",
-                        "message": f"No task with id: {task_id}",
-                    }
-                },
-            )
-        raise HTTPException(
-            status_code=403,
-            detail={"error": {"code": "FORBIDDEN", "message": "Access denied"}},
+        raise_owned_resource_error(
+            db,
+            Task,
+            task_id,
+            current_user["id"],
+            code="TASK_NOT_FOUND",
+            noun="task",
         )
     return updated

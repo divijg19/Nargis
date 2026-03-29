@@ -1,45 +1,34 @@
 import { NextResponse } from "next/server";
-import { getSpaceUrls, MissingEnvironmentError, warmSpace } from "../shared";
+import { getMissingEnvironment, triggerWarmup } from "@/app/api/system/shared";
+import type { RestartTarget } from "@/types/system";
 
-type WarmBody = {
-  service?: "python" | "go";
-};
+type WarmBody = { target?: RestartTarget; service?: "python" | "go" };
 
-function isValidService(service: unknown): service is "python" | "go" {
-  return service === "python" || service === "go";
+function toWarmTarget(body: WarmBody | null): RestartTarget {
+  if (body?.target === "go" || body?.service === "go") return "go";
+  if (body?.target === "py" || body?.service === "python") return "py";
+  return "both";
 }
 
 export async function POST(request: Request) {
   try {
-    const urls = getSpaceUrls();
-
-    let service: WarmBody["service"];
+    let body: WarmBody | null = null;
     try {
-      const body = (await request.json()) as WarmBody;
-      service = body?.service;
+      body = (await request.json()) as WarmBody;
     } catch {
-      service = undefined;
+      body = null;
     }
 
-    if (service && !isValidService(service)) {
-      return NextResponse.json({ error: "invalid-service" }, { status: 400 });
-    }
+    const target = toWarmTarget(body);
+    triggerWarmup(target);
 
-    if (service) {
-      await warmSpace(urls[service]);
-    } else {
-      await Promise.all([warmSpace(urls.python), warmSpace(urls.go)]);
-    }
-
-    return NextResponse.json({
-      python: "running",
-      go: "running",
-    });
+    return NextResponse.json({ waking: true, target });
   } catch (error) {
-    if (error instanceof MissingEnvironmentError) {
-      console.error("/api/system/warm missing environment", error.missing);
+    const missing = getMissingEnvironment(error);
+    if (missing) {
+      console.error("/api/system/warm missing environment", missing);
       return NextResponse.json(
-        { error: "missing-environment", missing: error.missing },
+        { error: "missing-environment", missing },
         { status: 500 },
       );
     }

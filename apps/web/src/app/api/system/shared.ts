@@ -1,27 +1,19 @@
-const ACTIVE_THRESHOLD_MS = 2000;
-const DEFAULT_TIMEOUT_MS = 4500;
+import {
+  type EngineKey,
+  type HfStatus,
+  type RestartTarget,
+  type RestartTargetResult,
+  type SystemRestartResponse,
+  type SystemStatusResponse,
+  UNKNOWN_ENGINE_STATUS,
+} from "@/types/system";
 
-type ServiceName = "python" | "go";
-export type ServiceStatus = "active" | "idle" | "unreachable";
+const READY_TIMEOUT_MS = 3000;
+const WARM_TIMEOUT_MS = 1000;
 
-export type ServiceHealth = {
-  status: ServiceStatus;
-  latency: number;
-};
-
-type PingResult = {
-  ok: boolean;
-  latency: number;
-};
-
-type SpaceUrls = {
-  python: string;
-  go: string;
-};
-
-type HfConfig = {
-  token: string;
-  spaces: Record<ServiceName, string>;
+type HfSpaceApiPayload = {
+  runtime?: { stage?: string | null } | null;
+  stage?: string | null;
 };
 
 export class MissingEnvironmentError extends Error {
@@ -34,123 +26,295 @@ export class MissingEnvironmentError extends Error {
   }
 }
 
-function requireEnvMany(names: string[]): Record<string, string> {
-  const missing: string[] = [];
-  const values: Record<string, string> = {};
-
-  for (const name of names) {
-    const value = process.env[name];
-    if (!value || value.trim().length === 0) {
-      missing.push(name);
-      continue;
-    }
-    values[name] = value;
+export function getMissingEnvironment(error: unknown): string[] | null {
+  if (error instanceof MissingEnvironmentError) {
+    return error.missing;
   }
-
-  if (missing.length > 0) {
-    throw new MissingEnvironmentError(missing);
-  }
-
-  return values;
+  return null;
 }
 
-function ensureSlash(value: string): string {
+function getFirstEnv(...names: string[]): string | null {
+  for (const name of names) {
+    const value = process.env[name];
+    if (value?.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
+}
+
+function ensureTrailingSlash(value: string): string {
   return value.endsWith("/") ? value : `${value}/`;
 }
 
 function joinUrl(baseUrl: string, path: string): string {
-  return new URL(path.replace(/^\//, ""), ensureSlash(baseUrl)).toString();
+  return new URL(
+    path.replace(/^\//, ""),
+    ensureTrailingSlash(baseUrl),
+  ).toString();
 }
 
-export function getSpaceUrls(): SpaceUrls {
-  const values = requireEnvMany(["PY_SPACE_URL", "GO_SPACE_URL"]);
-  return {
-    python: values.PY_SPACE_URL,
-    go: values.GO_SPACE_URL,
-  };
+function slugToSpaceUrl(spaceId: string): string {
+  return `https://${spaceId.replace("/", "-")}.hf.space`;
 }
 
-export function getHfConfig(): HfConfig {
-  const values = requireEnvMany(["HF_TOKEN", "HF_PY_SPACE", "HF_GO_SPACE"]);
-  return {
-    token: values.HF_TOKEN,
-    spaces: {
-      python: values.HF_PY_SPACE,
-      go: values.HF_GO_SPACE,
-    },
-  };
+function normalizeHfStatus(value: string | null | undefined): HfStatus {
+  const upper = String(value || "UNKNOWN")
+    .trim()
+    .toUpperCase();
+
+  if (!upper) return "UNKNOWN";
+  if (upper === "PAUSED") return "SLEEPING";
+  return upper;
 }
 
-export async function ping(
+async function fetchWithTimeout(
   url: string,
-  timeoutMs = DEFAULT_TIMEOUT_MS,
-): Promise<PingResult> {
-  const startedAt = Date.now();
-  const abortController = new AbortController();
-  const timer = setTimeout(() => abortController.abort(), timeoutMs);
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(url, {
-      method: "GET",
-      cache: "no-store",
-      signal: abortController.signal,
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal,
     });
-
-    return {
-      ok: response.ok,
-      latency: Date.now() - startedAt,
-    };
-  } catch {
-    return {
-      ok: false,
-      latency: timeoutMs,
-    };
   } finally {
     clearTimeout(timer);
   }
 }
 
-export async function warmSpace(baseUrl: string): Promise<void> {
-  const rootUrl = joinUrl(baseUrl, "/");
-  const firstAttempt = await ping(rootUrl);
+export function getSpaceIds(): Record<EngineKey, string> {
+  const go = getFirstEnv("HF_SPACE_GO", "HF_GO_SPACE");
+  const py = getFirstEnv("HF_SPACE_PY", "HF_PY_SPACE");
 
-  if (!firstAttempt.ok || firstAttempt.latency >= ACTIVE_THRESHOLD_MS) {
-    await ping(rootUrl, 6500);
+  const missing: string[] = [];
+  if (!go) missing.push("HF_SPACE_GO");
+  if (!py) missing.push("HF_SPACE_PY");
+
+  if (missing.length > 0) {
+    throw new MissingEnvironmentError(missing);
   }
+
+  return { go: go as string, py: py as string };
 }
 
-export async function getServiceHealth(
-  baseUrl: string,
-): Promise<ServiceHealth> {
-  const result = await ping(joinUrl(baseUrl, "/health"));
+export function getBackendBaseUrls(): Record<EngineKey, string> {
+  const spaces = getSpaceIds();
 
-  if (!result.ok) {
-    return {
-      status: "unreachable",
-      latency: -1,
-    };
-  }
+  const go =
+    getFirstEnv("NEXT_PUBLIC_GO_URL", "GO_SPACE_URL") ||
+    slugToSpaceUrl(spaces.go);
+  const py =
+    getFirstEnv(
+      "NEXT_PUBLIC_PY_URL",
+      "NEXT_PUBLIC_API_PY_URL",
+      "PY_SPACE_URL",
+    ) || slugToSpaceUrl(spaces.py);
 
   return {
-    status: result.latency < ACTIVE_THRESHOLD_MS ? "active" : "idle",
-    latency: result.latency,
+    go,
+    py,
   };
 }
 
-export async function restartSpace(service: ServiceName): Promise<boolean> {
-  const config = getHfConfig();
-  const space = config.spaces[service];
+function getHfToken(): string {
+  const token = getFirstEnv("HF_TOKEN");
+  if (!token) {
+    throw new MissingEnvironmentError(["HF_TOKEN"]);
+  }
+  return token;
+}
 
-  const response = await fetch(
-    `https://api.huggingface.co/spaces/${space}/restart`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${config.token}`,
+export async function fetchHfStatus(spaceId: string): Promise<HfStatus> {
+  try {
+    const response = await fetchWithTimeout(
+      `https://huggingface.co/api/spaces/${spaceId}`,
+      {
+        method: "GET",
+        cache: "no-store",
       },
+      READY_TIMEOUT_MS,
+    );
+
+    if (!response.ok) {
+      return "ERROR";
+    }
+
+    const payload = (await response.json()) as HfSpaceApiPayload;
+    return normalizeHfStatus(
+      payload.runtime?.stage || payload.stage || "UNKNOWN",
+    );
+  } catch {
+    return "ERROR";
+  }
+}
+
+export async function probeReady(
+  baseUrl: string,
+): Promise<{ ready: boolean; status: number; error?: string }> {
+  try {
+    const response = await fetchWithTimeout(
+      joinUrl(baseUrl, "/ready"),
+      {
+        method: "GET",
+        cache: "no-store",
+      },
+      READY_TIMEOUT_MS,
+    );
+
+    return {
+      ready: response.ok,
+      status: response.status,
+    };
+  } catch {
+    return {
+      ready: false,
+      status: 0,
+      error: "timeout-or-network",
+    };
+  }
+}
+
+export async function buildSystemStatusResponse(): Promise<SystemStatusResponse> {
+  const [spaces, baseUrls] = [getSpaceIds(), getBackendBaseUrls()];
+
+  const [goHfStatus, pyHfStatus, goReady, pyReady] = await Promise.all([
+    fetchHfStatus(spaces.go),
+    fetchHfStatus(spaces.py),
+    probeReady(baseUrls.go),
+    probeReady(baseUrls.py),
+  ]);
+
+  return {
+    go: {
+      hf_status: goHfStatus,
+      ready: goReady.ready,
+      ready_http_status: goReady.status,
+      ready_error: goReady.error,
+      app_url: baseUrls.go,
+    },
+    py: {
+      hf_status: pyHfStatus,
+      ready: pyReady.ready,
+      ready_http_status: pyReady.status,
+      ready_error: pyReady.error,
+      app_url: baseUrls.py,
+    },
+    checked_at: new Date().toISOString(),
+  };
+}
+
+export function buildSystemStatusFallback(
+  missing?: string[] | null,
+): SystemStatusResponse {
+  const readyError =
+    missing && missing.length > 0
+      ? `missing-env:${missing.join(",")}`
+      : undefined;
+
+  return {
+    go: readyError
+      ? {
+          ...UNKNOWN_ENGINE_STATUS,
+          ready_error: readyError,
+        }
+      : UNKNOWN_ENGINE_STATUS,
+    py: readyError
+      ? {
+          ...UNKNOWN_ENGINE_STATUS,
+          ready_error: readyError,
+        }
+      : UNKNOWN_ENGINE_STATUS,
+    checked_at: new Date().toISOString(),
+  };
+}
+
+function warmUrlNonBlocking(baseUrl: string): void {
+  void fetchWithTimeout(
+    joinUrl(baseUrl, "/health"),
+    {
+      method: "GET",
       cache: "no-store",
     },
-  );
+    WARM_TIMEOUT_MS,
+  ).catch(() => {
+    // Intentionally ignored; warm should never block the UI.
+  });
+}
 
-  return response.ok;
+export function triggerWarmup(target: RestartTarget = "both"): void {
+  const urls = getBackendBaseUrls();
+
+  if (target === "go" || target === "both") {
+    warmUrlNonBlocking(urls.go);
+  }
+  if (target === "py" || target === "both") {
+    warmUrlNonBlocking(urls.py);
+  }
+}
+
+async function restartTarget(target: EngineKey): Promise<RestartTargetResult> {
+  const token = getHfToken();
+  const spaces = getSpaceIds();
+  const space = spaces[target];
+
+  try {
+    const response = await fetchWithTimeout(
+      `https://huggingface.co/api/spaces/${space}/restart`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      },
+      READY_TIMEOUT_MS,
+    );
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        status: response.status,
+        error: "restart-failed",
+      };
+    }
+
+    return { ok: true, status: response.status };
+  } catch {
+    return {
+      ok: false,
+      error: "restart-failed",
+    };
+  }
+}
+
+export async function restartByTarget(
+  target: RestartTarget,
+): Promise<SystemRestartResponse> {
+  const result: SystemRestartResponse = { target };
+
+  const tasks: Promise<void>[] = [];
+
+  if (target === "go" || target === "both") {
+    tasks.push(
+      restartTarget("go").then((go) => {
+        result.go = go;
+      }),
+    );
+  }
+
+  if (target === "py" || target === "both") {
+    tasks.push(
+      restartTarget("py").then((py) => {
+        result.py = py;
+      }),
+    );
+  }
+
+  await Promise.all(tasks);
+
+  return result;
 }
