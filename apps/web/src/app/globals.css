@@ -519,9 +519,6 @@ body {
 :root {
   --app-header-offset: 96px; /* default header safe area */
   --app-footer-offset: 88px; /* default footer safe area */
-  --sidebar-width-collapsed: 72px;
-  --sidebar-width-expanded: 300px;
-  --sidebar-active-width: var(--sidebar-width-expanded);
 }
 
 .app-viewport-available {
@@ -1401,23 +1398,6 @@ body {
 }
 .chat-panel .status-tile .text-xs {
   color: var(--color-muted-foreground);
-}
-
-/* Sidebar structural contract (Phase 2) */
-aside.sidebar-desktop[data-collapsed="true"] {
-  width: var(--sidebar-width-collapsed);
-}
-
-aside.sidebar-desktop[data-collapsed="false"] {
-  width: var(--sidebar-width-expanded);
-}
-
-aside.sidebar-desktop {
-  transition: none;
-}
-
-aside.sidebar-desktop[data-collapsed="true"] .nav-label {
-  display: none;
 }
 
 /* Single global floating voice control (Phase 1) */

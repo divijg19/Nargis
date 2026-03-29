@@ -5,6 +5,7 @@ import { Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
+import { PageCanvas } from "@/components/layout/PageCanvas";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { DashboardCard } from "@/components/ui/DashboardCard";
 import DashboardHero from "@/components/ui/DashboardHero";
@@ -95,255 +96,165 @@ export default function DashboardPage() {
 
   return (
     <RequireAuth>
-      <div className="h-screen overflow-hidden flex flex-col pt-8 md:pt-12 bg-app-light transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-300">
-        {/* Quick Actions: rendered beneath the hero (desktop) - mobile kept in the stacked area */}
-
-        {/* Grid wrapper in a flex container to enable internal scrolling only */}
-        <div className="relative flex-1 min-h-0 lg:grid lg:grid-cols-[3rem_18rem_0rem_1fr_0rem_16rem_3rem] lg:gap-0 xl:grid-cols-[4rem_18rem_0rem_1fr_0rem_16rem_4rem] 2xl:grid-cols-[6rem_18rem_0rem_1fr_0rem_16rem_6rem]">
-          {/* Today's Tasks: left rail, sticky within its column */}
-          <aside className="hidden lg:flex flex-col sticky top-16 w-64 xl:w-72 justify-self-end gap-4 z-30 lg:col-start-2 lg:col-end-3">
-            <DashboardCard
-              title="Today's Tasks"
-              size="sm"
-              headerAction={
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                  {todayTasks.length}{" "}
-                  {todayTasks.length === 1 ? "task" : "tasks"}
-                </span>
-              }
+      <div className="min-h-full bg-app-light transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-300">
+        <PageCanvas className="gap-8">
+          {(briefingLoading || hasBriefing) && (
+            <section
+              aria-live="polite"
+              className="rounded-2xl border border-blue-200/70 bg-blue-50/50 p-4 shadow-sm dark:border-blue-500/20 dark:bg-blue-900/10 sm:p-5"
             >
-              <div className="w-full">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-blue-200/80 bg-white/70 text-blue-600 dark:border-blue-400/30 dark:bg-blue-900/20 dark:text-blue-300">
+                    <Sparkles className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <h2 className="text-base font-semibold text-foreground sm:text-lg">
+                    Morning Briefing
+                  </h2>
+                </div>
+                {briefingUpdatedAt ? (
+                  <span className="text-xs text-muted-foreground">
+                    Updated{" "}
+                    {briefingUpdatedAt.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                ) : null}
+              </div>
+
+              {briefingLoading ? (
+                <div
+                  className="space-y-2"
+                  role="status"
+                  aria-label="Loading briefing"
+                >
+                  <Skeleton className="h-3 w-full rounded-sm bg-blue-200/60 dark:bg-blue-800/35" />
+                  <Skeleton className="h-3 w-11/12 rounded-sm bg-blue-200/60 dark:bg-blue-800/35" />
+                  <Skeleton className="h-3 w-9/12 rounded-sm bg-blue-200/60 dark:bg-blue-800/35" />
+                </div>
+              ) : (
+                <p className="whitespace-pre-wrap text-sm leading-6 text-foreground/90 sm:text-base">
+                  {briefingText}
+                </p>
+              )}
+            </section>
+          )}
+
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(22rem,0.95fr)]">
+            <div className="space-y-6">
+              <div className="max-w-sm sm:max-w-md">
+                <DashboardHero greeting={greeting} />
+              </div>
+
+              <DashboardCard title="Task Status Overview" size="xs">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl bg-gray-50 p-2.5 text-center transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:shadow-md dark:bg-gray-700/30">
+                    <div className="mb-1 text-xl font-semibold tabular-nums text-foreground">
+                      {tasksByStatus.todo.length}
+                    </div>
+                    <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      To Do
+                    </div>
+                  </div>
+                  <div className="rounded-xl bg-blue-50 p-2.5 text-center transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:shadow-md dark:bg-blue-900/20">
+                    <div className="mb-1 text-xl font-semibold tabular-nums text-blue-600 dark:text-blue-400">
+                      {tasksByStatus.inProgress.length}
+                    </div>
+                    <div className="text-xs font-medium uppercase tracking-wide text-blue-700 dark:text-blue-300">
+                      In Progress
+                    </div>
+                  </div>
+                  <div className="rounded-xl bg-green-50 p-2.5 text-center transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:shadow-md dark:bg-green-900/20">
+                    <div className="mb-1 text-xl font-semibold tabular-nums text-green-600 dark:text-green-400">
+                      {tasksByStatus.done.length}
+                    </div>
+                    <div className="text-xs font-medium uppercase tracking-wide text-green-700 dark:text-green-300">
+                      Completed
+                    </div>
+                  </div>
+                </div>
+              </DashboardCard>
+
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {[
+                  {
+                    label: "Tasks Completed",
+                    value: completedToday,
+                  },
+                  {
+                    label: "Focus Sessions",
+                    value: todaySessionsCount,
+                  },
+                  {
+                    label: "Active Streaks",
+                    value: totalStreaks,
+                  },
+                  {
+                    label: "Weekly Progress",
+                    value: `${weeklyProgress}%`,
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="rounded-xl border border-structural bg-card p-4"
+                  >
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      {item.label}
+                    </p>
+                    <p className="text-3xl font-semibold tracking-tight text-foreground">
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <DashboardCard title="Quick Actions" size="xs">
+                <div className="space-y-2">
+                  <ActionButton
+                    label="Create Task"
+                    variant="primary"
+                    size="md"
+                    onClick={() => setIsTaskModalOpen(true)}
+                    className="w-full"
+                  />
+                  <ActionButton
+                    label="Start Focus Session"
+                    variant="secondary"
+                    size="md"
+                    onClick={handleStartFocus}
+                    className="w-full"
+                  />
+                  <ActionButton
+                    label="Log Habit"
+                    variant="secondary"
+                    size="md"
+                    onClick={() => setIsHabitModalOpen(true)}
+                    className="w-full"
+                  />
+                </div>
+              </DashboardCard>
+
+              <DashboardCard
+                title="Today's Tasks"
+                size="sm"
+                headerAction={
+                  <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                    {todayTasks.length} {todayTasks.length === 1 ? "task" : "tasks"}
+                  </span>
+                }
+              >
                 <TaskPreview
                   tasks={todayTasks}
                   limit={8}
                   onToggleTask={handleToggleTask}
                 />
-              </div>
-            </DashboardCard>
-          </aside>
-
-          {/* Center content column */}
-          <main className="w-full max-w-5xl mx-auto px-3 sm:px-4 lg:px-8 space-y-6 lg:space-y-8 pb-14 lg:pb-16 lg:col-start-4 lg:col-end-5 h-full overflow-auto">
-            <div className="app-viewport-available">
-              <div className="grid grid-cols-1 gap-4 md:gap-6">
-                {(briefingLoading || hasBriefing) && (
-                  <section
-                    aria-live="polite"
-                    className="rounded-2xl border border-blue-200/70 bg-blue-50/50 p-4 shadow-sm dark:border-blue-500/20 dark:bg-blue-900/10 sm:p-5"
-                  >
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-blue-200/80 bg-white/70 text-blue-600 dark:border-blue-400/30 dark:bg-blue-900/20 dark:text-blue-300">
-                          <Sparkles className="h-4 w-4" aria-hidden="true" />
-                        </span>
-                        <h2 className="text-base font-semibold text-foreground sm:text-lg">
-                          Morning Briefing
-                        </h2>
-                      </div>
-                      {briefingUpdatedAt ? (
-                        <span className="text-xs text-muted-foreground">
-                          Updated{" "}
-                          {briefingUpdatedAt.toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    {briefingLoading ? (
-                      <div
-                        className="space-y-2"
-                        role="status"
-                        aria-label="Loading briefing"
-                      >
-                        <Skeleton className="h-3 w-full rounded-sm bg-blue-200/60 dark:bg-blue-800/35" />
-                        <Skeleton className="h-3 w-11/12 rounded-sm bg-blue-200/60 dark:bg-blue-800/35" />
-                        <Skeleton className="h-3 w-9/12 rounded-sm bg-blue-200/60 dark:bg-blue-800/35" />
-                      </div>
-                    ) : (
-                      <p className="whitespace-pre-wrap text-sm leading-6 text-foreground/90 sm:text-base">
-                        {briefingText}
-                      </p>
-                    )}
-                  </section>
-                )}
-
-                {/* Mobile-only stacked left area */}
-                <div className="lg:hidden flex flex-col gap-4">
-                  <DashboardCard title="Quick Actions" size="xs">
-                    <div className="space-y-2">
-                      <ActionButton
-                        label="Create Task"
-                        variant="primary"
-                        size="sm"
-                        onClick={() => setIsTaskModalOpen(true)}
-                        className="w-full"
-                      />
-                      <ActionButton
-                        label="Start Focus Session"
-                        variant="secondary"
-                        size="sm"
-                        onClick={handleStartFocus}
-                        className="w-full"
-                      />
-                      <ActionButton
-                        label="Log Habit"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setIsHabitModalOpen(true)}
-                        className="w-full"
-                      />
-                    </div>
-                  </DashboardCard>
-
-                  <DashboardCard
-                    title="Today's Tasks"
-                    size="sm"
-                    headerAction={
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                        {todayTasks.length}{" "}
-                        {todayTasks.length === 1 ? "task" : "tasks"}
-                      </span>
-                    }
-                  >
-                    <TaskPreview
-                      tasks={todayTasks}
-                      limit={5}
-                      onToggleTask={handleToggleTask}
-                    />
-                  </DashboardCard>
-                </div>
-                {/* Stack Task Status Overview above the hero, center hero in available viewport */}
-                <div className="w-full flex flex-col items-center gap-1 lg:-mt-12">
-                  <div className="w-full max-w-md sm:max-w-lg">
-                    <DashboardCard title="Task Status Overview" size="xs">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="text-center p-2.5 rounded-xl bg-gray-50 dark:bg-gray-700/30 transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:shadow-md">
-                          <div className="text-xl font-semibold text-foreground mb-1 tabular-nums">
-                            {tasksByStatus.todo.length}
-                          </div>
-                          <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                            To Do
-                          </div>
-                          <div className="mt-2 w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1">
-                            <div
-                              className="bg-gray-500 dark:bg-gray-400 h-1 rounded-full"
-                              style={{ width: "100%" }}
-                            />
-                          </div>
-                        </div>
-                        <div className="text-center p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/20 transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:shadow-md">
-                          <div className="text-xl font-semibold text-blue-600 dark:text-blue-400 mb-1 tabular-nums">
-                            {tasksByStatus.inProgress.length}
-                          </div>
-                          <div className="text-xs font-medium text-blue-700 dark:text-blue-300 uppercase tracking-wide">
-                            In Progress
-                          </div>
-                          <div className="mt-2 w-full bg-blue-200 dark:bg-blue-800/30 rounded-full h-1">
-                            <div
-                              className="bg-blue-500 h-1 rounded-full"
-                              style={{ width: "100%" }}
-                            />
-                          </div>
-                        </div>
-                        <div className="text-center p-2.5 rounded-xl bg-green-50 dark:bg-green-900/20 transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:shadow-md">
-                          <div className="text-xl font-semibold text-green-600 dark:text-green-400 mb-1 tabular-nums">
-                            {tasksByStatus.done.length}
-                          </div>
-                          <div className="text-xs font-medium text-green-700 dark:text-green-300 uppercase tracking-wide">
-                            Completed
-                          </div>
-                          <div className="mt-2 w-full bg-green-200 dark:bg-green-800/30 rounded-full h-1">
-                            <div
-                              className="bg-green-500 h-1 rounded-full"
-                              style={{ width: "100%" }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </DashboardCard>
-                  </div>
-
-                  <div className="w-full flex flex-col gap-0 items-center">
-                    <div className="w-full flex items-start justify-center">
-                      <div className="w-full max-w-sm sm:max-w-md mt-0">
-                        <DashboardHero greeting={greeting} />
-                      </div>
-                    </div>
-
-                    {/* Desktop Quick Actions: beneath the hero, aligned to the hero's left edge */}
-                    <div className="w-full max-w-lg hidden lg:flex lg:justify-start lg:-mt-6">
-                      <div className="w-72">
-                        <DashboardCard title="Quick Actions" size="xs">
-                          <div className="space-y-2">
-                            <ActionButton
-                              label="Create Task"
-                              variant="primary"
-                              size="md"
-                              onClick={() => setIsTaskModalOpen(true)}
-                              className="w-full"
-                            />
-                            <ActionButton
-                              label="Start Focus Session"
-                              variant="secondary"
-                              size="md"
-                              onClick={handleStartFocus}
-                              className="w-full"
-                            />
-                            <ActionButton
-                              label="Log Habit"
-                              variant="secondary"
-                              size="md"
-                              onClick={() => setIsHabitModalOpen(true)}
-                              className="w-full"
-                            />
-                          </div>
-                        </DashboardCard>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              </DashboardCard>
             </div>
-          </main>
-
-          {/* Right stat stack: right rail, sticky within its column */}
-          <aside className="hidden lg:flex flex-col sticky top-16 w-48 xl:w-56 justify-self-start gap-3 z-20 lg:col-start-6 lg:col-end-7">
-            <div className="relative rounded-xl border border-structural bg-card p-4 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Tasks Completed
-              </p>
-              <p className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">
-                {completedToday}
-              </p>
-            </div>
-            <div className="relative rounded-xl border border-structural bg-card p-4 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Focus Sessions
-              </p>
-              <p className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">
-                {todaySessionsCount}
-              </p>
-            </div>
-            <div className="relative rounded-xl border border-structural bg-card p-4 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Active Streaks
-              </p>
-              <p className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">
-                {totalStreaks}
-              </p>
-            </div>
-            <div className="relative rounded-xl border border-structural bg-card p-4 transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-200">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Weekly Progress
-              </p>
-              <p className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">
-                {weeklyProgress}%
-              </p>
-            </div>
-          </aside>
-        </div>
+          </div>
+        </PageCanvas>
 
         {/* Modals */}
         <TaskModal

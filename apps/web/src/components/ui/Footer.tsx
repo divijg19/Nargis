@@ -45,7 +45,7 @@ export function Footer() {
   return (
     <footer
       ref={footerRef}
-      className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 w-[min(54rem,calc(100vw-4.5rem))] md:ml-[calc(var(--sidebar-width-expanded)/2)] md:w-[min(54rem,calc(100vw-var(--sidebar-width-expanded)-4.5rem))] rounded-xl border border-structural bg-card backdrop-blur-sm"
+      className="fixed bottom-3 left-1/2 z-40 w-[min(82rem,calc(100vw-1.5rem))] -translate-x-1/2 rounded-2xl border border-structural bg-card/98 backdrop-blur-sm"
     >
       <div className="px-2.5 sm:px-3">
         <div className="w-full max-w-none ml-auto py-3.5">

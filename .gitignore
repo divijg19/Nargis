@@ -12,6 +12,7 @@ Thumbs.db
 .vscode/
 !.vscode/settings.json
 AGENTS.md
+.codex
 
 # Environment variables
 .env

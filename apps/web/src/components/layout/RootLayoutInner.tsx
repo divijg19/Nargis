@@ -4,7 +4,6 @@ import type React from "react";
 import { useState } from "react";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { RegisterModal } from "@/components/auth/RegisterModal";
-import Sidebar from "@/components/layout/Sidebar";
 import { AccountDrawer } from "@/components/ui/AccountDrawer";
 import { AvatarButton } from "@/components/ui/AvatarButton";
 import { Footer } from "@/components/ui/Footer";
@@ -18,7 +17,6 @@ export default function RootLayoutInner({
 }: {
   children: React.ReactNode;
 }) {
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [accountDrawerOpen, setAccountDrawerOpen] = useState(false);
@@ -41,21 +39,14 @@ export default function RootLayoutInner({
   return (
     <>
       <div className="h-screen grid grid-rows-[auto_1fr_auto] overflow-hidden">
-        <NavBar onMobileSidebarToggle={() => setMobileSidebarOpen((s) => !s)} />
+        <NavBar />
 
-        <div className="min-h-0 grid grid-cols-1 md:grid-cols-[var(--sidebar-width-expanded)_1fr] overflow-hidden">
-          <Sidebar
-            mobileOpen={mobileSidebarOpen}
-            onMobileClose={() => setMobileSidebarOpen(false)}
-          />
-
-          <main
-            id="maincontent"
-            className="min-h-0 overflow-y-auto px-4 sm:px-6 pt-16 pb-24"
-          >
-            {children}
-          </main>
-        </div>
+        <main
+          id="maincontent"
+          className="min-h-0 overflow-y-auto px-4 pb-28 pt-16 sm:px-6"
+        >
+          {children}
+        </main>
 
         <Footer />
       </div>

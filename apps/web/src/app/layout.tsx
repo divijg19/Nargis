@@ -81,7 +81,7 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrains_mono.variable} font-sans antialiased min-h-screen`}
       >
         <AppProviders>
-          {/* Client-managed layout (sidebar state lives in a client component) */}
+          {/* Client-managed app shell (navbar, footer, drawers, and overlays) */}
           <RootLayoutInner>{children}</RootLayoutInner>
         </AppProviders>
       </body>
