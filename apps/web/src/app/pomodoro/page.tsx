@@ -99,7 +99,10 @@ export default function PomodoroPage() {
           </div>
 
           <div className="animate-scale-in grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.9fr)] xl:items-start">
-            <DashboardCard title="" className="w-full overflow-visible p-5 sm:p-6 lg:p-7">
+            <DashboardCard
+              title=""
+              className="w-full overflow-visible p-5 sm:p-6 lg:p-7"
+            >
               <PomodoroTimer
                 size="lg"
                 showControls={true}
