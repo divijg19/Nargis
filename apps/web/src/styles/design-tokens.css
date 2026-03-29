@@ -104,8 +104,7 @@
 }
 
 /* Chrome dimming during voice session */
-.is-voice-active .app__chrome,
-.is-voice-active .app__sidebar {
+.is-voice-active .app__chrome {
   opacity: var(--chrome-opacity);
   transition: opacity var(--motion-medium) var(--motion-ease);
 }

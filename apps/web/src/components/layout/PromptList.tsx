@@ -2,7 +2,7 @@
 
 import { Check, Clipboard } from "lucide-react";
 
-export type SidebarPrompt = {
+export type PromptListItem = {
   title: string;
   subtitle: string;
   prompt: string;
@@ -17,7 +17,7 @@ export function PromptList({
   onCopy,
   mobile,
 }: {
-  prompts: SidebarPrompt[];
+  prompts: PromptListItem[];
   compact?: boolean;
   copiedIndex: number | null;
   onSelect: (prompt: string) => void;

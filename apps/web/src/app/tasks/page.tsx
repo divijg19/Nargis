@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
+import { PageCanvas } from "@/components/layout/PageCanvas";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { DashboardCard } from "@/components/ui/DashboardCard";
 import { TaskModal } from "@/components/ui/TaskModal";
@@ -121,17 +122,16 @@ export default function TasksPage() {
 
   return (
     <RequireAuth>
-      <div className="h-full overflow-hidden flex flex-col bg-app-light transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-300">
-        {/* Premium Header */}
-        <div className="w-full max-w-300 2xl:max-w-350 mx-auto px-3 sm:px-4 lg:px-8 py-3">
+      <div className="min-h-full bg-app-light transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-300">
+        <PageCanvas className="gap-8">
           <div className="animate-fade-in">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 md:gap-6 mb-3">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-semibold mb-2 text-foreground">
+            <div className="mb-3 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center md:gap-6">
+              <div className="space-y-2">
+                <h1 className="text-3xl font-semibold text-foreground md:text-4xl">
                   Tasks
                 </h1>
                 <p className="text-base text-muted-foreground">
-                  Organize and track your work
+                  Organize and track your work.
                 </p>
               </div>
               <ActionButton
@@ -141,223 +141,111 @@ export default function TasksPage() {
               />
             </div>
           </div>
-        </div>
 
-        {/* Grid wrapper with outer gutters and snug side columns; internal scroll only */}
-        <div className="relative flex-1 min-h-0 lg:grid lg:grid-cols-[3rem_16rem_0rem_1fr_0rem_16rem_3rem] lg:gap-0 xl:grid-cols-[4rem_16rem_0rem_1fr_0rem_16rem_4rem] 2xl:grid-cols-[6rem_20rem_0rem_1fr_0rem_24rem_6rem]">
-          {/* Column 1: stacked summary stats - left rail */}
-          <aside className="hidden lg:flex flex-col w-64 xl:w-72 justify-self-end space-y-4 lg:col-start-2 lg:col-end-3">
-            <div className="rounded-xl p-2.5 border border-border/25 bg-card">
-              <div className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-                {tasks.length}
-              </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">
-                Total Tasks
-              </div>
-            </div>
-
-            <div className="rounded-xl p-2.5 border border-border/25 bg-card">
-              <div className="text-xl font-bold text-foreground mb-2">
-                {todayTasks.length}
-              </div>
-              <div className="text-sm text-muted-foreground font-medium">
-                Due Today
-              </div>
-            </div>
-
-            <div className="rounded-xl p-2.5 border border-border/25 bg-card">
-              <div className="text-xl font-bold text-foreground mb-2">
-                {completedCount}
-              </div>
-              <div className="text-sm text-muted-foreground font-medium">
-                Completed
-              </div>
-            </div>
-
-            <div className="rounded-xl p-2.5 border border-border/25 bg-card">
-              <div className="text-xl font-bold text-foreground mb-2">
-                {completionRate}%
-              </div>
-              <div className="text-sm text-muted-foreground font-medium">
-                Complete
-              </div>
-            </div>
-          </aside>
-
-          {/* Column 2: Today's Focus (center) and In Progress stacked */}
-          <main className="w-full px-3 sm:px-4 lg:px-8 space-y-5 pb-10 lg:col-start-4 lg:col-end-5 h-full overflow-auto">
-            {/* Mobile-only summary stats */}
-            <div className="lg:hidden flex flex-col space-y-4">
-              <div className="rounded-xl p-2.5 border border-border/25 bg-card">
-                <div className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-                  {tasks.length}
-                </div>
-                <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">
-                  Total Tasks
-                </div>
-              </div>
-
-              <div className="rounded-xl p-2.5 border border-border/25 bg-card">
-                <div className="text-xl font-bold text-foreground mb-2">
-                  {todayTasks.length}
-                </div>
-                <div className="text-sm text-muted-foreground font-medium">
-                  Due Today
-                </div>
-              </div>
-
-              <div className="rounded-xl p-2.5 border border-border/25 bg-card">
-                <div className="text-xl font-bold text-foreground mb-2">
-                  {completedCount}
-                </div>
-                <div className="text-sm text-muted-foreground font-medium">
-                  Completed
-                </div>
-              </div>
-
-              <div className="rounded-xl p-2.5 border border-border/25 bg-card">
-                <div className="text-xl font-bold text-foreground mb-2">
-                  {completionRate}%
-                </div>
-                <div className="text-sm text-muted-foreground font-medium">
-                  Complete
-                </div>
-              </div>
-            </div>
-
-            {todayTasks.length > 0 && (
-              <DashboardCard
-                title="Today's Focus"
-                size="xs"
-                headerAction={
-                  <span className="text-sm text-muted-foreground">
-                    {todayTasks.filter((t) => t.completed).length} of{" "}
-                    {todayTasks.length} done
-                  </span>
-                }
-              >
-                <div className="max-h-[32vh] lg:max-h-[35vh] overflow-auto pr-1">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(22rem,0.95fr)]">
+            <div className="grid gap-6 lg:grid-cols-2">
+              {todayTasks.length > 0 && (
+                <DashboardCard
+                  title="Today's Focus"
+                  size="xs"
+                  className="lg:col-span-2"
+                  headerAction={
+                    <span className="text-sm text-muted-foreground">
+                      {todayTasks.filter((t) => t.completed).length} of{" "}
+                      {todayTasks.length} done
+                    </span>
+                  }
+                >
                   <TaskPreview
                     tasks={todayTasks}
                     limit={6}
                     onToggleTask={handleToggleTask}
                   />
-                </div>
-              </DashboardCard>
-            )}
+                </DashboardCard>
+              )}
 
-            <DashboardCard
-              title="In Progress"
-              size="xs"
-              headerAction={
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                  {tasksByStatus.inProgress.length}
-                </span>
-              }
-            >
-              <div className="max-h-[32vh] lg:max-h-[35vh] overflow-auto pr-1">
+              <DashboardCard
+                title="To Do"
+                size="xs"
+                headerAction={
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-foreground dark:bg-gray-700 dark:text-gray-300">
+                    {tasksByStatus.todo.length}
+                  </span>
+                }
+              >
                 <TaskPreview
-                  tasks={tasksByStatus.inProgress}
-                  limit={6}
+                  tasks={tasksByStatus.todo}
+                  limit={8}
                   onToggleTask={handleToggleTask}
                   onEditTask={handleEditTask}
                   onDeleteTask={handleDeleteTask}
                   showActions={true}
                 />
-              </div>
-            </DashboardCard>
+              </DashboardCard>
 
-            {/* Mobile-only task lists */}
-            <div className="lg:hidden flex flex-col space-y-6">
               <DashboardCard
-                title="To Do"
+                title="In Progress"
                 size="xs"
                 headerAction={
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-foreground dark:bg-gray-700 dark:text-gray-300">
-                    {tasksByStatus.todo.length}
+                  <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                    {tasksByStatus.inProgress.length}
                   </span>
                 }
               >
-                <div className="max-h-[45vh] overflow-auto pr-1">
-                  <TaskPreview
-                    tasks={tasksByStatus.todo}
-                    limit={8}
-                    onToggleTask={handleToggleTask}
-                    onEditTask={handleEditTask}
-                    onDeleteTask={handleDeleteTask}
-                    showActions={true}
-                  />
-                </div>
+                <TaskPreview
+                  tasks={tasksByStatus.inProgress}
+                  limit={8}
+                  onToggleTask={handleToggleTask}
+                  onEditTask={handleEditTask}
+                  onDeleteTask={handleDeleteTask}
+                  showActions={true}
+                />
               </DashboardCard>
+            </div>
+
+            <div className="space-y-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {[
+                  { label: "Total Tasks", value: tasks.length },
+                  { label: "Due Today", value: todayTasks.length },
+                  { label: "Completed", value: completedCount },
+                  { label: "Complete", value: `${completionRate}%` },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="rounded-xl border border-border/25 bg-card p-4"
+                  >
+                    <div className="mb-2 text-2xl font-semibold text-foreground">
+                      {item.value}
+                    </div>
+                    <div className="text-sm font-medium text-muted-foreground">
+                      {item.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
 
               <DashboardCard
                 title="Completed"
                 size="xs"
                 headerAction={
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                  <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300">
                     {tasksByStatus.done.length}
                   </span>
                 }
               >
-                <div className="max-h-[45vh] overflow-auto pr-1">
-                  <TaskPreview
-                    tasks={tasksByStatus.done}
-                    limit={8}
-                    onToggleTask={handleToggleTask}
-                    onEditTask={handleEditTask}
-                    onDeleteTask={handleDeleteTask}
-                    showActions={true}
-                  />
-                </div>
-              </DashboardCard>
-            </div>
-          </main>
-
-          {/* Column 3: stacked task lists - right rail */}
-          <aside className="hidden lg:flex flex-col w-full justify-self-start space-y-2 lg:col-start-6 lg:col-end-7">
-            <DashboardCard
-              title="To Do"
-              size="xs"
-              headerAction={
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-foreground dark:bg-gray-700 dark:text-gray-300">
-                  {tasksByStatus.todo.length}
-                </span>
-              }
-            >
-              <div className="h-36 lg:h-40 pr-1">
-                <TaskPreview
-                  tasks={tasksByStatus.todo}
-                  limit={3}
-                  onToggleTask={handleToggleTask}
-                  onEditTask={handleEditTask}
-                  onDeleteTask={handleDeleteTask}
-                  showActions={true}
-                />
-              </div>
-            </DashboardCard>
-
-            <DashboardCard
-              title="Completed"
-              size="xs"
-              headerAction={
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                  {tasksByStatus.done.length}
-                </span>
-              }
-            >
-              <div className="h-36 lg:h-40 pr-1">
                 <TaskPreview
                   tasks={tasksByStatus.done}
-                  limit={3}
+                  limit={8}
                   onToggleTask={handleToggleTask}
                   onEditTask={handleEditTask}
                   onDeleteTask={handleDeleteTask}
                   showActions={true}
                 />
-              </div>
-            </DashboardCard>
-          </aside>
-        </div>
+              </DashboardCard>
+            </div>
+          </div>
+        </PageCanvas>
 
         {/* Task Creation Modal */}
         <TaskModal

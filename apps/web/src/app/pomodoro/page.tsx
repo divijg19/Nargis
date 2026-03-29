@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
+import { PageCanvas } from "@/components/layout/PageCanvas";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { DashboardCard } from "@/components/ui/DashboardCard";
 import { PomodoroSettings } from "@/components/ui/PomodoroSettings";
@@ -86,200 +87,136 @@ export default function PomodoroPage() {
 
   return (
     <RequireAuth>
-      <div className="h-full overflow-hidden flex flex-col bg-app-light transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-300">
-        {/* Main content: wider container and accessible main landmark. Add top padding to avoid fixed header overlap. */}
-        <main
-          id="maincontent"
-          className="relative z-10 max-w-300 mx-auto px-4 sm:px-6 lg:px-10 app-viewport-available safe-padding flex-1 min-h-0 overflow-auto"
-          tabIndex={-1}
-        >
-          {/* Premium Header */}
-          <div className="text-center animate-fade-in">
-            <h1 className="text-3xl md:text-4xl font-semibold mb-2 leading-tight tracking-tight text-foreground">
+      <div className="min-h-full bg-app-light transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-300">
+        <PageCanvas className="gap-8">
+          <div className="animate-fade-in text-center">
+            <h1 className="mb-2 text-3xl font-semibold leading-tight tracking-tight text-foreground md:text-4xl">
               Pomodoro
             </h1>
-            <p className="text-base text-muted-foreground max-w-2xl mx-auto mt-1">
-              Focus in structured intervals for maximum productivity
+            <p className="mx-auto mt-1 max-w-2xl text-base text-muted-foreground">
+              Focus in structured intervals for maximum productivity.
             </p>
           </div>
 
-          {/* Premium Stats Bar removed — metrics are shown in the left stacked column to avoid redundancy */}
+          <div className="animate-scale-in grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,0.9fr)] xl:items-start">
+            <DashboardCard title="" className="w-full overflow-visible p-5 sm:p-6 lg:p-7">
+              <PomodoroTimer
+                size="lg"
+                showControls={true}
+                formattedTime={formattedTime}
+                progress={progress}
+                sessionType={sessionType}
+                isRunning={isRunning}
+                currentSession={currentSession}
+                onStart={() => startTimer()}
+                onPause={pauseTimer}
+                onReset={resetTimer}
+              />
+            </DashboardCard>
 
-          {/* Main Timer Card */}
-          <div className="animate-scale-in mt-6 sm:mt-8">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-12 items-start">
-              {/* Left stacked metric column */}
-              <div className="lg:col-span-1 flex flex-col space-y-5 sm:space-y-6">
-                <div className="rounded-xl p-4 border border-border/25 bg-card text-center">
+            <aside className="flex flex-col items-stretch space-y-4 sm:space-y-6">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="inline-flex items-center space-x-3 rounded-full border border-border/30 bg-card px-4 py-3">
+                  <span className="text-sm font-medium text-primary">
+                    {sessionInfo.label}
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  {!isRunning ? (
+                    <ActionButton
+                      label="Start"
+                      variant="primary"
+                      size="md"
+                      onClick={() => startTimer()}
+                      aria-label={"Start timer (Space)"}
+                    />
+                  ) : (
+                    <ActionButton
+                      label="Pause"
+                      variant="secondary"
+                      size="md"
+                      onClick={pauseTimer}
+                      aria-label={"Pause timer (Space)"}
+                    />
+                  )}
+                  <ActionButton
+                    label="Reset"
+                    variant="danger"
+                    size="md"
+                    onClick={resetTimer}
+                    aria-label={"Reset timer (R)"}
+                  />
+                </div>
+
+                <ActionButton
+                  label="Settings"
+                  variant="secondary"
+                  size="md"
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-xl border border-border/25 bg-card p-4 text-center">
                   <div className="text-sm text-muted-foreground">
                     Sessions Today
                   </div>
-                  <div className="text-2xl md:text-3xl font-semibold text-foreground">
+                  <div className="text-2xl font-semibold text-foreground md:text-3xl">
                     {todaySessionsCount}
                   </div>
                 </div>
-
-                <div className="rounded-xl p-4 border border-border/25 bg-card text-center">
+                <div className="rounded-xl border border-border/25 bg-card p-4 text-center">
                   <div className="text-sm text-muted-foreground">Complete</div>
-                  <div className="text-2xl md:text-3xl font-semibold text-primary">
+                  <div className="text-2xl font-semibold text-primary md:text-3xl">
                     {Math.round(progress)}%
                   </div>
                 </div>
-
-                <div className="rounded-xl p-4 border border-border/25 bg-card text-center">
-                  <div className="text-sm text-muted-foreground">
-                    Focus Today
-                  </div>
-                  <div className="text-2xl md:text-3xl font-semibold text-foreground">
-                    —
-                  </div>
-                </div>
-
-                <div className="rounded-xl p-4 border border-border/25 bg-card text-center">
-                  <div className="text-sm text-muted-foreground">
-                    Longest Session
-                  </div>
-                  <div className="text-2xl md:text-3xl font-semibold text-foreground">
-                    —
-                  </div>
-                </div>
               </div>
-              {/* Timer column (spans 2 columns on large screens) */}
-              <div className="lg:col-span-2 flex items-center justify-center">
-                <DashboardCard
-                  title=""
-                  className="p-5 sm:p-6 lg:p-7 overflow-visible w-full"
-                >
-                  <PomodoroTimer
-                    size="lg"
-                    showControls={true}
-                    formattedTime={formattedTime}
-                    progress={progress}
-                    sessionType={sessionType}
-                    isRunning={isRunning}
-                    currentSession={currentSession}
-                    onStart={() => startTimer()}
-                    onPause={pauseTimer}
-                    onReset={resetTimer}
-                  />
-                </DashboardCard>
-              </div>{" "}
-              {/* Right column: controls, stats, guidance and shortcuts - stacked vertically */}
-              <aside className="lg:col-span-1 space-y-4 sm:space-y-6 flex flex-col items-stretch aside-sticky">
-                <div className="flex flex-col items-center space-y-4">
-                  {/* Session badge */}
-                  <div className="inline-flex items-center space-x-3 px-4 py-3 rounded-full bg-card border border-border/30">
-                    <span className="text-sm font-medium text-primary">
-                      {sessionInfo.label}
-                    </span>
-                  </div>
 
-                  {/* Controls */}
-                  <div className="flex items-center space-x-2 sm:space-x-3">
-                    {!isRunning ? (
-                      <ActionButton
-                        label="Start"
-                        variant="primary"
-                        size="md"
-                        onClick={() => startTimer()}
-                        aria-label={"Start timer (Space)"}
-                      />
-                    ) : (
-                      <ActionButton
-                        label="Pause"
-                        variant="secondary"
-                        size="md"
-                        onClick={pauseTimer}
-                        aria-label={"Pause timer (Space)"}
-                      />
-                    )}
-                    <ActionButton
-                      label="Reset"
-                      variant="danger"
-                      size="md"
-                      onClick={resetTimer}
-                      aria-label={"Reset timer (R)"}
-                    />
-                  </div>
+              <div className="rounded-xl border border-border/25 bg-card p-6">
+                <h2 className="text-sm font-semibold text-muted-foreground">
+                  Session Guidance
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {sessionType === "work" ? (
+                    <>
+                      <strong>Focus time!</strong> Eliminate distractions and
+                      work on a single task.
+                    </>
+                  ) : (
+                    <>
+                      <strong>Break time!</strong> Step away from your screen
+                      and recharge.
+                    </>
+                  )}
+                </p>
+              </div>
 
-                  {/* Settings Button */}
-                  <div className="mt-4">
-                    <ActionButton
-                      label="Settings"
-                      variant="secondary"
-                      size="md"
-                      onClick={() => setIsSettingsOpen(true)}
-                      className="w-full"
-                    />
-                  </div>
-                </div>{" "}
-                <div className="rounded-xl p-4 border border-border/25 bg-card">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="text-center">
-                      <div className="text-2xl font-medium text-foreground">
-                        {todaySessionsCount}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Sessions Today
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-medium text-primary">
-                        {Math.round(progress)}%
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Complete
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-xl p-6 border border-border/25 bg-card">
-                  <h2 className="text-sm font-semibold text-muted-foreground">
-                    Session Guidance
-                  </h2>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                    {sessionType === "work" ? (
-                      <>
-                        <strong>Focus time!</strong> Eliminate distractions and
-                        work on a single task.
-                      </>
-                    ) : (
-                      <>
-                        <strong>Break time!</strong> Step away from your screen
-                        and recharge.
-                      </>
-                    )}
-                  </p>
-                </div>
-                <div className="rounded-xl p-4 border border-border/25 bg-card">
-                  <h3 className="text-sm font-semibold text-muted-foreground">
-                    Keyboard Shortcuts
-                  </h3>
-                  <ul className="mt-2 text-sm text-muted-foreground space-y-1">
-                    <li>
-                      <strong>Space</strong>: Start / Pause
-                    </li>
-                    <li>
-                      <strong>R</strong>: Reset
-                    </li>
-                  </ul>
-                </div>
-              </aside>
-            </div>
-
-            {/* Analytics & Statistics Section */}
-            <div className="mt-10 sm:mt-12">
-              <PomodoroStats sessions={sessions} />
-            </div>
-
-            {/* Session History Section */}
-            <div className="mt-6 sm:mt-8">
-              <DashboardCard title="Session History" size="md">
-                <SessionHistory sessions={sessions} maxItems={15} />
-              </DashboardCard>
-            </div>
+              <div className="rounded-xl border border-border/25 bg-card p-4">
+                <h3 className="text-sm font-semibold text-muted-foreground">
+                  Keyboard Shortcuts
+                </h3>
+                <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                  <li>
+                    <strong>Space</strong>: Start / Pause
+                  </li>
+                  <li>
+                    <strong>R</strong>: Reset
+                  </li>
+                </ul>
+              </div>
+            </aside>
           </div>
-        </main>{" "}
+
+          <PomodoroStats sessions={sessions} />
+
+          <DashboardCard title="Session History" size="md">
+            <SessionHistory sessions={sessions} maxItems={15} />
+          </DashboardCard>
+        </PageCanvas>
+
         {/* Settings Modal */}
         <PomodoroSettings
           isOpen={isSettingsOpen}

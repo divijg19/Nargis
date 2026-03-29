@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
+import { PageCanvas } from "@/components/layout/PageCanvas";
 import { JournalEntryCard } from "@/components/ui/JournalEntryCard";
 import { JournalModal } from "@/components/ui/JournalModal";
 import { useJournalEntries } from "@/hooks/queries";
@@ -209,22 +210,30 @@ export default function JournalPage() {
 
   return (
     <RequireAuth>
-      <div className="h-full overflow-hidden flex flex-col bg-background p-3 sm:p-4 md:p-6 lg:p-8">
-        <div className="max-w-6xl 2xl:max-w-7xl mx-auto flex-1 min-h-0 overflow-hidden">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Journal
-            </h1>
-            <p className="text-muted-foreground">
-              Reflect on your thoughts and track your mood
-            </p>
+      <div className="min-h-full bg-app-light transition-[color,background-color,border-color,opacity,box-shadow,transform] duration-300">
+        <PageCanvas className="gap-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-semibold text-foreground md:text-4xl">
+                Journal
+              </h1>
+              <p className="text-base text-muted-foreground">
+                Reflect on your thoughts and track your mood over time.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleNewEntry}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            >
+              New Entry
+            </button>
           </div>
 
           {/* View controls, Search and Filters */}
-          <div className="mb-5 sm:mb-6 space-y-4">
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <div className="flex items-center gap-2">
+          <div className="space-y-4 rounded-2xl border border-border/25 bg-card p-4 shadow-sm sm:p-5">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setViewMode("list")}
@@ -241,7 +250,7 @@ export default function JournalPage() {
                 </button>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => changeRange("day")}
@@ -300,33 +309,30 @@ export default function JournalPage() {
                 <button
                   type="button"
                   onClick={() => setFilterType("all")}
-                  className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                    filterType === "all"
+                  className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${filterType === "all"
                       ? "bg-blue-600 text-white"
                       : "bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
+                    }`}
                 >
                   All
                 </button>
                 <button
                   type="button"
                   onClick={() => setFilterType("text")}
-                  className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                    filterType === "text"
+                  className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${filterType === "text"
                       ? "bg-blue-600 text-white"
                       : "bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
+                    }`}
                 >
                   Text
                 </button>
                 <button
                   type="button"
                   onClick={() => setFilterType("voice")}
-                  className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                    filterType === "voice"
+                  className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${filterType === "voice"
                       ? "bg-blue-600 text-white"
                       : "bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
+                    }`}
                 >
                   Voice
                 </button>
@@ -340,11 +346,10 @@ export default function JournalPage() {
                 <button
                   type="button"
                   onClick={() => setFilterMood("all")}
-                  className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                    filterMood === "all"
+                  className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-colors ${filterMood === "all"
                       ? "bg-blue-600 text-white"
                       : "bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600"
-                  }`}
+                    }`}
                 >
                   All Moods
                 </button>
@@ -354,11 +359,10 @@ export default function JournalPage() {
                       key={mood}
                       type="button"
                       onClick={() => setFilterMood(mood)}
-                      className={`px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
-                        filterMood === mood
+                      className={`px-3 py-2 rounded-lg font-medium text-sm transition-colors ${filterMood === mood
                           ? "bg-blue-600 text-white"
                           : "bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600"
-                      }`}
+                        }`}
                       title={mood.charAt(0).toUpperCase() + mood.slice(1)}
                       aria-label={`Filter by ${mood} mood`}
                     >
@@ -397,7 +401,7 @@ export default function JournalPage() {
 
           {/* Entry sections */}
           {filteredEntries.length > 0 && (
-            <div className="space-y-8 h-full overflow-auto pr-1">
+            <div className="space-y-8">
               {viewMode === "list" ? (
                 <div className="space-y-8">
                   {/* Today */}
@@ -459,9 +463,9 @@ export default function JournalPage() {
                 </div>
               ) : (
                 // Calendar view
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
+                <div className="rounded-2xl border border-border/25 bg-card p-4 shadow-sm sm:p-5">
+                  <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         onClick={() => {
@@ -540,7 +544,7 @@ export default function JournalPage() {
                   </div>
 
                   {rangeMode === "day" && (
-                    <div>
+                    <div className="space-y-4">
                       <h3 className="text-lg font-medium mb-3">
                         {selectedDate.toLocaleDateString()}
                       </h3>
@@ -567,146 +571,150 @@ export default function JournalPage() {
                   )}
 
                   {rangeMode === "week" && (
-                    <table
-                      className="w-full border-collapse"
-                      aria-label="Week calendar"
-                    >
-                      <tbody>
-                        <tr
-                          onKeyDown={(e) => {
-                            const key = e.key;
-                            if (key === "ArrowLeft") {
-                              setSelectedDate((d) => {
-                                const nd = new Date(d);
-                                nd.setDate(nd.getDate() - 1);
-                                return nd;
-                              });
-                            } else if (key === "ArrowRight") {
-                              setSelectedDate((d) => {
-                                const nd = new Date(d);
-                                nd.setDate(nd.getDate() + 1);
-                                return nd;
-                              });
-                            } else if (key === "ArrowUp") {
-                              setSelectedDate((d) => {
-                                const nd = new Date(d);
-                                nd.setDate(nd.getDate() - 7);
-                                return nd;
-                              });
-                            } else if (key === "ArrowDown") {
-                              setSelectedDate((d) => {
-                                const nd = new Date(d);
-                                nd.setDate(nd.getDate() + 7);
-                                return nd;
-                              });
-                            }
-                          }}
-                        >
-                          {weekDates.map((d) => {
-                            const key = dateKey(d);
-                            const list = entriesByDate[key] || [];
-                            return (
-                              <td
-                                key={key}
-                                className="align-top border rounded-lg p-2 min-h-30 bg-surface"
-                                aria-label={`Entries for ${d.toDateString()}`}
-                              >
-                                <div className="h-full">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="text-sm font-medium">
-                                      {d.toLocaleDateString(undefined, {
-                                        weekday: "short",
-                                        day: "numeric",
-                                      })}
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => openNewForDate(d)}
-                                      className="text-xs text-blue-600"
-                                    >
-                                      New
-                                    </button>
-                                  </div>
-                                  <div className="space-y-2 overflow-hidden">
-                                    {list.slice(0, 3).map((e) => (
-                                      <JournalEntryCard
-                                        key={e.id}
-                                        entry={e}
-                                        onEdit={openEdit}
-                                        onDelete={handleDeleteEntry}
-                                        compact
-                                      />
-                                    ))}
-                                    {list.length > 3 && (
-                                      <div
-                                        className="text-xs text-muted-foreground mt-1"
-                                        title={`${list.length - 3} more entries`}
-                                      >
-                                        +{list.length - 3} more
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      </tbody>
-                    </table>
-                  )}
-
-                  {rangeMode === "month" && (
-                    <table
-                      className="w-full border-collapse"
-                      aria-label="Month calendar"
-                    >
-                      <tbody>
-                        {monthGrid.map((row) => (
-                          <tr key={dateKey(row[0])}>
-                            {row.map((d) => {
+                    <div className="overflow-x-auto">
+                      <table
+                        className="min-w-4xl w-full border-separate border-spacing-3"
+                        aria-label="Week calendar"
+                      >
+                        <tbody>
+                          <tr
+                            onKeyDown={(e) => {
+                              const key = e.key;
+                              if (key === "ArrowLeft") {
+                                setSelectedDate((d) => {
+                                  const nd = new Date(d);
+                                  nd.setDate(nd.getDate() - 1);
+                                  return nd;
+                                });
+                              } else if (key === "ArrowRight") {
+                                setSelectedDate((d) => {
+                                  const nd = new Date(d);
+                                  nd.setDate(nd.getDate() + 1);
+                                  return nd;
+                                });
+                              } else if (key === "ArrowUp") {
+                                setSelectedDate((d) => {
+                                  const nd = new Date(d);
+                                  nd.setDate(nd.getDate() - 7);
+                                  return nd;
+                                });
+                              } else if (key === "ArrowDown") {
+                                setSelectedDate((d) => {
+                                  const nd = new Date(d);
+                                  nd.setDate(nd.getDate() + 7);
+                                  return nd;
+                                });
+                              }
+                            }}
+                          >
+                            {weekDates.map((d) => {
                               const key = dateKey(d);
                               const list = entriesByDate[key] || [];
-                              const isCurrentMonth =
-                                d.getMonth() === selectedDate.getMonth();
                               return (
                                 <td
                                   key={key}
-                                  className={`align-top border rounded-lg p-2 min-h-30 ${isCurrentMonth ? "bg-surface" : "bg-gray-50 dark:bg-gray-900 text-muted-foreground"}`}
+                                  className="min-w-48 align-top rounded-2xl border border-border/25 bg-background p-3"
+                                  aria-label={`Entries for ${d.toDateString()}`}
                                 >
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="text-sm font-medium">
-                                      {d.getDate()}
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => openNewForDate(d)}
-                                      className="text-xs text-blue-600"
-                                    >
-                                      New
-                                    </button>
-                                  </div>
-                                  <div className="space-y-2 overflow-hidden">
-                                    {list.slice(0, 3).map((e) => (
-                                      <JournalEntryCard
-                                        key={e.id}
-                                        entry={e}
-                                        onEdit={openEdit}
-                                        onDelete={handleDeleteEntry}
-                                      />
-                                    ))}
-                                    {list.length > 3 && (
-                                      <div className="text-xs text-muted-foreground mt-1">
-                                        +{list.length - 3} more
+                                  <div className="h-full">
+                                    <div className="mb-3 flex items-center justify-between gap-3">
+                                      <div className="text-sm font-medium">
+                                        {d.toLocaleDateString(undefined, {
+                                          weekday: "short",
+                                          day: "numeric",
+                                        })}
                                       </div>
-                                    )}
+                                      <button
+                                        type="button"
+                                        onClick={() => openNewForDate(d)}
+                                        className="text-xs text-blue-600"
+                                      >
+                                        New
+                                      </button>
+                                    </div>
+                                    <div className="space-y-2 overflow-hidden">
+                                      {list.slice(0, 3).map((e) => (
+                                        <JournalEntryCard
+                                          key={e.id}
+                                          entry={e}
+                                          onEdit={openEdit}
+                                          onDelete={handleDeleteEntry}
+                                          compact
+                                        />
+                                      ))}
+                                      {list.length > 3 && (
+                                        <div
+                                          className="mt-1 text-xs text-muted-foreground"
+                                          title={`${list.length - 3} more entries`}
+                                        >
+                                          +{list.length - 3} more
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 </td>
                               );
                             })}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {rangeMode === "month" && (
+                    <div className="overflow-x-auto">
+                      <table
+                        className="min-w-5xl w-full border-separate border-spacing-3"
+                        aria-label="Month calendar"
+                      >
+                        <tbody>
+                          {monthGrid.map((row) => (
+                            <tr key={dateKey(row[0])}>
+                              {row.map((d) => {
+                                const key = dateKey(d);
+                                const list = entriesByDate[key] || [];
+                                const isCurrentMonth =
+                                  d.getMonth() === selectedDate.getMonth();
+                                return (
+                                  <td
+                                    key={key}
+                                    className={`min-h-30 min-w-40 align-top rounded-2xl border p-3 ${isCurrentMonth ? "border-border/25 bg-background" : "border-border/15 bg-muted/30 text-muted-foreground"}`}
+                                  >
+                                    <div className="mb-3 flex items-center justify-between gap-3">
+                                      <div className="text-sm font-medium">
+                                        {d.getDate()}
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => openNewForDate(d)}
+                                        className="text-xs text-blue-600"
+                                      >
+                                        New
+                                      </button>
+                                    </div>
+                                    <div className="space-y-2 overflow-hidden">
+                                      {list.slice(0, 3).map((e) => (
+                                        <JournalEntryCard
+                                          key={e.id}
+                                          entry={e}
+                                          onEdit={openEdit}
+                                          onDelete={handleDeleteEntry}
+                                        />
+                                      ))}
+                                      {list.length > 3 && (
+                                        <div className="mt-1 text-xs text-muted-foreground">
+                                          +{list.length - 3} more
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
               )}
@@ -717,7 +725,7 @@ export default function JournalPage() {
           <button
             type="button"
             onClick={handleNewEntry}
-            className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-[color,background-color,border-color,opacity,box-shadow,transform] flex items-center justify-center group z-50"
+            className="group fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-[color,background-color,border-color,opacity,box-shadow,transform] hover:bg-blue-700 hover:shadow-xl sm:bottom-8 sm:right-8 md:hidden"
             aria-label="New journal entry"
           >
             <svg
@@ -738,7 +746,7 @@ export default function JournalPage() {
               New Entry
             </span>
           </button>
-        </div>
+        </PageCanvas>
 
         {/* Journal Modal */}
         <JournalModal

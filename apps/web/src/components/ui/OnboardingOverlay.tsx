@@ -89,7 +89,7 @@ export function OnboardingOverlay() {
                   </h2>
                   <p className="text-sm text-muted-foreground mt-3 leading-7">
                     Welcome to your voice-first workspace. Keep one calm
-                    conversation lane and use sidebar prompts for planning,
+                    conversation lane and use the prompt bar for planning,
                     journaling, habits, and focus sessions.
                   </p>
                 </div>
@@ -145,7 +145,7 @@ export function OnboardingOverlay() {
                   </li>
                   <li>
                     Explore the dashboard for insights and manage sessions from
-                    the sidebar.
+                    the top prompt bar.
                   </li>
                 </ol>
               </div>
