@@ -96,12 +96,26 @@ export function NavBar() {
 
       <div
         ref={shellRef}
-        className="fixed left-1/2 top-3 z-50 w-[min(82rem,calc(100vw-1.5rem))] -translate-x-1/2"
+        className="fixed left-1/2 top-3 z-50 w-[min(74rem,calc(100vw-1.5rem))] -translate-x-1/2"
       >
         <nav className="rounded-2xl border border-structural bg-card/96 shadow-[0_12px_40px_rgba(15,23,42,0.08)] backdrop-blur-sm">
           <div className="px-2.5 sm:px-3">
-            <div className="flex h-12 items-center justify-between gap-2.5 sm:gap-3">
-              <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex h-12 items-center gap-3 sm:gap-4">
+              <div className="flex shrink-0 items-center gap-2.5 sm:gap-3">
+                <Link
+                  href="/"
+                  className="flex items-center gap-2 transition-[opacity,transform] duration-(--motion-medium)"
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-md border border-structural">
+                    <span className="text-xs font-semibold text-foreground">
+                      N
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium tracking-tight text-foreground/95">
+                    Nargis
+                  </span>
+                </Link>
+
                 <button
                   type="button"
                   onClick={togglePromptBar}
@@ -127,23 +141,9 @@ export function NavBar() {
                     />
                   </svg>
                 </button>
-
-                <Link
-                  href="/"
-                  className="flex items-center gap-2 transition-[opacity,transform] duration-(--motion-medium)"
-                >
-                  <div className="flex h-6 w-6 items-center justify-center rounded-md border border-structural">
-                    <span className="text-xs font-semibold text-foreground">
-                      N
-                    </span>
-                  </div>
-                  <span className="text-sm font-medium tracking-tight text-foreground/95">
-                    Nargis
-                  </span>
-                </Link>
               </div>
 
-              <div className="hidden items-center gap-1 md:flex">
+              <div className="hidden flex-1 items-center justify-center gap-1 md:flex">
                 {navigationItems.map((item) => {
                   const isActive = pathname === item.href;
                   return (
@@ -163,7 +163,7 @@ export function NavBar() {
                 })}
               </div>
 
-              <div className="ml-auto flex items-center gap-2 sm:gap-2.5">
+              <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-2.5">
                 <div className="rounded-md bg-background/80 p-1">
                   <ThemeToggle />
                 </div>
