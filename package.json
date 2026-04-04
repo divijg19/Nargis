@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",
-    "@emnapi/wasi-threads": "^1.2.0",
+    "@emnapi/wasi-threads": "^1.2.1",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "turbo": "^2.9.3"
