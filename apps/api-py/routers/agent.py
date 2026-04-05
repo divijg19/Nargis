@@ -7,7 +7,7 @@ from routers.auth import get_current_user
 from services.agent_service import run_agent_pipeline
 from storage.database import get_db
 
-router = APIRouter(prefix="/v1/agent", tags=["agent"])
+router = APIRouter(tags=["agent"])
 
 
 class TriggerRequest(BaseModel):

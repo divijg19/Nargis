@@ -87,6 +87,13 @@ export function getToolInvalidationKeys(
   if (detect.includes("habit") || detect.includes("streak")) {
     keys.push(["habits"]);
   }
+  if (
+    detect.includes("pomodoro") ||
+    detect.includes("focus") ||
+    detect.includes("session")
+  ) {
+    keys.push(["pomodoro", "sessions"]);
+  }
   if (detect.includes("journal") || detect.includes("entry")) {
     keys.push(["journal"]);
   }

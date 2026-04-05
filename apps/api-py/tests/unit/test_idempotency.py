@@ -34,7 +34,7 @@ def test_idempotency_save_and_get():
     key = "idem-123"
     user_id = "user-1"
     method = "POST"
-    path = "/v1/tasks"
+    path = "/api/v1/tasks"
     payload = {"id": "t1", "title": "Test"}
 
     # initially absent

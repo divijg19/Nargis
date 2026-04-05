@@ -88,7 +88,7 @@ func main() {
 	mux.HandleFunc("/healthz", healthzHandler)
 	mux.HandleFunc("/ready", readyHandler)
 	mux.HandleFunc("/proxy/process-audio", proxyProcessAudioHandler)
-	mux.HandleFunc("/v1/auth/", withCORS(proxyAuthHandler))
+	mux.HandleFunc("/api/v1/auth/", withCORS(proxyAuthHandler))
 
 	server := &http.Server{
 		Addr:         ":" + cfg.Port,

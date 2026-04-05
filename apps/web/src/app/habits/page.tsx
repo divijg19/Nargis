@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PageCanvas } from "@/components/layout/PageCanvas";
 import { HabitCard } from "@/components/ui/HabitCard";
 import { useHabits } from "@/hooks/queries";
@@ -19,6 +19,8 @@ export default function HabitsPage() {
   const queryClient = useQueryClient();
   const habitsQuery = useHabits();
   const habits = habitsQuery.data ?? [];
+  const [days, setDays] = useState<string[]>([]);
+  const [todayKey, setTodayKey] = useState("");
 
   const updateCountMutation = useMutation({
     mutationFn: ({ id, count }: { id: string; count: number }) =>
@@ -28,7 +30,7 @@ export default function HabitsPage() {
     },
   });
 
-  const days = useMemo(() => {
+  useEffect(() => {
     const items: string[] = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -39,10 +41,9 @@ export default function HabitsPage() {
       items.push(toDayKey(day));
     }
 
-    return items;
+    setDays(items);
+    setTodayKey(toDayKey(today));
   }, []);
-
-  const todayKey = useMemo(() => toDayKey(new Date()), []);
 
   const completedToday = useMemo(
     () =>

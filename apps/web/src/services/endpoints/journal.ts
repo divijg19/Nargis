@@ -38,7 +38,7 @@ function mapApiToEntry(api: JournalEntryApi): JournalEntry {
 
 export async function listJournalEntries(): Promise<JournalEntry[]> {
   const headers = authService.getAuthHeaders();
-  const apiEntries = await fetchJson<JournalEntryApi[]>("/v1/journal", {
+  const apiEntries = await fetchJson<JournalEntryApi[]>("/api/v1/journal", {
     headers,
   });
   return apiEntries.map(mapApiToEntry);
@@ -47,9 +47,12 @@ export async function listJournalEntries(): Promise<JournalEntry[]> {
 export async function getLatestBriefing(): Promise<JournalEntry | null> {
   const headers = authService.getAuthHeaders();
   try {
-    const apiEntry = await fetchJson<JournalEntryApi>("/v1/journal/briefing", {
-      headers,
-    });
+    const apiEntry = await fetchJson<JournalEntryApi>(
+      "/api/v1/journal/briefing",
+      {
+        headers,
+      },
+    );
     return mapApiToEntry(apiEntry);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
@@ -64,7 +67,7 @@ export async function createJournalEntry(
 ): Promise<JournalEntry> {
   const headers = { ...authService.getAuthHeaders() };
   const body = JSON.stringify(data);
-  const apiEntry = await fetchJson<JournalEntryApi>("/v1/journal", {
+  const apiEntry = await fetchJson<JournalEntryApi>("/api/v1/journal", {
     method: "POST",
     headers,
     body,
@@ -78,7 +81,7 @@ export async function updateJournalEntry(
 ): Promise<JournalEntry> {
   const headers = { ...authService.getAuthHeaders() };
   const body = JSON.stringify(updates);
-  const apiEntry = await fetchJson<JournalEntryApi>(`/v1/journal/${id}`, {
+  const apiEntry = await fetchJson<JournalEntryApi>(`/api/v1/journal/${id}`, {
     method: "PATCH",
     headers,
     body,
@@ -88,14 +91,17 @@ export async function updateJournalEntry(
 
 export async function deleteJournalEntry(id: string): Promise<void> {
   const headers = authService.getAuthHeaders();
-  await fetchJson<void>(`/v1/journal/${id}`, { method: "DELETE", headers });
+  await fetchJson<void>(`/api/v1/journal/${id}`, {
+    method: "DELETE",
+    headers,
+  });
 }
 
 // Server-side summary generation for an existing entry
 export async function summarizeEntry(id: string): Promise<JournalEntry> {
   const headers = authService.getAuthHeaders();
   const result = await fetchJson<{ summary: string; entry: JournalEntryApi }>(
-    `/v1/journal/${id}/summary`,
+    `/api/v1/journal/${id}/summary`,
     { method: "POST", headers },
   );
   return mapApiToEntry(result.entry ?? {});

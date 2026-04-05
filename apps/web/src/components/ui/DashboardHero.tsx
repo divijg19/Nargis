@@ -47,7 +47,7 @@ export default function DashboardHero({ greeting }: { greeting?: string }) {
                   headers.set(key, value);
                 });
                 await fetch(
-                  `${process.env.NEXT_PUBLIC_API_URL}/v1/agent/trigger`,
+                  `${process.env.NEXT_PUBLIC_API_URL}/api/v1/agent/trigger`,
                   {
                     method: "POST",
                     headers,

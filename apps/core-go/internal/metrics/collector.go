@@ -49,8 +49,6 @@ func requestPathLabel(path string) string {
 	switch {
 	case strings.HasPrefix(path, "/api/v1/"):
 		return "/api/v1/*"
-	case strings.HasPrefix(path, "/v1/auth/"):
-		return "/v1/auth/*"
 	case strings.HasPrefix(path, "/ws"):
 		return "/ws"
 	default:

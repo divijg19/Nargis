@@ -16,7 +16,7 @@ def _register_user_and_get_token() -> str:
         "password": "SecurePass123!",
         "name": "Briefing User",
     }
-    response = client.post("/v1/auth/register", json=payload)
+    response = client.post("/api/v1/auth/register", json=payload)
     assert response.status_code == 201
     token = response.json().get("access_token")
     assert isinstance(token, str) and token
@@ -27,7 +27,7 @@ def test_get_latest_briefing_returns_404_when_absent():
     token = _register_user_and_get_token()
     headers = {"Authorization": f"Bearer {token}"}
 
-    response = client.get("/v1/journal/briefing", headers=headers)
+    response = client.get("/api/v1/journal/briefing", headers=headers)
 
     assert response.status_code == 404
 
@@ -37,7 +37,7 @@ def test_get_latest_briefing_returns_most_recent_system_entry():
     headers = {"Authorization": f"Bearer {token}"}
 
     first = client.post(
-        "/v1/journal",
+        "/api/v1/journal",
         headers=headers,
         json={
             "title": "Morning Briefing",
@@ -49,7 +49,7 @@ def test_get_latest_briefing_returns_most_recent_system_entry():
     assert first.status_code == 201
 
     second = client.post(
-        "/v1/journal",
+        "/api/v1/journal",
         headers=headers,
         json={
             "title": "Morning Briefing",
@@ -60,7 +60,7 @@ def test_get_latest_briefing_returns_most_recent_system_entry():
     )
     assert second.status_code == 201
 
-    response = client.get("/v1/journal/briefing", headers=headers)
+    response = client.get("/api/v1/journal/briefing", headers=headers)
 
     assert response.status_code == 200
     payload = response.json()

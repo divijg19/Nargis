@@ -13,7 +13,7 @@ def test_cookie_auth_register_and_logout_flow():
     with TestClient(app) as client:
         # Register
         resp = client.post(
-            "/v1/auth/register",
+            "/api/v1/auth/register",
             json={"email": email, "password": password, "name": "E2E"},
         )
         assert resp.status_code == 201, resp.text
@@ -30,13 +30,13 @@ def test_cookie_auth_register_and_logout_flow():
             client.cookies.set("access_token", tokens.get("access_token"))
 
         # Call protected endpoint relying on cookie (no Authorization header)
-        me = client.get("/v1/auth/me")
+        me = client.get("/api/v1/auth/me")
         assert me.status_code == 200, me.text
         body = me.json()
         assert body.get("email") == email
 
         # Logout (clears cookie)
-        lo = client.post("/v1/auth/logout")
+        lo = client.post("/api/v1/auth/logout")
         assert lo.status_code == 204, lo.text
 
         # Ensure server attempted to clear the cookie via Set-Cookie header
@@ -49,5 +49,5 @@ def test_cookie_auth_register_and_logout_flow():
             del client.cookies["access_token"]
 
         # After logout, cookie should be cleared (or server rejects)
-        me2 = client.get("/v1/auth/me")
+        me2 = client.get("/api/v1/auth/me")
         assert me2.status_code == 401

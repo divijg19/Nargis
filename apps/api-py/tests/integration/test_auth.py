@@ -20,8 +20,8 @@ def run_manual_auth_test():
     print("=" * 60)
 
     # Step 1: Try accessing protected endpoint without auth
-    print("\n1. Testing unauthorized access to /v1/journal...")
-    response = requests.get(f"{BASE_URL}/v1/journal")
+    print("\n1. Testing unauthorized access to /api/v1/journal...")
+    response = requests.get(f"{BASE_URL}/api/v1/journal")
     print(f"   Status: {response.status_code}")
     if response.status_code == 401:
         print("   ✅ Correctly rejected (401 Unauthorized)")
@@ -35,7 +35,7 @@ def run_manual_auth_test():
         "password": "TestPass123!",
         "name": "User Two",
     }
-    response = requests.post(f"{BASE_URL}/v1/auth/register", json=user_data)
+    response = requests.post(f"{BASE_URL}/api/v1/auth/register", json=user_data)
     print(f"   Status: {response.status_code}")
     if response.status_code == 201:
         token = response.json().get("access_token")
@@ -54,7 +54,9 @@ def run_manual_auth_test():
         "mood": "great",
         "tags": ["auth", "test"],
     }
-    response = requests.post(f"{BASE_URL}/v1/journal", json=entry_data, headers=headers)
+    response = requests.post(
+        f"{BASE_URL}/api/v1/journal", json=entry_data, headers=headers
+    )
     print(f"   Status: {response.status_code}")
     if response.status_code == 201:
         entry = response.json()
@@ -68,7 +70,7 @@ def run_manual_auth_test():
 
     # Step 4: List entries (should only show user's entries)
     print("\n4. Listing journal entries...")
-    response = requests.get(f"{BASE_URL}/v1/journal", headers=headers)
+    response = requests.get(f"{BASE_URL}/api/v1/journal", headers=headers)
     print(f"   Status: {response.status_code}")
     if response.status_code == 200:
         entries = response.json()
@@ -86,7 +88,9 @@ def run_manual_auth_test():
         "status": "pending",
         "priority": "high",
     }
-    response = requests.post(f"{BASE_URL}/v1/tasks", json=task_data, headers=headers)
+    response = requests.post(
+        f"{BASE_URL}/api/v1/tasks", json=task_data, headers=headers
+    )
     print(f"   Status: {response.status_code}")
     if response.status_code == 201:
         task = response.json()
@@ -100,7 +104,7 @@ def run_manual_auth_test():
     # Step 6: Try accessing with wrong/expired token
     print("\n6. Testing with invalid token...")
     bad_headers = {"Authorization": "Bearer invalid_token_here"}
-    response = requests.get(f"{BASE_URL}/v1/journal", headers=bad_headers)
+    response = requests.get(f"{BASE_URL}/api/v1/journal", headers=bad_headers)
     print(f"   Status: {response.status_code}")
     if response.status_code == 401:
         print("   ✅ Correctly rejected invalid token")
@@ -114,14 +118,14 @@ def run_manual_auth_test():
         "password": "AnotherPass123!",
         "name": "User Three",
     }
-    response = requests.post(f"{BASE_URL}/v1/auth/register", json=user2_data)
+    response = requests.post(f"{BASE_URL}/api/v1/auth/register", json=user2_data)
     if response.status_code == 201:
         token2 = response.json().get("access_token")
         print("   ✅ Second user registered")
 
         # Try to list journal entries as second user
         headers2 = {"Authorization": f"Bearer {token2}"}
-        response = requests.get(f"{BASE_URL}/v1/journal", headers=headers2)
+        response = requests.get(f"{BASE_URL}/api/v1/journal", headers=headers2)
         if response.status_code == 200:
             entries2 = response.json()
             print(f"   Second user sees {len(entries2)} entries (should be 0)")

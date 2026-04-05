@@ -21,7 +21,7 @@ from services.journal import (
 from storage.database import get_db
 from storage.models import JournalEntry
 
-router = APIRouter(prefix="/v1/journal", tags=["journal"])
+router = APIRouter(tags=["journal"])
 
 
 class JournalEntryCreate(BaseModel):
@@ -79,7 +79,11 @@ async def create_entry(
 
     if Idempotency_Key:
         saved = get_idempotent_response(
-            db, Idempotency_Key, current_user.get("id"), "POST", "/v1/journal"
+            db,
+            Idempotency_Key,
+            current_user.get("id"),
+            "POST",
+            "/api/v1/journal",
         )
         if saved:
             return saved["response"]
@@ -92,7 +96,7 @@ async def create_entry(
             Idempotency_Key,
             current_user.get("id"),
             "POST",
-            "/v1/journal",
+            "/api/v1/journal",
             201,
             created,
         )

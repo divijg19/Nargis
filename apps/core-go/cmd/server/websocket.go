@@ -19,8 +19,8 @@ import (
 
 func safeSend(send chan<- []byte, msg []byte) {
 	defer func() {
-		if r := recover(); r != nil {
-		}
+		// Ignore panic when attempting to send on a closed channel.
+		_ = recover()
 	}()
 	send <- msg
 }
