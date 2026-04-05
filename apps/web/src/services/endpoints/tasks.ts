@@ -81,14 +81,14 @@ function mapTaskUpdateToApi(updates: UpdateTaskRequest) {
 
 export async function listTasks(): Promise<Task[]> {
   const headers = authService.getAuthHeaders();
-  const apiTasks = await fetchJson<TaskApi[]>("/v1/tasks", { headers });
+  const apiTasks = await fetchJson<TaskApi[]>("/api/v1/tasks", { headers });
   return apiTasks.map(mapApiToTask);
 }
 
 export async function createTask(data: CreateTaskRequest): Promise<Task> {
   const headers = { ...authService.getAuthHeaders() };
   const body = JSON.stringify(mapTaskCreateToApi(data));
-  const apiTask = await fetchJson<TaskApi>("/v1/tasks", {
+  const apiTask = await fetchJson<TaskApi>("/api/v1/tasks", {
     method: "POST",
     headers,
     body,
@@ -102,7 +102,7 @@ export async function updateTask(
 ): Promise<Task | null> {
   const headers = { ...authService.getAuthHeaders() };
   const body = JSON.stringify(mapTaskUpdateToApi(updates));
-  const apiTask = await fetchJson<TaskApi | null>(`/v1/tasks/${id}`, {
+  const apiTask = await fetchJson<TaskApi | null>(`/api/v1/tasks/${id}`, {
     method: "PATCH",
     headers,
     body,
@@ -112,7 +112,7 @@ export async function updateTask(
 
 export async function deleteTask(id: string): Promise<boolean> {
   const headers = authService.getAuthHeaders();
-  await fetchJson<void>(`/v1/tasks/${id}`, { method: "DELETE", headers });
+  await fetchJson<void>(`/api/v1/tasks/${id}`, { method: "DELETE", headers });
   return true;
 }
 
@@ -120,10 +120,13 @@ export async function deleteTask(id: string): Promise<boolean> {
 export async function toggleTask(id: string): Promise<Task | null> {
   const headers = { ...authService.getAuthHeaders() };
   try {
-    const apiTask = await fetchJson<TaskApi | null>(`/v1/tasks/${id}/toggle`, {
-      method: "POST",
-      headers,
-    });
+    const apiTask = await fetchJson<TaskApi | null>(
+      `/api/v1/tasks/${id}/toggle`,
+      {
+        method: "POST",
+        headers,
+      },
+    );
     return apiTask ? mapApiToTask(apiTask) : null;
   } catch {
     return null;

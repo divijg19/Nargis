@@ -398,14 +398,14 @@ func TestWSStopEmitsSingleCanceledEnd(t *testing.T) {
 
 func fakeOrchestratorAuth(w http.ResponseWriter, r *http.Request) {
 	// minimal auth endpoint imitation for gateway proxy tests
-	if r.Method == http.MethodPost && r.URL.Path == "/v1/auth/login" {
+	if r.Method == http.MethodPost && r.URL.Path == "/api/v1/auth/login" {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Add("Set-Cookie", "access_token=test.jwt.token; Path=/; HttpOnly; SameSite=Lax")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"access_token":"test.jwt.token","token_type":"bearer"}`))
 		return
 	}
-	if r.Method == http.MethodGet && r.URL.Path == "/v1/auth/me" {
+	if r.Method == http.MethodGet && r.URL.Path == "/api/v1/auth/me" {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"id":"u1","email":"u1@example.com","name":"U1","createdAt":"now"}`))
@@ -423,14 +423,14 @@ func TestGatewayAuthProxyCORSAndCookie(t *testing.T) {
 	os.Setenv("WS_ALLOWED_ORIGINS", "http://localhost:3000")
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/auth/", withCORS(proxyAuthHandler))
+	mux.HandleFunc("/api/v1/auth/", withCORS(proxyAuthHandler))
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
 	client := &http.Client{Timeout: 3 * time.Second}
 
 	// Preflight
-	pre, err := http.NewRequest(http.MethodOptions, srv.URL+"/v1/auth/login", nil)
+	pre, err := http.NewRequest(http.MethodOptions, srv.URL+"/api/v1/auth/login", nil)
 	if err != nil {
 		t.Fatalf("failed create preflight: %v", err)
 	}
@@ -453,7 +453,7 @@ func TestGatewayAuthProxyCORSAndCookie(t *testing.T) {
 	}
 
 	// Actual login
-	req, err := http.NewRequest(http.MethodPost, srv.URL+"/v1/auth/login", strings.NewReader(`{"email":"a@b.com","password":"pw"}`))
+	req, err := http.NewRequest(http.MethodPost, srv.URL+"/api/v1/auth/login", strings.NewReader(`{"email":"a@b.com","password":"pw"}`))
 	if err != nil {
 		t.Fatalf("failed create req: %v", err)
 	}

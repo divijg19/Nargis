@@ -54,7 +54,7 @@ function mapApiToHabit(api: HabitApi): Habit {
 
 export async function listHabits(): Promise<Habit[]> {
   const headers = authService.getAuthHeaders();
-  const apiHabits = await fetchJson<HabitApi[]>("/v1/habits", { headers });
+  const apiHabits = await fetchJson<HabitApi[]>("/api/v1/habits", { headers });
   return apiHabits.map(mapApiToHabit);
 }
 
@@ -67,7 +67,7 @@ export async function createHabit(data: CreateHabitRequest): Promise<Habit> {
     frequency: data.frequency,
     color: data.color,
   });
-  const apiHabit = await fetchJson<HabitApi>("/v1/habits", {
+  const apiHabit = await fetchJson<HabitApi>("/api/v1/habits", {
     method: "POST",
     headers,
     body,
@@ -81,7 +81,7 @@ export async function updateHabit(
 ): Promise<Habit | null> {
   const headers = { ...authService.getAuthHeaders() };
   const body = JSON.stringify(updates);
-  const apiHabit = await fetchJson<HabitApi | null>(`/v1/habits/${id}`, {
+  const apiHabit = await fetchJson<HabitApi | null>(`/api/v1/habits/${id}`, {
     method: "PATCH",
     headers,
     body,
@@ -91,7 +91,7 @@ export async function updateHabit(
 
 export async function deleteHabit(id: string): Promise<boolean> {
   const headers = authService.getAuthHeaders();
-  await fetchJson<void>(`/v1/habits/${id}`, { method: "DELETE", headers });
+  await fetchJson<void>(`/api/v1/habits/${id}`, { method: "DELETE", headers });
   return true;
 }
 
@@ -102,7 +102,7 @@ export async function updateHabitCount(
   const headers = { ...authService.getAuthHeaders() };
   try {
     const apiHabit = await fetchJson<HabitApi | null>(
-      `/v1/habits/${id}/count`,
+      `/api/v1/habits/${id}/count`,
       {
         method: "POST",
         headers,

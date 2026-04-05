@@ -25,7 +25,7 @@ from sqlalchemy.orm import Session
 from storage.database import get_db
 from storage.models import User
 
-router = APIRouter(prefix="/v1/auth", tags=["auth"])
+router = APIRouter(tags=["auth"])
 security = HTTPBearer(auto_error=False)
 
 # JWT Configuration

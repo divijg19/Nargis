@@ -148,7 +148,7 @@ func TestWithCORSHandlesPreflightForAllowedOrigin(t *testing.T) {
 
 	cfg = &config.Config{WSAllowedOrigins: "https://app.example.com"}
 
-	req := httptest.NewRequest(http.MethodOptions, "/v1/auth/session", nil)
+	req := httptest.NewRequest(http.MethodOptions, "/api/v1/auth/session", nil)
 	req.Header.Set("Origin", "https://app.example.com")
 
 	rr := httptest.NewRecorder()

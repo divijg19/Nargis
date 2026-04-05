@@ -18,7 +18,7 @@ from services.habits import (
 from storage.database import get_db
 from storage.models import Habit
 
-router = APIRouter(prefix="/v1/habits", tags=["habits"])
+router = APIRouter(tags=["habits"])
 
 
 class HabitCreate(BaseModel):
@@ -74,7 +74,11 @@ async def create_habit(
     data = payload.model_dump()
     if Idempotency_Key:
         saved = get_idempotent_response(
-            db, Idempotency_Key, current_user.get("id"), "POST", "/v1/habits"
+            db,
+            Idempotency_Key,
+            current_user.get("id"),
+            "POST",
+            "/api/v1/habits",
         )
         if saved:
             return saved["response"]
@@ -87,7 +91,7 @@ async def create_habit(
             Idempotency_Key,
             current_user.get("id"),
             "POST",
-            "/v1/habits",
+            "/api/v1/habits",
             201,
             created,
         )

@@ -17,9 +17,6 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from middleware.idempotency import IdempotencyMiddleware
 from routers import (
-    agent as agent_router,
-)
-from routers import (
     auth as auth_router,
 )
 from routers import (
@@ -33,9 +30,6 @@ from routers import (
 )
 from routers import (
     pomodoro as pomodoro_router,
-)
-from routers import (
-    realtime as realtime_router,
 )
 from routers import (
     tasks as tasks_router,
@@ -197,6 +191,15 @@ def parse_origins(value: str | None) -> list[str]:
     ]
 
 
+def is_agent_enabled() -> bool:
+    groq_api_key = (os.getenv("GROQ_API_KEY") or "").strip()
+    if groq_api_key:
+        return True
+
+    logging.warning("WARNING: GROQ_API_KEY is missing. Agent features are disabled.")
+    return False
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="Nargis AI Service", lifespan=lifespan)
 
@@ -215,13 +218,24 @@ def create_app() -> FastAPI:
 
     app.include_router(system_router)
     app.include_router(audio_pipeline_router)
-    app.include_router(agent_router.router)
-    app.include_router(auth_router.router)
-    app.include_router(tasks_router.router)
-    app.include_router(habits_router.router)
-    app.include_router(pomodoro_router.router)
-    app.include_router(journal_router.router)
-    app.include_router(realtime_router.router)
+    app.include_router(auth_router.router, prefix="/api/v1/auth")
+    app.include_router(tasks_router.router, prefix="/api/v1/tasks")
+    app.include_router(habits_router.router, prefix="/api/v1/habits")
+    app.include_router(pomodoro_router.router, prefix="/api/v1/pomodoro")
+    app.include_router(journal_router.router, prefix="/api/v1/journal")
+
+    if is_agent_enabled():
+        try:
+            from routers import agent as agent_router
+            from routers import realtime as realtime_router
+
+            app.include_router(agent_router.router, prefix="/api/v1/agent")
+            app.include_router(realtime_router.router)
+        except Exception:
+            logging.exception(
+                "Agent router initialization failed. Agent features are disabled."
+            )
+
     app.include_router(internal_router.router, prefix="/api")
 
     @app.exception_handler(HTTPException)

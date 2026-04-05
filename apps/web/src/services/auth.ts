@@ -121,7 +121,7 @@ class AuthService {
    * Register new user
    */
   async register(data: RegisterData): Promise<User> {
-    const response = await fetch(`${API_URL}/v1/auth/register`, {
+    const response = await fetch(`${API_URL}/api/v1/auth/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -155,7 +155,7 @@ class AuthService {
    * Login user
    */
   async login(credentials: LoginCredentials): Promise<User> {
-    const response = await fetch(`${API_URL}/v1/auth/login`, {
+    const response = await fetch(`${API_URL}/api/v1/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -191,7 +191,7 @@ class AuthService {
     // Call server logout to clear httpOnly cookie, then clear local storage.
     (async () => {
       try {
-        await fetch(`${API_URL}/v1/auth/logout`, {
+        await fetch(`${API_URL}/api/v1/auth/logout`, {
           method: "POST",
           credentials: "include",
         });
@@ -212,7 +212,7 @@ class AuthService {
     const headers = new Headers();
     this.applySessionAuthHeader(headers);
 
-    const response = await fetch(`${API_URL}/v1/auth/me`, {
+    const response = await fetch(`${API_URL}/api/v1/auth/me`, {
       headers,
       credentials: "include",
     });
@@ -240,7 +240,7 @@ class AuthService {
     const headers = new Headers({ "Content-Type": "application/json" });
     this.applySessionAuthHeader(headers);
 
-    const response = await fetch(`${API_URL}/v1/auth/me`, {
+    const response = await fetch(`${API_URL}/api/v1/auth/me`, {
       method: "PATCH",
       headers,
       credentials: "include",

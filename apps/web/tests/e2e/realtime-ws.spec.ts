@@ -218,7 +218,7 @@ test("WS agent mode works with auth cookie", async ({ page }) => {
   // Exercise real browser CORS + Set-Cookie flow (not Playwright request context).
   const registerOk = await page.evaluate(
     async ({ email, password }) => {
-      const resp = await fetch("http://localhost:8080/v1/auth/register", {
+      const resp = await fetch("http://localhost:8080/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

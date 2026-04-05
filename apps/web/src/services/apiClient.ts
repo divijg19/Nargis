@@ -17,18 +17,21 @@ export class ApiError extends Error implements ApiErrorShape {
   }
 }
 
-const apiProxyBase = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
+const apiBase = (
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+).replace(/\/$/, "");
 
 function normalizeApiPath(path: string): string {
-  if (!path) return "/api/v1";
-  if (/^https?:\/\//i.test(path)) return path;
-  if (path.startsWith("/api/v1/")) return path;
-  if (path === "/api/v1") return path;
-  if (path.startsWith("/v1/")) return `/api${path}`;
-  if (path === "/v1") return "/api/v1";
+  const candidate = path.trim();
+  if (!candidate) return "/api/v1";
+  if (/^https?:\/\//i.test(candidate)) return candidate;
+  if (candidate === "/api/v1" || candidate.startsWith("/api/v1/")) {
+    return candidate;
+  }
 
-  const withSlash = path.startsWith("/") ? path : `/${path}`;
-  return `/api/v1${withSlash}`;
+  throw new Error(
+    `Non-canonical API path: ${path}. Expected a /api/v1/... path.`,
+  );
 }
 
 export async function fetchAPI(
@@ -38,7 +41,7 @@ export async function fetchAPI(
   const normalizedPath = normalizeApiPath(path);
   const url = /^https?:\/\//i.test(normalizedPath)
     ? normalizedPath
-    : `${apiProxyBase}${normalizedPath}`;
+    : `${apiBase}${normalizedPath}`;
 
   const headers = new Headers(options.headers || {});
   if (!headers.has("Content-Type")) {

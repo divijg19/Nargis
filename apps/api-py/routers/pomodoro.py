@@ -19,7 +19,7 @@ from services.pomodoro import (
 from storage.database import get_db
 from storage.models import PomodoroSession
 
-router = APIRouter(prefix="/v1/pomodoro", tags=["pomodoro"])
+router = APIRouter(tags=["pomodoro"])
 
 
 class PomodoroCreate(BaseModel):
@@ -70,7 +70,11 @@ async def create_session(
     data = payload.model_dump()
     if Idempotency_Key:
         saved = get_idempotent_response(
-            db, Idempotency_Key, current_user.get("id"), "POST", "/v1/pomodoro"
+            db,
+            Idempotency_Key,
+            current_user.get("id"),
+            "POST",
+            "/api/v1/pomodoro",
         )
         if saved:
             return saved["response"]
@@ -83,7 +87,7 @@ async def create_session(
             Idempotency_Key,
             current_user.get("id"),
             "POST",
-            "/v1/pomodoro",
+            "/api/v1/pomodoro",
             201,
             created,
         )

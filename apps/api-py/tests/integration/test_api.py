@@ -20,7 +20,7 @@ def register_user():
         "password": "SecurePass123!",
         "name": "Test User",
     }
-    response = client.post("/v1/auth/register", json=user_data)
+    response = client.post("/api/v1/auth/register", json=user_data)
     if response.status_code == 201:
         return response.json().get("access_token")
     # If the user already exists, attempt to login and return an access token
@@ -33,7 +33,7 @@ def register_user():
 def login_user():
     """Helper: login and return access token or None."""
     login_data = {"email": "test@nargis.ai", "password": "SecurePass123!"}
-    response = client.post("/v1/auth/login", json=login_data)
+    response = client.post("/api/v1/auth/login", json=login_data)
     if response.status_code == 200:
         return response.json().get("access_token")
     return None
@@ -60,7 +60,7 @@ def test_login():
 def test_profile(token):
     """Test get profile endpoint"""
     headers = {"Authorization": f"Bearer {token}"}
-    response = client.get("/v1/auth/me", headers=headers)
+    response = client.get("/api/v1/auth/me", headers=headers)
     assert response.status_code == 200
 
 
@@ -77,21 +77,21 @@ def test_journal_create(token):
         "mood": "great",
         "tags": ["test", "api"],
     }
-    response = client.post("/v1/journal", json=journal_data, headers=headers)
+    response = client.post("/api/v1/journal", json=journal_data, headers=headers)
     assert response.status_code == 201
 
 
 def test_journal_list(token):
     """Test list journal entries"""
     headers = {"Authorization": f"Bearer {token}"}
-    response = client.get("/v1/journal", headers=headers)
+    response = client.get("/api/v1/journal", headers=headers)
     assert response.status_code == 200
 
 
 def test_tasks_list(token):
     """Test list tasks"""
     headers = {"Authorization": f"Bearer {token}"}
-    response = client.get("/v1/tasks", headers=headers)
+    response = client.get("/api/v1/tasks", headers=headers)
     assert response.status_code == 200
 
 
@@ -99,20 +99,20 @@ def test_guest_shadow_profile_from_forwarded_header():
     guest_user_id = f"guest_{uuid.uuid4().hex}"
     headers = {"X-User-Id": guest_user_id}
 
-    me_response = client.get("/v1/auth/me", headers=headers)
+    me_response = client.get("/api/v1/auth/me", headers=headers)
     assert me_response.status_code == 200
     profile = me_response.json()
     assert profile["id"] == guest_user_id
     assert profile["email"] == f"{guest_user_id}@temp.com"
 
     create_response = client.post(
-        "/v1/tasks",
+        "/api/v1/tasks",
         json={"title": "Guest task", "status": "pending"},
         headers=headers,
     )
     assert create_response.status_code == 201
 
-    list_response = client.get("/v1/tasks", headers=headers)
+    list_response = client.get("/api/v1/tasks", headers=headers)
     assert list_response.status_code == 200
     assert any(task.get("title") == "Guest task" for task in list_response.json())
 
@@ -121,7 +121,7 @@ def test_guest_shadow_profile_from_guest_header():
     guest_suffix = uuid.uuid4().hex
     headers = {"X-Guest-Id": guest_suffix}
 
-    me_response = client.get("/v1/auth/me", headers=headers)
+    me_response = client.get("/api/v1/auth/me", headers=headers)
     assert me_response.status_code == 200
     profile = me_response.json()
     assert profile["id"] == f"guest_{guest_suffix}"

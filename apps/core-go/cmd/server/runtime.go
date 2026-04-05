@@ -101,7 +101,7 @@ func newRedisClient(redisURL string) (*redis.Client, error) {
 	return redis.NewClient(opts), nil
 }
 
-func WaitForOrchestrator(healthURL string, maxRetries int, retryMs time.Duration) error {
+func WaitForOrchestrator(healthURL string, maxRetries int, retryDelay time.Duration) error {
 	client := &http.Client{Timeout: 2 * time.Second}
 	for i := 0; i < maxRetries; i++ {
 		resp, err := client.Get(healthURL)
@@ -112,7 +112,7 @@ func WaitForOrchestrator(healthURL string, maxRetries int, retryMs time.Duration
 				return nil
 			}
 		}
-		time.Sleep(retryMs)
+		time.Sleep(retryDelay)
 	}
 	return fmt.Errorf("orchestrator healthcheck failed after %d retries", maxRetries)
 }

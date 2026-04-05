@@ -22,7 +22,7 @@ from services.tasks import (
 from storage.database import get_db
 from storage.models import Task
 
-router = APIRouter(prefix="/v1/tasks", tags=["tasks"])
+router = APIRouter(tags=["tasks"])
 logger = logging.getLogger(__name__)
 
 
@@ -73,7 +73,7 @@ async def create_task(
 
     if Idempotency_Key:
         saved = get_idempotent_response(
-            db, Idempotency_Key, current_user.get("id"), "POST", "/v1/tasks"
+            db, Idempotency_Key, current_user.get("id"), "POST", "/api/v1/tasks"
         )
         if saved:
             return saved["response"]
@@ -94,7 +94,7 @@ async def create_task(
             Idempotency_Key,
             current_user.get("id"),
             "POST",
-            "/v1/tasks",
+            "/api/v1/tasks",
             201,
             created,
         )
